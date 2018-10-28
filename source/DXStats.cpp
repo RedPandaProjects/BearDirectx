@@ -135,7 +135,7 @@ DXStats::~DXStats()
 {
 }
 
-DXBlendState::DXBlendState(const BearGraphics::BearBlendStateInitializer & initializer)
+DXBlendState::DXBlendState(const BearGraphics::BearBlendStateInitializer & initializer):BlendState(0)
 {
 	D3D11_BLEND_DESC desc;
 	BearCore::bear_fill(desc);
@@ -158,12 +158,14 @@ DXBlendState::DXBlendState(const BearGraphics::BearBlendStateInitializer & initi
 			desc.RenderTarget[i].RenderTargetWriteMask |= D3D11_COLOR_WRITE_ENABLE_ALPHA;
 	}
 	R_CHK(Factory->device->CreateBlendState(&desc, &BlendState));
-	GCountRasterizerState++;
+	GCountBlendState++;
 }
 
 DXBlendState::~DXBlendState()
 {
-	GCountBlendState++;
+	GCountBlendState--;
+	BlendState->Release();
+
 }
 
 

@@ -149,6 +149,7 @@ void * DXTexture2D::lock(bsize mipId)
 void DXTexture2D::unlock()
 {
 	if (m_lock)m_lock = false;
+	else return;
 	if (isDynamic())
 	{
 		bsize move = 0;
@@ -237,6 +238,7 @@ DXTexture2D::~DXTexture2D()
 {
 	unlock();
 	m_texture->Release();
+	if(m_shader_texture)
 	m_shader_texture->Release();
 	GCountTexture2D--;
 }

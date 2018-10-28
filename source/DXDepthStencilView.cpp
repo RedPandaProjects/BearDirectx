@@ -6,7 +6,8 @@ uint16 GCountDepthStencilView  = 0;
 
 DXDepthStencilView::~DXDepthStencilView()
 {
-
+	if (depthStencilView)depthStencilView->Release();
+	if (m_depth_stencil_texture)BearCore::bear_delete(m_depth_stencil_texture);
 }
 
 DXDepthStencilView::DXDepthStencilView(bsize w, bsize h, BearGraphics::BearDepthStencilFormat format):m_format(format)
@@ -18,7 +19,7 @@ DXDepthStencilView::DXDepthStencilView(bsize w, bsize h, BearGraphics::BearDepth
 
 void DXDepthStencilView::resize(bsize w, bsize h)
 {
-	if (m_depth_stencil_texture)BearCore::bear_free(m_depth_stencil_texture);
+	if (m_depth_stencil_texture)BearCore::bear_delete(m_depth_stencil_texture);
 	if (depthStencilView)depthStencilView->Release();
 
 	m_depth_stencil_texture = BearCore::bear_new<DXTexture2D>( w, h, m_format);
