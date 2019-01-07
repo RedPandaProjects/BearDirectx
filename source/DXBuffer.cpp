@@ -17,11 +17,11 @@ DXIndexBuffer::DXIndexBuffer(void * data, bsize size, bool dynamic)
 
 	subdata.pSysMem = data;
 	subdata.SysMemPitch = static_cast<UINT>(size);
-	R_CHK(	Factory->device->CreateBuffer(&m_desc, &subdata, &buffer));
+	R_CHK(	Factory->device->CreateBuffer(&m_desc, data ? &subdata : 0, &buffer));
 	GCountIndexBuffer++;
 }
 
-void * DXIndexBuffer::lock()
+void * DXIndexBuffer::Lock()
 {
 	if (m_desc.Usage== D3D11_USAGE_DYNAMIC)
 	{
@@ -37,23 +37,23 @@ void * DXIndexBuffer::lock()
 	//return nullptr;
 }
 
-void DXIndexBuffer::unlock()
+void DXIndexBuffer::Unlock()
 {
 	if (m_desc.Usage == D3D11_USAGE_DYNAMIC)
 	{
 		Factory->deviceContext->Unmap(buffer, 0);
 	}
-	else
+	else if(m_tmp)
 	{
 		Factory->deviceContext->UpdateSubresource(buffer, 0, 0, m_tmp, 1, m_desc.ByteWidth);
-		BearCore::bear_free(m_tmp);
+		BearCore::bear_free(m_tmp); m_tmp = 0;
 	}
 }
 
 DXIndexBuffer::~DXIndexBuffer()
 {
 	if (m_tmp)
-		unlock();
+		Unlock();
 	buffer->Release();
 	GCountIndexBuffer--;
 }
@@ -67,14 +67,16 @@ DXVertexBuffer::DXVertexBuffer(void * data, bsize size, bool dynamic)
 	m_desc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
 	D3D11_SUBRESOURCE_DATA subdata;
 	BearCore::bear_fill(subdata);
-
-	subdata.pSysMem = data;
-	subdata.SysMemPitch = static_cast<UINT>(size);
-	R_CHK(Factory->device->CreateBuffer(&m_desc, &subdata, &buffer));
+	if (data)
+	{
+		subdata.pSysMem = data;
+		subdata.SysMemPitch = static_cast<UINT>(size);
+	}
+	R_CHK(Factory->device->CreateBuffer(&m_desc, data? &subdata:0, &buffer));
 	GCountVertexBuffer++;
 }
 
-void * DXVertexBuffer::lock()
+void * DXVertexBuffer::Lock()
 {
 	if (m_desc.Usage == D3D11_USAGE_DYNAMIC)
 	{
@@ -82,7 +84,7 @@ void * DXVertexBuffer::lock()
 		R_CHK(Factory->deviceContext->Map(buffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &MappedSubRes));
 		return MappedSubRes.pData;
 	}
-	else
+	else 
 	{
 		m_tmp = BearCore::bear_alloc<uint8>(m_desc.ByteWidth);
 		return m_tmp;
@@ -90,23 +92,23 @@ void * DXVertexBuffer::lock()
 //	return nullptr;
 }
 
-void DXVertexBuffer::unlock()
+void DXVertexBuffer::Unlock()
 {
 	if (m_desc.Usage == D3D11_USAGE_DYNAMIC)
 	{
 		Factory->deviceContext->Unmap(buffer, 0);
 	}
-	else
+	else if (m_tmp)
 	{
 		Factory->deviceContext->UpdateSubresource(buffer, 0, 0, m_tmp, 1, m_desc.ByteWidth);
-		BearCore::bear_free(m_tmp);
+		BearCore::bear_free(m_tmp); m_tmp = 0;
 	}
 }
 
 DXVertexBuffer::~DXVertexBuffer()
 {
 	if (m_tmp)
-		unlock();
+		Unlock();
 	buffer->Release();
 	GCountVertexBuffer--;
 }

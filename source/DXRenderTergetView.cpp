@@ -4,10 +4,10 @@ uint16 GCountRenderTargetView = 0;
 
 DXRenderTergetView::DXRenderTergetView(bsize w, bsize h, BearGraphics::BearRenderTargetFormat format):m_render_target_texture(0), m_format(format), m_render_target(0)
 {
-	reisze(w, h);
+	Reisze(w, h);
 }
 
-void DXRenderTergetView::reisze(bsize w, bsize h)
+void DXRenderTergetView::Reisze(bsize w, bsize h)
 {
 	if (m_render_target)m_render_target->Release();
 	if(m_render_target_texture)BearCore::bear_free(m_render_target_texture);
@@ -18,30 +18,30 @@ void DXRenderTergetView::reisze(bsize w, bsize h)
 	BearCore::bear_fill(render_terget_view_desc);
 	render_terget_view_desc.Format = DXFactory::TranslateRenderTargetFromat(m_format);
 	render_terget_view_desc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D;
-	R_CHK(Factory->device->CreateRenderTargetView(m_render_target_texture->getTexture(), &render_terget_view_desc, &m_render_target));
+	R_CHK(Factory->device->CreateRenderTargetView(m_render_target_texture->Texture, &render_terget_view_desc, &m_render_target));
 
 	GCountRenderTargetView++;
 }
 
 
-void DXRenderTergetView::clearColor(const BearCore::BearColor & color)
+void DXRenderTergetView::ClearColor(const BearCore::BearColor & color)
 {
-	Factory->deviceContext->ClearRenderTargetView(m_render_target, color.getFloat().array);
+	Factory->deviceContext->ClearRenderTargetView(m_render_target, color.GetFloat().array);
 }
 
-ID3D11ShaderResourceView * DXRenderTergetView::getShaderResource()
+ID3D11ShaderResourceView * DXRenderTergetView::GetShaderResource()
 {
-	return m_render_target_texture->getShaderResource();
+	return m_render_target_texture->ShaderTexture;
 }
 
-bptr DXRenderTergetView::getRenderTarget()
+bptr DXRenderTergetView::GetRenderTarget()
 {
 	return (bptr) m_render_target;
 }
 
-void DXRenderTergetView::generateMips()
+void DXRenderTergetView::GenerateMips()
 {
-	m_render_target_texture->generateMipmap();
+	m_render_target_texture->GenerateMipmap();
 }
 
 

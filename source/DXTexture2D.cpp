@@ -5,8 +5,8 @@ uint16 GCountTexture2D = 0;
 
 DXTexture2D::DXTexture2D(bsize w, bsize h, bsize mip, BearGraphics::BearTexturePixelFormat format, bool dynamic, void*data) :m_fromat(format), m_lock(false)
 {
-	m_shader_texture = 0;
-	m_texture = 0;
+	ShaderTexture = 0;
+	Texture = 0;
 	m_dynamic = dynamic && mip == 1;
 	BearCore::bear_fill(m_desc);
 	m_desc.ArraySize = 1;
@@ -34,13 +34,13 @@ DXTexture2D::DXTexture2D(bsize w, bsize h, bsize mip, BearGraphics::BearTextureP
 	m_shader_view_desc.Format = m_desc.Format;
 	if (m_fromat == BearGraphics::TPF_R8G8B8)
 	{
-		R_CHK(Factory->device->CreateTexture2D(&m_desc,  0, &m_texture))
+		R_CHK(Factory->device->CreateTexture2D(&m_desc,  0, &Texture))
 		for (bsize i = 0; i < mip; i++)
 		{
 			bsize size = GetSizeDepth(GetMip(m_desc.Width, i), GetMip(m_desc.Height, i), BearGraphics::TPF_R8G8B8);
-			BearCore::bear_copy(lock(i), (uint8*)data, size);
+			BearCore::bear_copy(Lock(i), (uint8*)data, size);
 			data = (uint8*)data + size;
-			unlock();
+			Unlock();
 		}
 	}
 	else
@@ -58,17 +58,17 @@ DXTexture2D::DXTexture2D(bsize w, bsize h, bsize mip, BearGraphics::BearTextureP
 			subdata[i].pSysMem = ptr;
 			ptr += subdata[i].SysMemSlicePitch;
 		}
-		R_CHK(Factory->device->CreateTexture2D(&m_desc, data ? subdata : 0, &m_texture));
+		R_CHK(Factory->device->CreateTexture2D(&m_desc, data ? subdata : 0, &Texture));
 	}
-	R_CHK(Factory->device->CreateShaderResourceView(m_texture, &m_shader_view_desc, &m_shader_texture));
+	R_CHK(Factory->device->CreateShaderResourceView(Texture, &m_shader_view_desc, &ShaderTexture));
 	GCountTexture2D++;
 
 }
 
 DXTexture2D::DXTexture2D(bsize w, bsize h, BearGraphics::BearRenderTargetFormat format): m_lock(false)
 {
-	m_shader_texture = 0;
-	m_texture = 0;
+	ShaderTexture = 0;
+	Texture = 0;
 	m_dynamic = false;
 
 	BearCore::bear_fill(m_desc);
@@ -82,14 +82,14 @@ DXTexture2D::DXTexture2D(bsize w, bsize h, BearGraphics::BearRenderTargetFormat 
 	m_desc.CPUAccessFlags = 0;
 	m_desc.Usage = D3D11_USAGE_DEFAULT;
 	m_desc.BindFlags = D3D11_BIND_SHADER_RESOURCE| D3D11_BIND_RENDER_TARGET;
-	R_CHK(Factory->device->CreateTexture2D(&m_desc, 0, &m_texture));
+	R_CHK(Factory->device->CreateTexture2D(&m_desc, 0, &Texture));
 
 
 	BearCore::bear_fill(m_shader_view_desc);
 	m_shader_view_desc.Texture2D.MipLevels = 1;
 	m_shader_view_desc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
 	m_shader_view_desc.Format = m_desc.Format;
-	R_CHK(Factory->device->CreateShaderResourceView(m_texture, &m_shader_view_desc, &m_shader_texture));
+	R_CHK(Factory->device->CreateShaderResourceView(Texture, &m_shader_view_desc, &ShaderTexture));
 	GCountTexture2D++;
 }
 
@@ -97,8 +97,8 @@ DXTexture2D::DXTexture2D(bsize w, bsize h, BearGraphics::BearRenderTargetFormat 
 
 DXTexture2D::DXTexture2D(bsize w, bsize h, BearGraphics::BearDepthStencilFormat fromat): m_lock(false)
 {
-	m_shader_texture = 0;
-	m_texture = 0;
+	ShaderTexture = 0;
+	Texture = 0;
 	m_dynamic = false;
 
 	BearCore::bear_fill(m_desc);
@@ -112,23 +112,23 @@ DXTexture2D::DXTexture2D(bsize w, bsize h, BearGraphics::BearDepthStencilFormat 
 	m_desc.CPUAccessFlags = 0;
 	m_desc.Usage = D3D11_USAGE_DEFAULT;
 	m_desc.BindFlags = D3D11_BIND_DEPTH_STENCIL;//D3D11_BIND_SHADER_RESOURCE | 
-	R_CHK(Factory->device->CreateTexture2D(&m_desc, 0, &m_texture));
+	R_CHK(Factory->device->CreateTexture2D(&m_desc, 0, &Texture));
 
 
 	BearCore::bear_fill(m_shader_view_desc);
-	m_shader_texture = 0;
+	ShaderTexture = 0;
 	GCountTexture2D++;
 }
 
-void * DXTexture2D::lock(bsize mipId)
+void * DXTexture2D::Lock(bsize mipId)
 {
-	if (m_lock)unlock();
-	if (!m_texture||isRenderTarget()||isDepthStencill())return 0;
+	if (m_lock)Unlock();
+	if (!Texture||isRenderTarget()||isDepthStencill())return 0;
 	if (isDynamic())
 	{
 	
 		uint32 id = D3D11CalcSubresource(static_cast<UINT>(mipId), 0, static_cast<UINT>(m_desc.MipLevels));
-		R_CHK(Factory->deviceContext->Map(m_texture, id, D3D11_MAP_WRITE_DISCARD, 0, &m_mapData));
+		R_CHK(Factory->deviceContext->Map(Texture, id, D3D11_MAP_WRITE_DISCARD, 0, &m_mapData));
 		m_lock_mipId = mipId;
 		m_lock = true;
 		return m_mapData.pData;
@@ -146,7 +146,7 @@ void * DXTexture2D::lock(bsize mipId)
 
 }
 
-void DXTexture2D::unlock()
+void DXTexture2D::Unlock()
 {
 	if (m_lock)m_lock = false;
 	else return;
@@ -183,7 +183,7 @@ void DXTexture2D::unlock()
 			}
 		}
 		uint32 id = D3D11CalcSubresource(static_cast<UINT>(m_lock_mipId), static_cast<UINT>(0), static_cast<UINT>(m_desc.MipLevels));
-		Factory->deviceContext->Unmap(m_texture, id);
+		Factory->deviceContext->Unmap(Texture, id);
 	}
 	else
 	{
@@ -195,7 +195,7 @@ void DXTexture2D::unlock()
 			UINT SrcRowPitch = static_cast<UINT>(GetSizeWidth(GetMip(m_desc.Width, m_lock_mipId), BearGraphics::TPF_R8G8B8A8));
 			UINT SrcDepthPitch = static_cast<UINT>(GetSizeDepth(GetMip(m_desc.Width, m_lock_mipId), GetMip(m_desc.Height, m_lock_mipId), BearGraphics::TPF_R8G8B8A8));
 
-			Factory->deviceContext->UpdateSubresource(m_texture, id, 0, m_lock_data, SrcRowPitch, SrcDepthPitch);
+			Factory->deviceContext->UpdateSubresource(Texture, id, 0, m_lock_data, SrcRowPitch, SrcDepthPitch);
 		}
 		else
 		{
@@ -203,17 +203,17 @@ void DXTexture2D::unlock()
 			UINT SrcRowPitch = static_cast<UINT>(GetSizeWidth(GetMip(m_desc.Width, m_lock_mipId), m_fromat));
 			UINT SrcDepthPitch = static_cast<UINT>(GetSizeDepth(GetMip(m_desc.Width, m_lock_mipId), GetMip(m_desc.Height, m_lock_mipId), m_fromat));
 
-			Factory->deviceContext->UpdateSubresource(m_texture, id, 0, m_lock_data, SrcRowPitch, SrcDepthPitch);
+			Factory->deviceContext->UpdateSubresource(Texture, id, 0, m_lock_data, SrcRowPitch, SrcDepthPitch);
 		}
 
 	}
 }
 
-void DXTexture2D::generateMipmap()
+void DXTexture2D::GenerateMipmap()
 {
-	if (m_shader_texture)
+	if (ShaderTexture)
 	{
-		Factory->deviceContext->GenerateMips(m_shader_texture);
+		Factory->deviceContext->GenerateMips(ShaderTexture);
 	}
 }
 
@@ -236,22 +236,13 @@ bool DXTexture2D::isDepthStencill() const
 
 DXTexture2D::~DXTexture2D()
 {
-	unlock();
-	m_texture->Release();
-	if(m_shader_texture)
-	m_shader_texture->Release();
+	Unlock();
+	Texture->Release();
+	if(ShaderTexture)
+	ShaderTexture->Release();
 	GCountTexture2D--;
 }
 
-ID3D11Texture2D * DXTexture2D::getTexture()
-{
-	return m_texture;
-}
-
-ID3D11ShaderResourceView * DXTexture2D::getShaderResource()
-{
-	return m_shader_texture;
-}
 
 void DXTexture2D::R8G8B8ToR8G8B8A8(uint8 * data, bsize w, bsize h)
 {

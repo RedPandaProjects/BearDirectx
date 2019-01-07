@@ -1,9 +1,9 @@
 using BearBuildTool.Projects;
 using System.IO;
 using System;
-public class bear_dx11 :Project
+public class bear_directx11 :Project
 {
-	public bear_dx11(string ProjectPath)
+	public bear_directx11(string ProjectPath)
 	{
 		PCHFile=Path.Combine(ProjectPath,"source","DXPCH.cpp");
 		PCHIncludeFile="DXPCH.h";

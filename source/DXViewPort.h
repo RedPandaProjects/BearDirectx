@@ -1,17 +1,17 @@
 #pragma once
-class DXViewPort:public BearRHI::BearRHIViewPort
+class DXViewport:public BearRHI::BearRHIViewport
 {
 public:
-	DXViewPort(void*win, bsize w, bsize h,bool fullscreen, bool vsync);
-	virtual void swap() ;
-	virtual void setFullScreen(bool fullscreen);
-	virtual void reisze(bsize w, bsize h);
-	virtual void setVsync(bool vsync);
-	virtual void clearColor(const BearCore::BearColor&color);
+	DXViewport(void*win, bsize w, bsize h,bool fullscreen, bool vsync);
+	virtual void Swap() ;
+	virtual void SetFullScreen(bool fullscreen);
+	virtual void Reisze(bsize w, bsize h);
+	virtual void SetVsync(bool vsync);
+	virtual void ClearColor(const BearCore::BearColor&color);
 
 	
-	~DXViewPort();
-	virtual bptr getRenderTarget();
+	~DXViewport();
+	virtual bptr GetRenderTarget();
 private:
 	bool m_vsync;
 	ID3D11RenderTargetView *m_render_target;

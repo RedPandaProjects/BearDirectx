@@ -3,10 +3,9 @@ class DXDepthStencilView:public BearRHI::BearRHIDepthStencilView
 {
 public:
 	DXDepthStencilView(bsize w, bsize h,BearGraphics::BearDepthStencilFormat format);
-	virtual void resize(bsize w, bsize h) ;
-	virtual void clearDepth(float depth);
-	virtual void clearStencil(uint8 mask);
-	virtual void generateMips();
+	virtual void Resize(bsize w, bsize h) ;
+	virtual void ClearDepth(float depth);
+	virtual void ClearStencil(uint8 mask);
 	~DXDepthStencilView();
 	ID3D11DepthStencilView *depthStencilView;
 private:

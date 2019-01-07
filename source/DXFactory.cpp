@@ -13,7 +13,7 @@ DXFactory::DXFactory()
 	{
 		DXGI_ADAPTER_DESC desc; 
 		Adapter->GetDesc(&desc);
-		if (!wcscmp(desc.Description, L"NVIDIA PerfHUD"))
+		if (wcscmp(desc.Description, L"NVIDIA PerfHUD")==0)
 		{
 			PerfHUD = true;
 			break;
@@ -59,7 +59,7 @@ DXFactory::DXFactory()
 		flags |= D3D11_CREATE_DEVICE_DEBUG;
 #endif
 		D3D_DRIVER_TYPE DriveType = PerfHUD ? D3D_DRIVER_TYPE_REFERENCE : D3D_DRIVER_TYPE::D3D_DRIVER_TYPE_HARDWARE;
-	if (FAILED(D3D11CreateDevice(0, DriveType, NULL, 0, &Level, 1, D3D11_SDK_VERSION, &device,0, &deviceContext)))
+	if (FAILED(D3D11CreateDevice(0, DriveType, NULL, flags, &Level, 1, D3D11_SDK_VERSION, &device,0, &deviceContext)))
 	{
 		if (Adapter)Adapter->Release();
 		GIFactory->Release();
@@ -72,77 +72,99 @@ DXFactory::DXFactory()
 	}
 	if(Adapter)
 	Adapter->Release();
-
+	m_PerfHUD = PerfHUD;
 }
 
-BearRHI::BearRHIInterface * DXFactory::createInterface()
+BearRHI::BearRHIInterface * DXFactory::CreateInterface()
 {
 	return BearCore::bear_new<DXInterface>();;
 }
 
-void DXFactory::destroyInterface(BearRHI::BearRHIInterface * a)
+void DXFactory::DestroyInterface(BearRHI::BearRHIInterface * a)
 {
 	DXInterface*b = (DXInterface*)a;
 	BearCore::bear_delete<>(b);
 }
 
-BearRHI::BearRHIRenderTargetView * DXFactory::createRenderTargetView(bsize w, bsize h, BearGraphics::BearRenderTargetFormat format)
+BearRHI::BearRHIDefaultManager * DXFactory::CreateDefaultManager()
+{
+	return BearCore::bear_new<DXDefaultManager>();;
+}
+
+void DXFactory::DestroyDefaultManager(BearRHI::BearRHIDefaultManager * a)
+{
+	DXDefaultManager*b = (DXDefaultManager*)a;
+	BearCore::bear_delete<>(b);
+}
+
+BearRHI::BearRHIRenderTargetView * DXFactory::CreateRenderTargetView(bsize w, bsize h, BearGraphics::BearRenderTargetFormat format)
 {
 	return BearCore::bear_new<DXRenderTergetView>(w,h,format);
 }
 
-void DXFactory::destroyRenderTargetView(BearRHI::BearRHIRenderTargetView * a)
+void DXFactory::DestroyRenderTargetView(BearRHI::BearRHIRenderTargetView * a)
 {
 	DXRenderTergetView*b = (DXRenderTergetView*)a;
 	BearCore::bear_delete<>(b);
 }
 
 
-BearRHI::BearRHIViewPort * DXFactory::createViewPort(void * win, bsize w, bsize h, bool fullscreen, bool vsync)
+BearRHI::BearRHIViewport * DXFactory::CreateViewport(void * win, bsize w, bsize h, bool fullscreen, bool vsync)
 {
-	return BearCore::bear_new<DXViewPort>(win,w,h,fullscreen,vsync);
+	return BearCore::bear_new<DXViewport>(win,w,h,fullscreen,vsync);
 }
 
-void DXFactory::destroyViewPort(BearRHI::BearRHIViewPort * a)
+void DXFactory::DestroyViewport(BearRHI::BearRHIViewport * a)
 {
-	DXViewPort*b = (DXViewPort*)a;
+	DXViewport*b = (DXViewport*)a;
 	BearCore::bear_delete<>(b);
 }
 
-BearRHI::BearRHITexture2D * DXFactory::createTexture2D(bsize w, bsize h, bsize mip,  BearGraphics::BearTexturePixelFormat format, bool dynamic, void*data)
+BearRHI::BearRHITexture2D * DXFactory::CreateTexture2D(bsize w, bsize h, bsize mip,  BearGraphics::BearTexturePixelFormat format, bool dynamic, void*data)
 {
 	return  BearCore::bear_new<DXTexture2D>(w,h,mip,format,dynamic,data);
 }
 
-void DXFactory::destroyTexture2D(BearRHI::BearRHITexture2D * a)
+void DXFactory::DestroyTexture2D(BearRHI::BearRHITexture2D * a)
 {
 	DXTexture2D*b = (DXTexture2D*)a;
 	BearCore::bear_delete<>(b);
 }
 
-BearRHI::BearRHIVertexBuffer * DXFactory::createVertexBuffer(void * data, bsize size, bool dynamic)
+BearRHI::BearRHITexture2DArray * DXFactory::CreateTexture2DArray(bsize w, bsize h, bsize depth, bsize mip, BearGraphics::BearTexturePixelFormat format, void * data)
+{
+	return  BearCore::bear_new<DXTexture2DArray>(w, h, depth,mip, format, data);
+}
+
+void DXFactory::DestroyTexture2DArray(BearRHI::BearRHITexture2DArray * a)
+{
+	DXTexture2DArray*b = (DXTexture2DArray*)a;
+	BearCore::bear_delete<>(b);
+}
+
+BearRHI::BearRHIVertexBuffer * DXFactory::CreateVertexBuffer(void * data, bsize size, bool dynamic)
 {
 	return BearCore::bear_new<DXVertexBuffer>( data,size,dynamic);;
 }
 
-void DXFactory::destroyVertexBuffer(BearRHI::BearRHIVertexBuffer * a)
+void DXFactory::DestroyVertexBuffer(BearRHI::BearRHIVertexBuffer * a)
 {
 	DXVertexBuffer*b = (DXVertexBuffer*)a;
 	BearCore::bear_delete<>(b);
 }
 
-BearRHI::BearRHIIndexBuffer * DXFactory::createIndexBuffer(void * data, bsize size, bool dynamic)
+BearRHI::BearRHIIndexBuffer * DXFactory::CreateIndexBuffer(void * data, bsize size, bool dynamic)
 {
 	return BearCore::bear_new<DXIndexBuffer>( data, size, dynamic);;
 }
 
-void DXFactory::destroyIndexBuffer(BearRHI::BearRHIIndexBuffer * a)
+void DXFactory::DestroyIndexBuffer(BearRHI::BearRHIIndexBuffer * a)
 {
 	DXIndexBuffer*b = (DXIndexBuffer*)a;
 	BearCore::bear_delete<>(b);
 }
 
-BearRHI::BearRHIVertexShader * DXFactory::createVertexShader(void * data, bsize size)
+BearRHI::BearRHIVertexShader * DXFactory::CreateVertexShader(void * data, bsize size)
 {
 	auto a = BearCore::bear_new<DXVertexShader>( data, size);;
 	if (!a->shader)
@@ -152,13 +174,13 @@ BearRHI::BearRHIVertexShader * DXFactory::createVertexShader(void * data, bsize 
 	return a;
 }
 
-void DXFactory::destroyVertexShader(BearRHI::BearRHIVertexShader * a)
+void DXFactory::DestroyVertexShader(BearRHI::BearRHIVertexShader * a)
 {
 	DXVertexShader*b = (DXVertexShader*)a;
 	BearCore::bear_delete<>(b);
 }
 
-BearRHI::BearRHIPixelShader * DXFactory::createPixelShader(void * data, bsize size)
+BearRHI::BearRHIPixelShader * DXFactory::CreatePixelShader(void * data, bsize size)
 {
 
 	auto a= BearCore::bear_new<DXPixelShader>( data, size);;
@@ -168,98 +190,108 @@ BearRHI::BearRHIPixelShader * DXFactory::createPixelShader(void * data, bsize si
 	return a;
 }
 
-void DXFactory::destroyPixelShader(BearRHI::BearRHIPixelShader * a)
+void DXFactory::DestroyPixelShader(BearRHI::BearRHIPixelShader * a)
 {
 	DXPixelShader*b = (DXPixelShader*)a;
 	BearCore::bear_delete<>(b);
 }
 
-BearRHI::BearRHIVertexShaderCompiler * DXFactory::createVertexShaderCompiler()
+BearRHI::BearRHIVertexShaderCompiler * DXFactory::CreateVertexShaderCompiler()
 {
 	return BearCore::bear_new<DXVertexShaderCompiler>();;
 }
 
-void DXFactory::destroyVertexShaderCompiler(BearRHI::BearRHIVertexShaderCompiler * a)
+void DXFactory::DestroyVertexShaderCompiler(BearRHI::BearRHIVertexShaderCompiler * a)
 {
 	DXVertexShaderCompiler*b = (DXVertexShaderCompiler*)a;
 	BearCore::bear_delete<>(b);
 }
 
-BearRHI::BearRHIPixelShaderCompiler * DXFactory::createPixelShaderCompiler()
+BearRHI::BearRHIPixelShaderCompiler * DXFactory::CreatePixelShaderCompiler()
 {
 	return BearCore::bear_new<DXPixelShaderCompiler>();;
 }
 
-void DXFactory::destroyPixelShaderCompiler(BearRHI::BearRHIPixelShaderCompiler * a)
+void DXFactory::DestroyPixelShaderCompiler(BearRHI::BearRHIPixelShaderCompiler * a)
 {
 	DXPixelShaderCompiler*b = (DXPixelShaderCompiler*)a;
 	BearCore::bear_delete<>(b);
 }
 
-BearRHI::BearRHIVertexInputLayout * DXFactory::createVertexInputLayout(const BearGraphics::BearVertexInputLayoutInitializer & initializer, void * data, bsize size)
+BearRHI::BearRHIVertexState * DXFactory::CreateVertexState(const BearGraphics::BearVertexStateInitializer & initializer, void * data, bsize size)
 {
-	return BearCore::bear_new<DXVertexInputLayout>( initializer,data,size);;
+	return BearCore::bear_new<DXVertexState>(initializer,data,size);;
 }
 
-void DXFactory::destroyVertexInputLayout(BearRHI::BearRHIVertexInputLayout * a)
+void DXFactory::DestroyVertexState(BearRHI::BearRHIVertexState * a)
 {
-	DXVertexInputLayout*b = (DXVertexInputLayout*)a;
+	DXVertexState*b = (DXVertexState*)a;
 	BearCore::bear_delete<>(b);
 }
 
-BearRHI::BearRHIDepthStencilView * DXFactory::createDepthStencilView(bsize w, bsize h, BearGraphics::BearDepthStencilFormat format)
+BearRHI::BearRHIDepthStencilView * DXFactory::CreateDepthStencilView(bsize w, bsize h, BearGraphics::BearDepthStencilFormat format)
 {
 	return  BearCore::bear_new<DXDepthStencilView>(w,h,format);
 }
 
-void DXFactory::destroyDepthStencilView(BearRHI::BearRHIDepthStencilView * a)
+void DXFactory::DestroyDepthStencilView(BearRHI::BearRHIDepthStencilView * a)
 {
 	DXDepthStencilView*b = (DXDepthStencilView*)a;
 	BearCore::bear_delete<>(b);
 }
 
-BearRHI::BearRHIDepthStencilState * DXFactory::createDepthStencilState(const BearGraphics::BearDepthStencilStateInitializer & initializer)
+BearRHI::BearRHIDepthStencilState * DXFactory::CreateDepthStencilState(const BearGraphics::BearDepthStencilStateInitializer & initializer)
 {
 	return  BearCore::bear_new<DXDepthStencilState>( initializer);
 }
 
-void DXFactory::destroyDepthStencilState(BearRHI::BearRHIDepthStencilState * a)
+void DXFactory::DestroyDepthStencilState(BearRHI::BearRHIDepthStencilState * a)
 {
 	DXDepthStencilState*b = (DXDepthStencilState*)a;
 	BearCore::bear_delete<>(b);
 }
 
-BearRHI::BearRHISamplerState * DXFactory::createSamplerState(const BearGraphics::BearSamplerStateInitializer & initializer)
+BearRHI::BearRHISamplerState * DXFactory::CreateSamplerState(const BearGraphics::BearSamplerStateInitializer & initializer)
 {
 	return  BearCore::bear_new<DXSamplerState>( initializer);
 }
 
-void DXFactory::destroySamplerState(BearRHI::BearRHISamplerState * a)
+void DXFactory::DestroySamplerState(BearRHI::BearRHISamplerState * a)
 {
 	DXSamplerState*b = (DXSamplerState*)a;
 	BearCore::bear_delete<>(b);
 }
 
-BearRHI::BearRHIBlendState * DXFactory::createBlendState(const BearGraphics::BearBlendStateInitializer & initializer)
+BearRHI::BearRHIBlendState * DXFactory::CreateBlendState(const BearGraphics::BearBlendStateInitializer & initializer)
 {
 	return  BearCore::bear_new<DXBlendState>( initializer);
 }
 
-void DXFactory::destroyBlendState(BearRHI::BearRHIBlendState * a)
+void DXFactory::DestroyBlendState(BearRHI::BearRHIBlendState * a)
 {
 	DXBlendState*b = (DXBlendState*)a;
 	BearCore::bear_delete<>(b);
 }
 
-BearRHI::BearRHIRasterizerState * DXFactory::createRasterizerState(const BearGraphics::BearRasterizerStateInitializer & initializer)
+BearRHI::BearRHIRasterizerState * DXFactory::CreateRasterizerState(const BearGraphics::BearRasterizerStateInitializer & initializer)
 {
 	return  BearCore::bear_new<DXRasterizerState>( initializer);
 }
 
-void DXFactory::destroyRasterizerState(BearRHI::BearRHIRasterizerState * a)
+void DXFactory::DestroyRasterizerState(BearRHI::BearRHIRasterizerState * a)
 {
 	DXRasterizerState*b = (DXRasterizerState*)a;
 	BearCore::bear_delete<>(b);
+}
+
+BearRHI::BearRHIShaderConstants * DXFactory::CreateShaderConstants(const BearGraphics::BearShaderConstantsInitializer & initializer, bool dynamic)
+{
+	return BearCore::bear_new<DXShaderConstants>(initializer, dynamic);;
+}
+
+void DXFactory::DestroyShaderConstants(BearRHI::BearRHIShaderConstants * a)
+{
+	BearCore::bear_delete<DXShaderConstants>(reinterpret_cast<DXShaderConstants*>(a));
 }
 
 bool DXFactory::isVoid()
@@ -369,24 +401,81 @@ DXGI_FORMAT DXFactory::TranslateDepthStencillFromat(BearGraphics::BearDepthStenc
 	return DXGI_FORMAT_UNKNOWN;
 }
 
-DXGI_FORMAT DXFactory::TranslateInputLayoutElement(BearGraphics::BearInputLayoutElementType format)
+DXGI_FORMAT DXFactory::TranslateVertexFormat(BearGraphics::BearVertexFormat format)
 {
 	switch (format)
 	{
-	case BearGraphics::ILE_R32G32B32_FLOAT:
-		return DXGI_FORMAT_R32G32B32_FLOAT;
-	case BearGraphics::ILE_R32G32_FLOAT:
-		return DXGI_FORMAT_R32G32_FLOAT;
-	case BearGraphics::ILE_R32_FLOAT:
-		return DXGI_FORMAT_R32_FLOAT;
-	case BearGraphics::ILE_R32G32B32A32_FLOAT:
+	case BearGraphics::VF_R32G32B32A32_FLOAT:
 		return DXGI_FORMAT_R32G32B32A32_FLOAT;
+	case BearGraphics::VF_R32G32B32_FLOAT:
+		return DXGI_FORMAT_R32G32B32_FLOAT;
+	case BearGraphics::VF_R32G32_FLOAT:
+		return DXGI_FORMAT_R32G32_FLOAT;
+	case BearGraphics::VF_R32_FLOAT:
+		return DXGI_FORMAT_R32_FLOAT;
+
+	case BearGraphics::VF_R32_INT:
+		return DXGI_FORMAT_R32_SINT;
+	case BearGraphics::VF_R8G8B8A8:
+		return DXGI_FORMAT_R8G8B8A8_UINT;
+	case BearGraphics::VF_R8G8:
+		return DXGI_FORMAT_R8G8_UINT;
+	case BearGraphics::VF_R8:
+		return DXGI_FORMAT_R8_UINT;
 	default:
 		BEAR_ASSERT(0);;
 		return DXGI_FORMAT_UNKNOWN;
 	}
 
 	//return DXGI_FORMAT_UNKNOWN;
+}
+
+bsize DXFactory::GetSizeVertexFormat(BearGraphics::BearVertexFormat format)
+{
+	switch (format)
+	{
+	case BearGraphics::VF_R32G32B32A32_FLOAT:
+		return 4 * 4;
+	case BearGraphics::VF_R32G32B32_FLOAT:
+		return 4 * 3;
+	case BearGraphics::VF_R32G32_FLOAT:
+		return 4 * 2;
+	case BearGraphics::VF_R32_FLOAT:
+		return 4 * 1;
+	case BearGraphics::VF_R32_INT:
+		return 4 ;
+	case BearGraphics::VF_R8G8B8A8:
+		return 4;
+	case BearGraphics::VF_R8G8:
+		return 2;
+	case BearGraphics::VF_R8:
+		return 1;
+	default:
+		BEAR_ASSERT(0);;
+		return 0;
+	}
+}
+
+bsize DXFactory::GetSizeConstantFormat(BearGraphics::BearConstantFormat format)
+{
+	switch (format)
+	{
+	case BearGraphics::CF_R32G32B32A32_FLOAT:
+		return 4 * 4;
+	case BearGraphics::CF_R32G32B32_FLOAT:
+		return 4 * 3;
+	case BearGraphics::CF_R32G32_FLOAT:
+		return 4 * 2;
+	case BearGraphics::CF_R32_FLOAT:
+		return 4 * 1;
+	case BearGraphics::CF_R32_INT:
+		return 4;
+	case BearGraphics::CF_MATRIX:
+		return 4*4*4;
+	default:
+		BEAR_ASSERT(0);;
+		return 0;
+	}
 }
 
 D3D11_CULL_MODE DXFactory::TranslateRasterizerCullMode(BearGraphics::BearRasterizerCullMode format)

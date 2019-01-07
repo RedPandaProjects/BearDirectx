@@ -5,7 +5,6 @@ public:
 	DXVertexShader(void*data, bsize size);
 	~DXVertexShader();
 	ID3D11VertexShader*shader;
-	DXShaderBuffer shaderBuffer;
 };
 
 #pragma once
@@ -15,6 +14,5 @@ public:
 	DXPixelShader(void*data,bsize size);
 	~DXPixelShader();
 	ID3D11PixelShader*shader;
-	DXShaderBuffer shaderBuffer;
 };
 

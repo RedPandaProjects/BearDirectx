@@ -8,124 +8,132 @@ extern uint16 GCountPixelShader ;
 extern uint16 GCountVertexShaderCompiler ;
 extern uint16 GCountPixelShaderCompiler ;
 
-extern uint16 GCountVertexInputLayout;
-
 extern uint16 GCountViewPort;
 extern uint16 GCountRenderTargetView;
 extern uint16 GCountDepthStencilView;
+
 
 uint16 GCountRasterizerState = 0;
 uint16 GCountBlendState = 0;
 uint16 GCountSamplerState = 0;
 uint16 GCountDepthStencilState = 0;
+uint16 GCountVertexState = 0;
 
+extern uint16 GCountShaderConstants;
 extern uint16 GCountTexture2D;
+
+extern uint16 GCountTexture2DArray;
 
 DXStats::DXStats()
 {
 }
 
-uint16 DXStats::getCountIndexBuffer()
+uint16 DXStats::GetCountIndexBuffer()
 {
 	return GCountIndexBuffer;
 }
 
-uint16 DXStats::getCountVertexBuffer()
+uint16 DXStats::GetCountVertexBuffer()
 {
 	return GCountVertexBuffer;
 }
 
-uint16 DXStats::getCountPixelShader()
+uint16 DXStats::GetCountPixelShader()
 {
 	return GCountPixelShader;
 }
 
-uint16 DXStats::getCountPixelShaderCompiler()
+uint16 DXStats::GetCountPixelShaderCompiler()
 {
 	return GCountPixelShaderCompiler;
 }
 
-uint16 DXStats::getCountVertexShader()
+uint16 DXStats::GetCountVertexShader()
 {
 	return GCountVertexShader;
 }
 
-uint16 DXStats::getCountVertexShaderCompiler()
+uint16 DXStats::GetCountVertexShaderCompiler()
 {
 	return GCountVertexShaderCompiler;
 }
 
-uint16 DXStats::getCountRenderTargetView()
+uint16 DXStats::GetCountRenderTargetView()
 {
 	return GCountRenderTargetView;
 }
 
-uint16 DXStats::getCountViewPort()
+uint16 DXStats::GetCountViewPort()
 {
 	return GCountViewPort;
 }
 
-uint16 DXStats::getCountDepthStencilView()
+uint16 DXStats::GetCountDepthStencilView()
 {
 	return GCountDepthStencilView;
 }
 
-uint16 DXStats::getCountVertexInputLayout()
+uint16 DXStats::GetCountShaderConstants()
 {
-	return GCountVertexInputLayout;
+	return GCountShaderConstants;
 }
 
-uint16 DXStats::getCountTexture1D()
+uint16 DXStats::GetCountVertexState()
+{
+	return GCountVertexState;
+}
+
+uint16 DXStats::GetCountTexture1D()
 {
 	return uint16();
 }
 
-uint16 DXStats::getCountTexture1DArray()
+uint16 DXStats::GetCountTexture1DArray()
 {
 	return uint16();
 }
 
-uint16 DXStats::getCountTexture2D()
+uint16 DXStats::GetCountTexture2D()
 {
 	return GCountTexture2D;
 }
 
-uint16 DXStats::getCountTexture2DArray()
+uint16 DXStats::GetCountTexture2DArray()
+{
+	return GCountTexture2DArray;
+}
+
+uint16 DXStats::GetCountTexture3D()
 {
 	return uint16();
 }
 
-uint16 DXStats::getCountTexture3D()
+uint16 DXStats::GetCountTextureCubeMap()
 {
 	return uint16();
 }
 
-uint16 DXStats::getCountTextureCubeMap()
+uint16 DXStats::GetCountTextureCubeMapArray()
 {
 	return uint16();
 }
 
-uint16 DXStats::getCountTextureCubeMapArray()
-{
-	return uint16();
-}
-
-uint16 DXStats::getCountBlendState()
+uint16 DXStats::GetCountBlendState()
 {
 	return GCountBlendState;
 }
 
-uint16 DXStats::getCountSamplerState()
+uint16 DXStats::GetCountSamplerState()
 {
 	return GCountSamplerState;
 }
 
-uint16 DXStats::getCountDepthStencilState()
+uint16 DXStats::GetCountDepthStencilState()
 {
 	return GCountDepthStencilState;
 }
 
-uint16 DXStats::getCountRasterizerState()
+uint16 DXStats::GetCountRasterizerState()
 {
 	return GCountRasterizerState;
 }
@@ -181,7 +189,7 @@ DXRasterizerState::DXRasterizerState(const BearGraphics::BearRasterizerStateInit
 	desc.FillMode = DXFactory::TranslateRasterizerFillMode(initializer.FillMode);;
 	desc.FrontCounterClockwise = false;
 	desc.MultisampleEnable = false;
-	desc.ScissorEnable = false;
+	desc.ScissorEnable = true;
 	desc.SlopeScaledDepthBias = initializer.SlopeScaleDepthBias;
 	R_CHK(Factory->device->CreateRasterizerState(&desc, &RasterizerState));
 	GCountRasterizerState++;
@@ -230,7 +238,7 @@ DXSamplerState::DXSamplerState(const BearGraphics::BearSamplerStateInitializer &
 	desc.AddressV = DXFactory::TranslateSamplerAddressMode(initializer.AddressV);
 	desc.AddressW = DXFactory::TranslateSamplerAddressMode(initializer.AddressW);
 	desc.MaxLOD = D3D11_FLOAT32_MAX;
-	BearCore::bear_copy(desc.BorderColor , initializer.BorderColor.getFloat().array,4);
+	BearCore::bear_copy(desc.BorderColor , initializer.BorderColor.GetFloat().array,4);
 	desc.MaxAnisotropy =static_cast<UINT>( initializer.MaxAnisotropy < 0 ? 1 : initializer.MaxAnisotropy);
 	
 
@@ -300,4 +308,36 @@ DXSamplerState::~DXSamplerState()
 {
 	SamplerState->Release();
 	GCountSamplerState--;
+}
+
+
+
+
+DXVertexState::DXVertexState(const BearGraphics::BearVertexStateInitializer & initializer, void * data, bsize size)
+{
+	BearCore::BearVector<D3D11_INPUT_ELEMENT_DESC> m_input_elements;
+	Stride = 0;
+	for (bsize i = 0; initializer.Elements[i].Type!=BearGraphics::VF_NONE&&i<16; i++)
+	{
+		D3D11_INPUT_ELEMENT_DESC item;
+
+		item.SemanticName = *initializer.Elements[i].Name;
+		item.Format = DXFactory::TranslateVertexFormat(initializer.Elements[i].Type);
+		item.InputSlot = 0;
+	
+		item.AlignedByteOffset = static_cast<UINT>(initializer.Elements[i].Offset);
+		Stride=BearCore::bear_max(Stride, static_cast<UINT>(initializer.Elements[i].Offset) + static_cast<UINT>(DXFactory::GetSizeVertexFormat(initializer.Elements[i].Type)));
+		item.InputSlotClass = initializer.Elements[i].IsInstance? D3D11_INPUT_PER_INSTANCE_DATA :D3D11_INPUT_PER_VERTEX_DATA;
+		item.InstanceDataStepRate = initializer.Elements[i].IsInstance ? 1 : 0;
+		item.SemanticIndex = static_cast<UINT>(initializer.Elements[i].SemanticIndex);
+		m_input_elements.push_back(item);
+	}
+	R_CHK(Factory->device->CreateInputLayout(&m_input_elements[0], static_cast<UINT>(m_input_elements.size()), data, size, &InputLayout));
+	GCountVertexState++;
+}
+
+DXVertexState::~DXVertexState()
+{
+	GCountVertexState--;
+	InputLayout->Release();
 }

@@ -7,9 +7,10 @@ void RHIInitialize()
 	if (!Factory->isVoid())
 	{
 		RHIFactoty = Factory;
+		BEAR_ASSERT(RHIFactoty);
 		RHIStats = &Stats;
 	}
-
+	 
 }
 void RHIDestroy()
 {

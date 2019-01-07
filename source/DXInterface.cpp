@@ -4,191 +4,145 @@
 
 DXInterface::DXInterface()
 {
-	m_pixel_shader_current = 0;
-	m_vertex_shader_current = 0;
 	BearCore::bear_fill(m_renderTarget,  8, 0);
-	for (bsize i = 0; i < 8; i++)
-	{
-		m_viewPorts[i].Height = 0;
-		m_viewPorts[i].Width = 0;
-		m_viewPorts[i].TopLeftX = 0;
-		m_viewPorts[i].TopLeftY = 0;
-		m_viewPorts[i].MaxDepth = 0;
-		m_viewPorts[i].MinDepth = 0;
-	}
 	m_depthStencill = 0;
-	m_count_texture_ps = 0;
-	m_count_texture_vs = 0;
 }
 
-void DXInterface::clear()
+void DXInterface::Clear()
 {
 }
 
-void DXInterface::attachRenderTargetView(uint32 id, BearRHI::BearRHIViewPort * render_target)
+void DXInterface::AttachRenderTargetView(uint32 id, BearRHI::BearRHIViewport * render_target)
 {
 	BEAR_ASSERT(id < 9);
-	m_renderTarget[id] = (ID3D11RenderTargetView*)render_target->getRenderTarget();
+	m_renderTarget[id] = (ID3D11RenderTargetView*)render_target->GetRenderTarget();
 	Factory->deviceContext->OMSetRenderTargets(8, m_renderTarget, m_depthStencill);
 }
 
-void DXInterface::attachRenderTargetView(uint32 id, BearRHI::BearRHIRenderTargetView * render_target)
+void DXInterface::AttachRenderTargetView(uint32 id, BearRHI::BearRHIRenderTargetView * render_target)
 {
 	BEAR_ASSERT(id < 9);
-	m_renderTarget[id] = (ID3D11RenderTargetView*)render_target->getRenderTarget();
+	m_renderTarget[id] = (ID3D11RenderTargetView*)render_target->GetRenderTarget();
 	Factory->deviceContext->OMSetRenderTargets(8, m_renderTarget, m_depthStencill);
 }
 
-void DXInterface::attachDepthStencilView(BearRHI::BearRHIDepthStencilView * depthStencill)
+void DXInterface::AttachDepthStencilView(BearRHI::BearRHIDepthStencilView * depthStencill)
 {
 	m_depthStencill = ((DXDepthStencilView*)depthStencill)->depthStencilView;
 	Factory->deviceContext->OMSetRenderTargets(8, m_renderTarget, m_depthStencill);
 }
 
-void DXInterface::detachRenderTargetView(uint32 id)
+void DXInterface::DetachRenderTargetView(uint32 id)
 {
 	BEAR_ASSERT(id < 9);
 	m_renderTarget[id] = (ID3D11RenderTargetView*)0;
 	Factory->deviceContext->OMSetRenderTargets(8, m_renderTarget, m_depthStencill);
 }
 
-void DXInterface::detachDepthStencilView()
+void DXInterface::DetachDepthStencilView()
 {
 	m_depthStencill =0;
 	Factory->deviceContext->OMSetRenderTargets(8, m_renderTarget, m_depthStencill);
 }
 
-void DXInterface::setViewport(uint32 id, float x, float y, float width, float height, float minDepth, float maxDepth)
+void DXInterface::SetViewport( float x, float y, float width, float height, float minDepth, float maxDepth)
 {
-	BEAR_ASSERT(id < 9);
-	m_viewPorts[id].MaxDepth = maxDepth;
-	m_viewPorts[id].MinDepth = minDepth;
-	m_viewPorts[id].Width = width;
-	m_viewPorts[id].Height = height;
-	m_viewPorts[id].TopLeftX = x;
-	m_viewPorts[id].TopLeftY = y;
-	Factory->deviceContext->RSSetViewports(8, m_viewPorts);
+
+	D3D11_VIEWPORT view_port;
+	view_port.MaxDepth = maxDepth;
+	view_port.MinDepth = minDepth;
+	view_port.Width = width;
+	view_port.Height = height;
+	view_port.TopLeftX = x;
+	view_port.TopLeftY = y;
+	Factory->deviceContext->RSSetViewports(1, &view_port);
+
 }
 
-void DXInterface::setPixelShader(BearRHI::BearRHIPixelShader * shader)
+void DXInterface::SetScissor( float x, float y, float x1, float y1)
 {
-	m_count_texture_ps = 0;
-	DXPixelShader*pixel = (DXPixelShader*)shader;
-	m_pixel_shader_current = pixel;
+	D3D11_RECT rect;
+	rect.left = static_cast<LONG>(x);
+	rect.right = static_cast<LONG>(x1);
+	rect.top = static_cast<LONG>(y);
+	rect.bottom = static_cast<LONG>(y1);
+	Factory->deviceContext->RSSetScissorRects(1, &rect);
+}
 
+void DXInterface::SetPixelShader(BearRHI::BearRHIPixelShader * shader)
+{
+	DXPixelShader*pixel = (DXPixelShader*)shader;
 	Factory->deviceContext->PSSetShader(pixel->shader, 0, 0);
 }
-void DXInterface::setVertexShader(BearRHI::BearRHIVertexShader * shader)
+void DXInterface::SetVertexShader(BearRHI::BearRHIVertexShader * shader)
 {
-	m_count_texture_vs = 0;
 	DXVertexShader*vertex = (DXVertexShader*)shader;
-	m_vertex_shader_current = vertex;
 	Factory->deviceContext->VSSetShader(vertex->shader, 0, 0);
 }
 
-void DXInterface::setIndexBuffer(BearRHI::BearRHIIndexBuffer * buffer)
+void DXInterface::SetIndexBuffer(BearRHI::BearRHIIndexBuffer * buffer)
 {
 	DXIndexBuffer*b = (DXIndexBuffer*)buffer;
 	Factory->deviceContext->IASetIndexBuffer(b->buffer, DXGI_FORMAT_R32_UINT, 0);
 }
 
-void DXInterface::setVertexBuffer(BearRHI::BearRHIVertexBuffer * buffer,uint32 stride)
+void DXInterface::SetVertexBuffer(BearRHI::BearRHIVertexBuffer * buffer)
 {
 	DXVertexBuffer*b = (DXVertexBuffer*)buffer;
-	UINT offset = 0;
-	Factory->deviceContext->IASetVertexBuffers(0, 1,&b->buffer, &stride, &offset);
+	UINT offSet = 0;
+	Factory->deviceContext->IASetVertexBuffers(0, 1,&b->buffer, &m_stride, &offSet);
 }
 
-void DXInterface::setVertexInputLayout(BearRHI::BearRHIVertexInputLayout * buffer)
+void DXInterface::SetVertexState(BearRHI::BearRHIVertexState * buffer)
 {
-	DXVertexInputLayout*b = (DXVertexInputLayout*)buffer;
-	Factory->deviceContext->IASetInputLayout(b->inputLayout);
+	DXVertexState*b = (DXVertexState*)buffer;
+	m_stride = b->Stride;
+	Factory->deviceContext->IASetInputLayout(b->InputLayout);
 }
 
-void DXInterface::setBlendState(BearRHI::BearRHIBlendState * State, const  BearCore::BearColor&color)
+void DXInterface::SetBlendState(BearRHI::BearRHIBlendState * State, const  BearCore::BearColor&color)
 {
 	DXBlendState *state = (DXBlendState *)State;
-	Factory->deviceContext->OMSetBlendState(state->BlendState, color.getFloat().array, 0xffffffff);
+	Factory->deviceContext->OMSetBlendState(state->BlendState, color.GetFloat().array, 0xffffffff);
 }
 
-void DXInterface::setDepthStencilState(BearRHI::BearRHIDepthStencilState * State, uint32 StenciRef)
+void DXInterface::SetDepthStencilState(BearRHI::BearRHIDepthStencilState * State, uint32 StenciRef)
 {
 	DXDepthStencilState *state = (DXDepthStencilState *)State;
 	Factory->deviceContext->OMSetDepthStencilState(state->DepthStencilState,StenciRef);
 }
 
-void DXInterface::setRasterizerState(BearRHI::BearRHIRasterizerState * State)
+void DXInterface::SetRasterizerState(BearRHI::BearRHIRasterizerState * State)
 {
 	DXRasterizerState *state = (DXRasterizerState *)State;
 	Factory->deviceContext->RSSetState(state->RasterizerState);
 }
 
-void DXInterface::setItemInPixelShader(const char * name, BearRHI::BearRHITexture2D * texture2d, BearRHI::BearRHISamplerState * sampler)
+void DXInterface::SetPixelShaderConstants(bsize slot, BearRHI::BearRHIShaderConstants * constants)
 {
-	DXTexture2D *texture= (DXTexture2D *)texture2d;
-	DXSamplerState *state = (DXSamplerState *)sampler;
-	auto texture_resource = texture->getShaderResource();
-	Factory->deviceContext->PSSetShaderResources(m_count_texture_ps, 1, &texture_resource);
-	Factory->deviceContext->PSSetSamplers(m_count_texture_ps, 1, &state->SamplerState);
-	m_count_texture_ps++;
+	Factory->deviceContext->PSSetConstantBuffers(static_cast<UINT>(slot), 1, &((DXShaderConstants *)constants)->Buffer);
 }
 
-void DXInterface::setItemInVertexShader(const char * name, BearRHI::BearRHITexture2D * texture2d, BearRHI::BearRHISamplerState * sampler)
+void DXInterface::SetPixelShaderResource(bsize slot, BearRHI::BearRHITexture2D * texture2d, BearRHI::BearRHISamplerState * sampler)
 {
-	DXTexture2D *texture = (DXTexture2D *)texture2d;
-	DXSamplerState *state = (DXSamplerState *)sampler;
-	auto texture_resource = texture->getShaderResource();
-	Factory->deviceContext->VSSetShaderResources(m_count_texture_ps, 1, &texture_resource);
-	Factory->deviceContext->VSSetSamplers(m_count_texture_ps, 1, &state->SamplerState);
-	m_count_texture_ps++;
+	Factory->deviceContext->PSSetShaderResources(static_cast<UINT>(slot), 1, &((DXTexture2D *)texture2d)->ShaderTexture);
+	Factory->deviceContext->PSSetSamplers(static_cast<UINT>(slot), 1, &((DXSamplerState *)sampler)->SamplerState);
+
 }
 
-void DXInterface::setItemInPixelShader(const char * name, float R)
+void DXInterface::SetVertexShaderConstants(bsize slot, BearRHI::BearRHIShaderConstants * constants)
 {
-	if (m_pixel_shader_current) *(float*)m_pixel_shader_current->shaderBuffer.getPointer(name, 4)=R;
+	Factory->deviceContext->VSSetConstantBuffers(static_cast<UINT>(slot), 1, &((DXShaderConstants *)constants)->Buffer);
 }
 
-void DXInterface::setItemInPixelShader(const char * name, const BearCore::BearVector2<float>& RG)
+void DXInterface::SetVertexShaderResource(bsize slot, BearRHI::BearRHITexture2D * texture2d, BearRHI::BearRHISamplerState * sampler)
 {
-	if (m_pixel_shader_current) BearCore::bear_copy(m_pixel_shader_current->shaderBuffer.getPointer(name, 8), RG.array, 8);
-}
-
-void DXInterface::setItemInPixelShader(const char * name, const BearCore::BearVector3<float>& RGB)
-{
-	if (m_pixel_shader_current) BearCore::bear_copy(m_pixel_shader_current->shaderBuffer.getPointer(name, 12), RGB.array, 12);
-}
-
-void DXInterface::setItemInPixelShader(const char * name, const BearCore::BearVector4<float>& RGGBA)
-{
-	if (m_pixel_shader_current) BearCore::bear_copy(m_pixel_shader_current->shaderBuffer.getPointer(name, 16), RGGBA.array, 16);
-}
-void DXInterface::setItemInVertexShader(const char * name, float R)
-{
-	if (m_vertex_shader_current) *(float*)m_vertex_shader_current->shaderBuffer.getPointer(name, 4) = R;
-}
-
-void DXInterface::setItemInVertexShader(const char * name, const BearCore::BearVector2<float>& RG)
-{
-	if (m_vertex_shader_current) BearCore::bear_copy(m_vertex_shader_current->shaderBuffer.getPointer(name, 8), RG.array, 8);
-}
-
-void DXInterface::setItemInVertexShader(const char * name, const BearCore::BearVector3<float>& RGB)
-{
-	if (m_vertex_shader_current) BearCore::bear_copy(m_vertex_shader_current->shaderBuffer.getPointer(name, 12), RGB.array, 12);
-}
-
-void DXInterface::setItemInVertexShader(const char * name, const BearCore::BearVector4<float>& RGGBA)
-{
-	if (m_vertex_shader_current) BearCore::bear_copy(m_vertex_shader_current->shaderBuffer.getPointer(name, 16), RGGBA.array, 16);
-}
-
-void DXInterface::setItemInVertexShader(const char * name, const BearCore::BearMatrix & matrix)
-{
-	if (m_vertex_shader_current) BearCore::bear_copy(m_vertex_shader_current->shaderBuffer.getPointer(name, sizeof(float)*16), *matrix, sizeof(float) * 16);
+	Factory->deviceContext->VSSetShaderResources(static_cast<UINT>(slot), 1, &((DXTexture2D *)texture2d)->ShaderTexture);
+	Factory->deviceContext->VSSetSamplers(static_cast<UINT>(slot), 1, &((DXSamplerState *)sampler)->SamplerState);
 }
 
 
-void DXInterface::draw(bsize size, bsize possition, BearGraphics::BearDrawType mode)
+void DXInterface::Draw(bsize size, bsize possition, BearGraphics::BearDrawType mode)
 {
 	switch (mode)
 	{
@@ -204,8 +158,6 @@ void DXInterface::draw(bsize size, bsize possition, BearGraphics::BearDrawType m
 	default:
 		break;
 	}
-	if (m_pixel_shader_current)m_pixel_shader_current->shaderBuffer.PSSetBuffer();
-	if (m_vertex_shader_current)m_vertex_shader_current->shaderBuffer.VSSetBuffer();
 	Factory->deviceContext->DrawIndexed(static_cast<UINT>(size), static_cast<UINT>(possition), 0);
 }
 

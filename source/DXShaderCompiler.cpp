@@ -11,7 +11,7 @@ DXVertexShaderCompiler::DXVertexShaderCompiler()
 	shader = 0;
 }
 
-bool DXVertexShaderCompiler::compileFromText(const bchar * text, BearCore::BearString & out_error)
+bool DXVertexShaderCompiler::CompileFromText(const bchar * text, BearCore::BearString & out_error)
 {
 	if (shader)
 		shader->Release();
@@ -40,14 +40,14 @@ bool DXVertexShaderCompiler::compileFromText(const bchar * text, BearCore::BearS
 	return true;
 }
 
-void * DXVertexShaderCompiler::getPointerBuffer()
+void * DXVertexShaderCompiler::GetPointerBuffer()
 {
 	if(shader)
 		return shader->GetBufferPointer();
 	return 0;
 }
 
-bsize DXVertexShaderCompiler::getSizeBuffer()
+bsize DXVertexShaderCompiler::GetSizeBuffer()
 {
 	if (shader)
 		return shader->GetBufferSize();
@@ -67,7 +67,7 @@ DXPixelShaderCompiler::DXPixelShaderCompiler()
 	shader = 0;
 }
 
-bool DXPixelShaderCompiler::compileFromText(const bchar * text, BearCore::BearString & out_error)
+bool DXPixelShaderCompiler::CompileFromText(const bchar * text, BearCore::BearString & out_error)
 {
 	if (shader)
 		shader->Release();
@@ -95,14 +95,14 @@ bool DXPixelShaderCompiler::compileFromText(const bchar * text, BearCore::BearSt
 	return true;
 }
 
-void * DXPixelShaderCompiler::getPointerBuffer()
+void * DXPixelShaderCompiler::GetPointerBuffer()
 {
 	if (shader)
 		return shader->GetBufferPointer();
 	return 0;
 }
 
-bsize DXPixelShaderCompiler::getSizeBuffer()
+bsize DXPixelShaderCompiler::GetSizeBuffer()
 {
 	if (shader)
 		return shader->GetBufferSize();

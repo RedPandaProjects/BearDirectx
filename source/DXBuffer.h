@@ -3,8 +3,8 @@ class DXIndexBuffer:public BearRHI::BearRHIIndexBuffer
 {
 public:
 	DXIndexBuffer(void*data,bsize size,bool dynamic);
-	virtual void*lock();
-	virtual void unlock();
+	virtual void*Lock();
+	virtual void Unlock();
 	~DXIndexBuffer();
 	ID3D11Buffer*buffer;
 private:
@@ -16,8 +16,8 @@ class DXVertexBuffer:public BearRHI::BearRHIVertexBuffer
 {
 public:
 	DXVertexBuffer(void*data, bsize size, bool dynamic);
-	virtual void*lock();
-	virtual void unlock();
+	virtual void*Lock();
+	virtual void Unlock();
 	~DXVertexBuffer();
 	ID3D11Buffer*buffer;
 private:
