@@ -52,8 +52,11 @@ DXFactory::DXFactory()
 	m_GIVideoMode.resize(count);
 	Output->GetDisplayModeList(DXGI_FORMAT_R8G8B8A8_UNORM, 0, &count, &m_GIVideoMode[0]);
 	Output->Release();
-
 	D3D_FEATURE_LEVEL Level = D3D_FEATURE_LEVEL_11_0;
+#ifdef DX10
+	Level = D3D_FEATURE_LEVEL_10_0;
+#endif
+	
 	UINT flags = D3D11_CREATE_DEVICE_SINGLETHREADED;
 #ifdef DEBUG
 		flags |= D3D11_CREATE_DEVICE_DEBUG;

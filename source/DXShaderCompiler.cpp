@@ -16,7 +16,15 @@ bool DXVertexShaderCompiler::CompileFromText(const bchar * text, BearCore::BearS
 	if (shader)
 		shader->Release();
 	ID3D10Blob* errorMessage;
-	if (FAILED(D3DX11CompileFromMemory(*BearCore::BearEncoding::ToANSI(text), BearCore::BearString::GetSize(text), 0, 0, 0, "main", "vs_5_0", D3D10_SHADER_ENABLE_STRICTNESS, 0, NULL, &shader, &errorMessage, 0)))
+	const char*VS =
+#ifdef DX10
+		"vs_4_0";
+#else
+		"vs_5_0";
+#endif
+	if (FAILED(D3DX11CompileFromMemory(*BearCore::BearEncoding::ToANSI(text), BearCore::BearString::GetSize(text), 0, 0, 0, "main",
+		VS
+		, D3D10_SHADER_ENABLE_STRICTNESS, 0, NULL, &shader, &errorMessage, 0)))
 	{
 #ifdef UNICODE
 		out_error.append(*BearCore::BearEncoding::ToUTF16((char*)errorMessage->GetBufferPointer(),(char*)errorMessage->GetBufferPointer()+ errorMessage->GetBufferSize()));
@@ -72,7 +80,16 @@ bool DXPixelShaderCompiler::CompileFromText(const bchar * text, BearCore::BearSt
 	if (shader)
 		shader->Release();
 	ID3D10Blob* errorMessage;
-	if (FAILED(D3DX11CompileFromMemory(*BearCore::BearEncoding::ToANSI(text), BearCore::BearString::GetSize(text), 0, 0, 0, "main", "ps_5_0", D3D10_SHADER_ENABLE_STRICTNESS, 0, NULL, &shader, &errorMessage, 0)))
+	const char*PS =
+#ifdef DX10
+		"ps_4_0";
+#else
+		"ps_5_0";
+#endif
+	if (FAILED(D3DX11CompileFromMemory(*BearCore::BearEncoding::ToANSI(text), BearCore::BearString::GetSize(text), 0, 0, 0, "main",
+		PS
+
+		, D3D10_SHADER_ENABLE_STRICTNESS, 0, NULL, &shader, &errorMessage, 0)))
 	{
 #ifdef UNICODE
 		out_error.append(*BearCore::BearEncoding::ToUTF16((char*)errorMessage->GetBufferPointer(), (char*)errorMessage->GetBufferPointer() + errorMessage->GetBufferSize()));
