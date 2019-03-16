@@ -4,15 +4,16 @@ class DXInterface:public BearRHI::BearRHIInterface
 public:
 	DXInterface();
 	virtual void Clear();
-	virtual void AttachRenderTargetView(uint32 id, BearRHI::BearRHIViewport*render_target);
+	virtual void AttachViewport( BearRHI::BearRHIViewport*render_target);
 	virtual void AttachRenderTargetView(uint32 id, BearRHI::BearRHIRenderTargetView*render_target) ;
 	virtual void AttachDepthStencilView(BearRHI::BearRHIDepthStencilView*depthStencill) ;
 	virtual void DetachRenderTargetView(uint32 id);
+	virtual void DetachViewport();
 	virtual void DetachDepthStencilView();
 
 
 	virtual void SetViewport( float x, float y, float width, float height, float minDepth = 0.f, float maxDepth = 1.f) ;
-	virtual void SetScissor( float x, float y, float x1, float y1) ;
+	virtual void SetScissor(bool Enable, float x, float y, float x1, float y1) ;
 
 	virtual void SetPixelShader(BearRHI::BearRHIPixelShader*shader);
 	virtual void SetVertexShader(BearRHI::BearRHIVertexShader*shader);
@@ -36,7 +37,10 @@ public:
 	~DXInterface();
 private:
 	UINT m_stride;
-	ID3D11RenderTargetView *m_renderTarget[8];
+	BearRHI::BearRHIRenderTargetView*m_RenderTarget[8];
+	BearRHI::BearRHIViewport* m_Viewport;
+	bool m_UpdateRenderTarger;
+
 	ID3D11DepthStencilView *m_depthStencill;
 };
 

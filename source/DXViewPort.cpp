@@ -5,7 +5,7 @@
 
 uint16 GCountViewPort = 0;
 
-DXViewport::DXViewport( void*win, bsize w, bsize h ,bool fullscreen,bool vsync):m_vsync(vsync),m_render_target(0)
+DXViewport::DXViewport( void*win, bsize w, bsize h ,bool fullscreen,bool vsync):m_vsync(vsync),m_render_target(0), DepthStencilView(0)
 {
 
 	BearCore::bear_fill(m_desc);
@@ -41,6 +41,7 @@ DXViewport::DXViewport( void*win, bsize w, bsize h ,bool fullscreen,bool vsync):
 	R_CHK(Factory->device->CreateRenderTargetView(pBackBuffer, &RTVDesc, &m_render_target));
 	pBackBuffer->Release();
 	GCountViewPort++;
+	DepthStencilView = BearCore::bear_new<DXDepthStencilView>(w, h, BearGraphics::BearDepthStencilFormat::DSF_DEPTH32F_STENCIL8);
 }
 
 void DXViewport::Swap()
@@ -54,10 +55,12 @@ void DXViewport::SetFullScreen(bool fullscreen)
 
 }
 
-void DXViewport::Reisze(bsize w, bsize h)
+void DXViewport::Resize(bsize w, bsize h)
 {
 	if (m_desc.BufferDesc.Width == w && m_desc.BufferDesc.Height == h)
 		return;
+	if (DepthStencilView)BearCore::bear_free(DepthStencilView);
+	DepthStencilView = BearCore::bear_new<DXDepthStencilView>(w, h, BearGraphics::BearDepthStencilFormat::DSF_DEPTH32F_STENCIL8);
 	m_desc.BufferDesc.Width = static_cast<UINT>(w);
 	m_desc.BufferDesc.Height = static_cast<UINT>(h);
 	R_CHK(m_swap_chain->ResizeTarget(&m_desc.BufferDesc));
@@ -118,11 +121,22 @@ void DXViewport::ClearColor(const BearCore::BearColor & color)
 	Factory->deviceContext->ClearRenderTargetView(m_render_target, color.GetFloat().array);
 }
 
+void DXViewport::ClearDepth(float depth)
+{
+	if (DepthStencilView)DepthStencilView->ClearDepth(depth);
+}
+
+void DXViewport::ClearStencil(uint8 mask)
+{
+	if (DepthStencilView)DepthStencilView->ClearStencil(mask);
+}
+
 
 
 
 DXViewport::~DXViewport()
 {
+	if (DepthStencilView)BearCore::bear_delete(DepthStencilView);
 	GCountViewPort--;
 	m_render_target->Release();
 	m_swap_chain->Release();

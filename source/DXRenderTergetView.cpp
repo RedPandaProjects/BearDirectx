@@ -4,10 +4,10 @@ uint16 GCountRenderTargetView = 0;
 
 DXRenderTergetView::DXRenderTergetView(bsize w, bsize h, BearGraphics::BearRenderTargetFormat format):m_render_target_texture(0), m_format(format), m_render_target(0)
 {
-	Reisze(w, h);
+	Resize(w, h);
 }
 
-void DXRenderTergetView::Reisze(bsize w, bsize h)
+void DXRenderTergetView::Resize(bsize w, bsize h)
 {
 	if (m_render_target)m_render_target->Release();
 	if(m_render_target_texture)BearCore::bear_free(m_render_target_texture);

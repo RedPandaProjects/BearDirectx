@@ -193,6 +193,7 @@ DXRasterizerState::DXRasterizerState(const BearGraphics::BearRasterizerStateInit
 	desc.SlopeScaledDepthBias = initializer.SlopeScaleDepthBias;
 	R_CHK(Factory->device->CreateRasterizerState(&desc, &RasterizerState));
 	GCountRasterizerState++;
+
 }
 
 DXRasterizerState::~DXRasterizerState()
@@ -216,10 +217,18 @@ DXDepthStencilState::DXDepthStencilState(const BearGraphics::BearDepthStencilSta
 	desc.FrontFace.StencilFailOp = DXFactory::TranslateStencilOp(initializer.FrontFace.StencilFailOp);
 	desc.FrontFace.StencilPassOp = DXFactory::TranslateStencilOp(initializer.FrontFace.StencilPassOp);
 	desc.FrontFace.StencilFunc = DXFactory::TranslateCompareFunction(initializer.FrontFace.StencilTest);
-	desc.BackFace.StencilDepthFailOp = DXFactory::TranslateStencilOp(initializer.BackFace.StencilDepthFailOp);
-	desc.BackFace.StencilFailOp = DXFactory::TranslateStencilOp(initializer.BackFace.StencilFailOp);
-	desc.BackFace.StencilPassOp = DXFactory::TranslateStencilOp(initializer.BackFace.StencilPassOp);
-	desc.BackFace.StencilFunc = DXFactory::TranslateCompareFunction(initializer.BackFace.StencilTest);
+	if (initializer.BackStencillEnable)
+	{
+		desc.BackFace.StencilDepthFailOp = DXFactory::TranslateStencilOp(initializer.BackFace.StencilDepthFailOp);
+		desc.BackFace.StencilFailOp = DXFactory::TranslateStencilOp(initializer.BackFace.StencilFailOp);
+		desc.BackFace.StencilPassOp = DXFactory::TranslateStencilOp(initializer.BackFace.StencilPassOp);
+		desc.BackFace.StencilFunc = DXFactory::TranslateCompareFunction(initializer.BackFace.StencilTest);
+	}
+	else
+	{
+		desc.BackFace = desc.FrontFace;
+	}
+
 	R_CHK(Factory->device->CreateDepthStencilState(&desc, &DepthStencilState));
 	GCountDepthStencilState++;
 }

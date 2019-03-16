@@ -2,9 +2,9 @@
 #include "DXInterface.h"
 
 
-DXInterface::DXInterface()
+DXInterface::DXInterface():m_UpdateRenderTarger(true)
 {
-	BearCore::bear_fill(m_renderTarget,  8, 0);
+	BearCore::bear_fill(m_RenderTarget,  8, 0);
 	m_depthStencill = 0;
 }
 
@@ -12,37 +12,42 @@ void DXInterface::Clear()
 {
 }
 
-void DXInterface::AttachRenderTargetView(uint32 id, BearRHI::BearRHIViewport * render_target)
+void DXInterface::AttachViewport(BearRHI::BearRHIViewport * render_target)
 {
-	BEAR_ASSERT(id < 9);
-	m_renderTarget[id] = (ID3D11RenderTargetView*)render_target->GetRenderTarget();
-	Factory->deviceContext->OMSetRenderTargets(8, m_renderTarget, m_depthStencill);
+	m_Viewport = render_target;
+	m_UpdateRenderTarger = true;
 }
+
 
 void DXInterface::AttachRenderTargetView(uint32 id, BearRHI::BearRHIRenderTargetView * render_target)
 {
 	BEAR_ASSERT(id < 9);
-	m_renderTarget[id] = (ID3D11RenderTargetView*)render_target->GetRenderTarget();
-	Factory->deviceContext->OMSetRenderTargets(8, m_renderTarget, m_depthStencill);
+	m_RenderTarget[id] = render_target;
+	m_UpdateRenderTarger = true;
 }
 
 void DXInterface::AttachDepthStencilView(BearRHI::BearRHIDepthStencilView * depthStencill)
 {
 	m_depthStencill = ((DXDepthStencilView*)depthStencill)->depthStencilView;
-	Factory->deviceContext->OMSetRenderTargets(8, m_renderTarget, m_depthStencill);
+	m_UpdateRenderTarger = true;
 }
 
 void DXInterface::DetachRenderTargetView(uint32 id)
 {
 	BEAR_ASSERT(id < 9);
-	m_renderTarget[id] = (ID3D11RenderTargetView*)0;
-	Factory->deviceContext->OMSetRenderTargets(8, m_renderTarget, m_depthStencill);
+	m_RenderTarget[id] = 0;
+	m_UpdateRenderTarger = true;
+}
+
+void DXInterface::DetachViewport()
+{
+	m_Viewport = 0; m_UpdateRenderTarger = true;
 }
 
 void DXInterface::DetachDepthStencilView()
 {
-	m_depthStencill =0;
-	Factory->deviceContext->OMSetRenderTargets(8, m_renderTarget, m_depthStencill);
+	m_depthStencill =0; m_UpdateRenderTarger = true;
+	
 }
 
 void DXInterface::SetViewport( float x, float y, float width, float height, float minDepth, float maxDepth)
@@ -59,14 +64,26 @@ void DXInterface::SetViewport( float x, float y, float width, float height, floa
 
 }
 
-void DXInterface::SetScissor( float x, float y, float x1, float y1)
+void DXInterface::SetScissor(bool Enable, float x, float y, float x1, float y1)
 {
-	D3D11_RECT rect;
-	rect.left = static_cast<LONG>(x);
-	rect.right = static_cast<LONG>(x1);
-	rect.top = static_cast<LONG>(y);
-	rect.bottom = static_cast<LONG>(y1);
-	Factory->deviceContext->RSSetScissorRects(1, &rect);
+	if (Enable)
+	{
+		D3D11_RECT rect;
+		rect.left = static_cast<LONG>(x);
+		rect.right = static_cast<LONG>(x1);
+		rect.top = static_cast<LONG>(y);
+		rect.bottom = static_cast<LONG>(y1);
+		//Factory->deviceContext->RSSetScissorRects(1, &rect);
+	}
+	else
+	{
+		D3D11_RECT rect;
+		rect.left = 0;
+		rect.right = 0;
+		rect.top = D3D11_REQ_TEXTURE2D_U_OR_V_DIMENSION;
+		rect.bottom = D3D11_REQ_TEXTURE2D_U_OR_V_DIMENSION;
+	//	Factory->deviceContext->RSSetScissorRects(1, &rect);
+	}
 }
 
 void DXInterface::SetPixelShader(BearRHI::BearRHIPixelShader * shader)
@@ -144,6 +161,34 @@ void DXInterface::SetVertexShaderResource(bsize slot, BearRHI::BearRHITexture2D 
 
 void DXInterface::Draw(bsize size, bsize possition, BearGraphics::BearDrawType mode)
 {
+	ID3D11RenderTargetView * RenderTargetArray[8];
+	if (m_UpdateRenderTarger)
+	{
+		m_UpdateRenderTarger = false;
+		if (m_Viewport)
+		{
+
+			BEAR_ASSERT(dynamic_cast<DXViewport*>(m_Viewport));
+			RenderTargetArray[0] = reinterpret_cast<ID3D11RenderTargetView *>(static_cast<DXViewport*>(m_Viewport)->GetRenderTarget());
+			Factory->deviceContext->OMSetRenderTargets(1, RenderTargetArray, static_cast<DXViewport*>(m_Viewport)->DepthStencilView->depthStencilView);
+		}
+		else
+		{
+			for (bsize i = 0; i < 8; i++)
+			{
+				if (m_RenderTarget[i])
+				{
+					BEAR_ASSERT(dynamic_cast<DXViewport*>(m_RenderTarget[i]));
+					RenderTargetArray[i] = reinterpret_cast<ID3D11RenderTargetView *>(static_cast<DXViewport*>(m_RenderTarget[i])->GetRenderTarget());
+				}
+				else
+				{
+					RenderTargetArray[i] = 0;
+				}
+				Factory->deviceContext->OMSetRenderTargets(8, RenderTargetArray, m_depthStencill);
+			}
+		}
+	}
 	switch (mode)
 	{
 	case BearGraphics::DT_POINT:
