@@ -73,16 +73,16 @@ void DXInterface::SetScissor(bool Enable, float x, float y, float x1, float y1)
 		rect.right = static_cast<LONG>(x1);
 		rect.top = static_cast<LONG>(y);
 		rect.bottom = static_cast<LONG>(y1);
-		//Factory->deviceContext->RSSetScissorRects(1, &rect);
+		Factory->deviceContext->RSSetScissorRects(1, &rect);
 	}
 	else
 	{
 		D3D11_RECT rect;
 		rect.left = 0;
-		rect.right = 0;
-		rect.top = D3D11_REQ_TEXTURE2D_U_OR_V_DIMENSION;
+		rect.right = D3D11_REQ_TEXTURE2D_U_OR_V_DIMENSION;
+		rect.top = 0;
 		rect.bottom = D3D11_REQ_TEXTURE2D_U_OR_V_DIMENSION;
-	//	Factory->deviceContext->RSSetScissorRects(1, &rect);
+		Factory->deviceContext->RSSetScissorRects(1, &rect);
 	}
 }
 

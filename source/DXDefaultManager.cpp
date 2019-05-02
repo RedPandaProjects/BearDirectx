@@ -103,6 +103,34 @@ PixelInputType main(VertexInputType input)\
 	res.uv = input.uv;\
 	return res;\
 }");
+
+	case BearGraphics::DVS_UI:
+		return TEXT("\
+struct VertexInputType\
+{\
+	float2 position : POSITION;\
+	float2 uv : TEXTUREUV;\
+};\
+\
+struct PixelInputType\
+{\
+	float4 position : SV_POSITION;\
+	float2 uv : UV;\
+};\
+cbuffer ConstantBuffer : register(b0)\
+{\
+	float4 screen;\
+};\
+PixelInputType main(VertexInputType input)\
+{\
+	PixelInputType res;\
+	res.position = float4(input.position, 0.0001f,0.9999f);\
+	res.position.x=res.position.x*screen.z*2-1;\
+	res.position.y=res.position.y*screen.w*2-1;\
+	res.position.y*=-1;\
+	res.uv = input.uv;\
+	return res;\
+}");
 	};
 	return nullptr;
 }
