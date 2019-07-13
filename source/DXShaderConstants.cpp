@@ -10,10 +10,11 @@ DXShaderConstants::DXShaderConstants(const BearGraphics::BearShaderConstantsInit
 		m_size += DXFactory::GetSizeConstantFormat(*begin);
 		begin++;
 	}
+	m_size = BearCore::bear_max(BearCore::bear_recommended_size(m_size), bsize(16));;
 	D3D11_BUFFER_DESC desc;
 	BearCore::bear_fill(desc);
 	desc.Usage = dynamic ? D3D11_USAGE_DYNAMIC : D3D11_USAGE_DEFAULT;
-	desc.ByteWidth = static_cast<UINT>(BearCore::bear_max( BearCore::bear_recommended_size( m_size),bsize(16)));
+	desc.ByteWidth = static_cast<UINT>(m_size);
 	desc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
 	desc.CPUAccessFlags = dynamic ? D3D11_CPU_ACCESS_WRITE : 0;
 	desc.MiscFlags = 0;

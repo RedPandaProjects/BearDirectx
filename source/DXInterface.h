@@ -32,7 +32,7 @@ public:
 	virtual void SetPixelShaderConstants(bsize slot, BearRHI::BearRHIShaderConstants*constants);
 	virtual void SetPixelShaderResource(bsize slot, BearRHI::BearRHITexture2D*texture2d, BearRHI::BearRHISamplerState*sampler);
 
-
+	virtual void DrawIndexed(bsize size, bsize possition, BearGraphics::BearDrawType mode);
 	virtual void Draw(bsize size, bsize possition, BearGraphics::BearDrawType mode);
 	~DXInterface();
 private:

@@ -159,6 +159,52 @@ void DXInterface::SetVertexShaderResource(bsize slot, BearRHI::BearRHITexture2D 
 }
 
 
+void DXInterface::DrawIndexed(bsize size, bsize possition, BearGraphics::BearDrawType mode)
+{ID3D11RenderTargetView * RenderTargetArray[8];
+	if (m_UpdateRenderTarger)
+	{
+		m_UpdateRenderTarger = false;
+		if (m_Viewport)
+		{
+
+			BEAR_ASSERT(dynamic_cast<DXViewport*>(m_Viewport));
+			RenderTargetArray[0] = reinterpret_cast<ID3D11RenderTargetView *>(static_cast<DXViewport*>(m_Viewport)->GetRenderTarget());
+			Factory->deviceContext->OMSetRenderTargets(1, RenderTargetArray, static_cast<DXViewport*>(m_Viewport)->DepthStencilView->depthStencilView);
+		}
+		else
+		{
+			for (bsize i = 0; i < 8; i++)
+			{
+				if (m_RenderTarget[i])
+				{
+					BEAR_ASSERT(dynamic_cast<DXViewport*>(m_RenderTarget[i]));
+					RenderTargetArray[i] = reinterpret_cast<ID3D11RenderTargetView *>(static_cast<DXViewport*>(m_RenderTarget[i])->GetRenderTarget());
+				}
+				else
+				{
+					RenderTargetArray[i] = 0;
+				}
+				Factory->deviceContext->OMSetRenderTargets(8, RenderTargetArray, m_depthStencill);
+			}
+		}
+	}
+	switch (mode)
+	{
+	case BearGraphics::DT_POINT:
+		Factory->deviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_POINTLIST);
+		break;
+	case BearGraphics::DT_LINE:
+		Factory->deviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_LINELIST);
+		break;
+	case BearGraphics::DT_TRIANGLE:
+		Factory->deviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+		break;
+	default:
+		break;
+	}
+	Factory->deviceContext->DrawIndexed(static_cast<UINT>(size), static_cast<UINT>(possition), 0);
+}
+
 void DXInterface::Draw(bsize size, bsize possition, BearGraphics::BearDrawType mode)
 {
 	ID3D11RenderTargetView * RenderTargetArray[8];
@@ -203,7 +249,7 @@ void DXInterface::Draw(bsize size, bsize possition, BearGraphics::BearDrawType m
 	default:
 		break;
 	}
-	Factory->deviceContext->DrawIndexed(static_cast<UINT>(size), static_cast<UINT>(possition), 0);
+	Factory->deviceContext->Draw(static_cast<UINT>(size), static_cast<UINT>(possition));
 }
 
 
