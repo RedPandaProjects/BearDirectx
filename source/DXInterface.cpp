@@ -6,6 +6,7 @@ DXInterface::DXInterface():m_UpdateRenderTarger(true)
 {
 	BearCore::bear_fill(m_RenderTarget,  8, 0);
 	m_depthStencill = 0;
+	m_Viewport = 0;
 }
 
 void DXInterface::Clear()
@@ -184,8 +185,9 @@ void DXInterface::DrawIndexed(bsize size, bsize possition, BearGraphics::BearDra
 				{
 					RenderTargetArray[i] = 0;
 				}
-				Factory->deviceContext->OMSetRenderTargets(8, RenderTargetArray, m_depthStencill);
+				
 			}
+			Factory->deviceContext->OMSetRenderTargets(8, RenderTargetArray, m_depthStencill);
 		}
 	}
 	switch (mode)
