@@ -59,7 +59,7 @@ void DXViewport::Resize(bsize w, bsize h)
 {
 	if (m_desc.BufferDesc.Width == w && m_desc.BufferDesc.Height == h)
 		return;
-	if (DepthStencilView)BearCore::bear_free(DepthStencilView);
+	if (DepthStencilView)BearCore::bear_delete(DepthStencilView);
 	DepthStencilView = BearCore::bear_new<DXDepthStencilView>(w, h, BearGraphics::BearDepthStencilFormat::DSF_DEPTH32F_STENCIL8);
 	m_desc.BufferDesc.Width = static_cast<UINT>(w);
 	m_desc.BufferDesc.Height = static_cast<UINT>(h);

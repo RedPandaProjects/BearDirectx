@@ -23,6 +23,7 @@ void DXInterface::AttachViewport(BearRHI::BearRHIViewport * render_target)
 void DXInterface::AttachRenderTargetView(uint32 id, BearRHI::BearRHIRenderTargetView * render_target)
 {
 	BEAR_ASSERT(id < 9);
+	m_Viewport = 0;
 	m_RenderTarget[id] = render_target;
 	m_UpdateRenderTarger = true;
 }
@@ -148,6 +149,13 @@ void DXInterface::SetPixelShaderResource(bsize slot, BearRHI::BearRHITexture2D *
 
 }
 
+void DXInterface::SetPixelShaderResource(bsize slot, BearRHI::BearRHIRenderTargetView * texture2d, BearRHI::BearRHISamplerState * sampler)
+{
+	auto *ptr = (((DXRenderTergetView *)texture2d)->GetShaderResource());
+	Factory->deviceContext->PSSetShaderResources(static_cast<UINT>(slot), 1, &ptr);
+	Factory->deviceContext->PSSetSamplers(static_cast<UINT>(slot), 1, &((DXSamplerState *)sampler)->SamplerState);
+}
+
 void DXInterface::SetVertexShaderConstants(bsize slot, BearRHI::BearRHIShaderConstants * constants)
 {
 	Factory->deviceContext->VSSetConstantBuffers(static_cast<UINT>(slot), 1, &((DXShaderConstants *)constants)->Buffer);
@@ -156,6 +164,13 @@ void DXInterface::SetVertexShaderConstants(bsize slot, BearRHI::BearRHIShaderCon
 void DXInterface::SetVertexShaderResource(bsize slot, BearRHI::BearRHITexture2D * texture2d, BearRHI::BearRHISamplerState * sampler)
 {
 	Factory->deviceContext->VSSetShaderResources(static_cast<UINT>(slot), 1, &((DXTexture2D *)texture2d)->ShaderTexture);
+	Factory->deviceContext->VSSetSamplers(static_cast<UINT>(slot), 1, &((DXSamplerState *)sampler)->SamplerState);
+}
+
+void DXInterface::SetVertexShaderResource(bsize slot, BearRHI::BearRHIRenderTargetView * texture2d, BearRHI::BearRHISamplerState * sampler)
+{
+	auto *ptr = (((DXRenderTergetView *)texture2d)->GetShaderResource());
+	Factory->deviceContext->VSSetShaderResources(static_cast<UINT>(slot), 1,&ptr);
 	Factory->deviceContext->VSSetSamplers(static_cast<UINT>(slot), 1, &((DXSamplerState *)sampler)->SamplerState);
 }
 
@@ -222,19 +237,22 @@ void DXInterface::Draw(bsize size, bsize possition, BearGraphics::BearDrawType m
 		}
 		else
 		{
+			BEAR_ASSERT(dynamic_cast<DXRenderTergetView*>(m_RenderTarget[0]));
+	
 			for (bsize i = 0; i < 8; i++)
 			{
 				if (m_RenderTarget[i])
 				{
-					BEAR_ASSERT(dynamic_cast<DXViewport*>(m_RenderTarget[i]));
-					RenderTargetArray[i] = reinterpret_cast<ID3D11RenderTargetView *>(static_cast<DXViewport*>(m_RenderTarget[i])->GetRenderTarget());
+					
+					RenderTargetArray[i] = reinterpret_cast<ID3D11RenderTargetView *>(static_cast<DXRenderTergetView*>(m_RenderTarget[i])->GetRenderTarget());
 				}
 				else
 				{
 					RenderTargetArray[i] = 0;
 				}
-				Factory->deviceContext->OMSetRenderTargets(8, RenderTargetArray, m_depthStencill);
+			
 			}
+			Factory->deviceContext->OMSetRenderTargets(8, RenderTargetArray, m_depthStencill);
 		}
 	}
 	switch (mode)
