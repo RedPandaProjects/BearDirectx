@@ -4,13 +4,14 @@ uint16 GCountRenderTargetView = 0;
 
 DXRenderTergetView::DXRenderTergetView(bsize w, bsize h, BearGraphics::BearRenderTargetFormat format):m_render_target_texture(0), m_format(format), m_render_target(0)
 {
+	GCountRenderTargetView++;
 	Resize(w, h);
 }
 
 void DXRenderTergetView::Resize(bsize w, bsize h)
 {
 	if (m_render_target)m_render_target->Release();
-	if(m_render_target_texture)BearCore::bear_free(m_render_target_texture);
+	if(m_render_target_texture)BearCore::bear_delete(m_render_target_texture);
 
 	m_render_target_texture = BearCore::bear_new<DXTexture2D>( w, h, m_format);
 
@@ -20,7 +21,7 @@ void DXRenderTergetView::Resize(bsize w, bsize h)
 	render_terget_view_desc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D;
 	R_CHK(Factory->device->CreateRenderTargetView(m_render_target_texture->Texture, &render_terget_view_desc, &m_render_target));
 
-	GCountRenderTargetView++;
+	
 }
 
 
@@ -50,5 +51,5 @@ DXRenderTergetView::~DXRenderTergetView()
 {
 	GCountRenderTargetView--;
 	m_render_target->Release();
-	BearCore::bear_free(m_render_target_texture);
+	BearCore::bear_delete(m_render_target_texture);
 }

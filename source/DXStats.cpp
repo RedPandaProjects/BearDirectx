@@ -147,6 +147,8 @@ DXBlendState::DXBlendState(const BearGraphics::BearBlendStateInitializer & initi
 {
 	D3D11_BLEND_DESC desc;
 	BearCore::bear_fill(desc);
+	desc.IndependentBlendEnable = true;
+	desc.AlphaToCoverageEnable = initializer.AlphaToCoverageEnable;
 	for (bsize i = 0; i < 8; i++)
 	{
 		desc.RenderTarget[i].BlendEnable = initializer.RenderTarget[i].Enable;
@@ -209,7 +211,7 @@ DXDepthStencilState::DXDepthStencilState(const BearGraphics::BearDepthStencilSta
 	BearCore::bear_fill(desc);
 	desc.DepthEnable = initializer.DepthEnable;
 	desc.DepthFunc = DXFactory::TranslateCompareFunction(initializer.DepthTest);
-	desc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK::D3D11_DEPTH_WRITE_MASK_ALL;
+	desc.DepthWriteMask = initializer.EnableDepthWrite? D3D11_DEPTH_WRITE_MASK::D3D11_DEPTH_WRITE_MASK_ALL: D3D11_DEPTH_WRITE_MASK::D3D11_DEPTH_WRITE_MASK_ZERO;
 	desc.StencilEnable = initializer.StencillEnable;
 	desc.StencilReadMask = initializer.StencilReadMask;
 	desc.StencilWriteMask = initializer.StencilWriteMask;
