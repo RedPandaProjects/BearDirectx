@@ -22,11 +22,12 @@ DX12RenderFactory::DX12RenderFactory()
 
 	GetHardwareAdapter(GIFactory.Get(), &hardwareAdapter);
 
-	if (FAILED(D3D12CreateDevice(hardwareAdapter.Get(), D3D_FEATURE_LEVEL_12_1, IID_PPV_ARGS(&Device))))
+	if (FAILED(D3D12CreateDevice(hardwareAdapter.Get(), D3D_FEATURE_LEVEL_12_0, IID_PPV_ARGS(&Device))))
 	{
 		return;
 	}
-	
+
+
 }
 DX12RenderFactory::~DX12RenderFactory()
 {
@@ -35,9 +36,13 @@ BearRenderBase::BearRenderInterfaceBase* DX12RenderFactory::CreateInterface()
 {
 	return bear_new<DX12RenderInterface>();
 }
-void DX12RenderFactory::DestroyInterface(BearRenderBase::BearRenderInterfaceBase * object)
+BearRenderBase::BearRenderContextBase * DX12RenderFactory::CreateContext()
 {
-	bear_delete(static_cast<DX12RenderInterface*>(object));
+	return nullptr;
+}
+BearRenderBase::BearRenderViewportBase * DX12RenderFactory::CreateViewport(void * Handle, bsize Width, bsize Height, bool Fullscreen, bool VSync)
+{
+	return nullptr;
 }
 
 void DX12RenderFactory::GetHardwareAdapter(IDXGIFactory2 * pFactory, IDXGIAdapter1 ** ppAdapter)
