@@ -8,7 +8,7 @@ public:
 	virtual void SetVSync(bool Sync);
 	virtual void SetFullScreen(bool FullScreen);
 	virtual void Resize(bsize Width, bsize Height);
-	virtual void*GetRenderTarget();
+	virtual void*GetHandle();
 
 	void Flush(bool wait);
 	void Wait();

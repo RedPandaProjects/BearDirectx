@@ -38,11 +38,11 @@ BearRenderBase::BearRenderInterfaceBase* DX12RenderFactory::CreateInterface()
 }
 BearRenderBase::BearRenderContextBase * DX12RenderFactory::CreateContext()
 {
-	return nullptr;
+	return bear_new<DX12RenderContext>();;
 }
 BearRenderBase::BearRenderViewportBase * DX12RenderFactory::CreateViewport(void * Handle, bsize Width, bsize Height, bool Fullscreen, bool VSync)
 {
-	return nullptr;
+	return  bear_new<DX12RenderViewport>(Handle, Width, Height, Fullscreen, VSync);;;
 }
 
 void DX12RenderFactory::GetHardwareAdapter(IDXGIFactory2 * pFactory, IDXGIAdapter1 ** ppAdapter)

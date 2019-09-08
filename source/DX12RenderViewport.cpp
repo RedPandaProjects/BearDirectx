@@ -64,13 +64,16 @@ DX12RenderViewport::DX12RenderViewport(void * Handle, bsize Width, bsize Height,
 
 
 	R_CHK(Factory->Device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&Fence)));
-	FenceValue = 1;
+	FenceValue = 0;
 
 	FenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
 	if (FenceEvent == nullptr)
 	{
 		R_CHK(HRESULT_FROM_WIN32(GetLastError()));
 	}
+	auto transition = CD3DX12_RESOURCE_BARRIER::Transition(RenderTargets[FrameIndex].Get(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
+	CommandList->ResourceBarrier(1, &transition);
+
 }
 
 DX12RenderViewport::~DX12RenderViewport()
@@ -81,27 +84,32 @@ DX12RenderViewport::~DX12RenderViewport()
 
 void DX12RenderViewport::Flush(bool wait)
 {
+	auto transition = CD3DX12_RESOURCE_BARRIER::Transition(RenderTargets[FrameIndex].Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
+	CommandList->ResourceBarrier(1,&transition);
+
 	R_CHK(CommandList->Close());
-	Wait();
+
 	ID3D12CommandList* ppCommandLists[] = { CommandList.Get() };
 	CommandQueue->ExecuteCommandLists(_countof(ppCommandLists), ppCommandLists);
 	R_CHK(SwapChain->Present(1, 0));
 
-	R_CHK(CommandQueue->Signal(Fence.Get(), ++FenceValue));
-	R_CHK(CommandAllocator->Reset());
-	R_CHK(CommandList->Reset(CommandAllocator.Get(), 0));
+	R_CHK(CommandQueue->Signal(Fence.Get(), FenceValue++));
 	if (wait)Wait();
 }
 
 void DX12RenderViewport::Wait()
 {
-	if (Fence->GetCompletedValue() < FenceValue)
+	if (FenceValue == 0)return;
+	if (Fence->GetCompletedValue() < FenceValue-1)
 	{
-		R_CHK(Fence->SetEventOnCompletion(FenceValue, FenceEvent));
+		R_CHK(Fence->SetEventOnCompletion(FenceValue-1, FenceEvent));
 		WaitForSingleObject(FenceEvent, INFINITE);
 	}
-
+	R_CHK(CommandAllocator->Reset());
+	R_CHK(CommandList->Reset(CommandAllocator.Get(), 0));
 	FrameIndex = SwapChain->GetCurrentBackBufferIndex();
+	auto transition = CD3DX12_RESOURCE_BARRIER::Transition(RenderTargets[FrameIndex].Get(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
+	CommandList->ResourceBarrier(1, &transition);
 }
 
 void DX12RenderViewport::SetVSync(bool Sync)
@@ -116,7 +124,7 @@ void DX12RenderViewport::Resize(bsize Width, bsize Height)
 {
 }
 
-void * DX12RenderViewport::GetRenderTarget()
+void * DX12RenderViewport::GetHandle()
 {
 	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(RtvHeap->GetCPUDescriptorHandleForHeapStart(), FrameIndex, RtvDescriptorSize);
 	RtvHandle = rtvHandle;
