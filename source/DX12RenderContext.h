@@ -6,8 +6,7 @@ public:
 	DX12RenderContext();
 	virtual ~DX12RenderContext();
 
-	virtual void Flush(bool wait);
-	virtual void Wait();
+	virtual void Flush();
 	virtual void AttachViewport(BearGraphics::BearFactoryPointer<BearRenderBase::BearRenderViewportBase> Viewport);
 	virtual void DetachViewport();
 	virtual void ClearColor(BearGraphics::BearFactoryPointer<BearRenderBase::BearRenderTargetViewBase> RenderTarget, const BearCore::BearColor Color);

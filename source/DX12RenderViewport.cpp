@@ -77,8 +77,15 @@ DX12RenderViewport::DX12RenderViewport(void * Handle, bsize Width, bsize Height,
 }
 
 DX12RenderViewport::~DX12RenderViewport()
-{
-	Wait();
+{	
+	if(FenceValue)
+	if (Fence->GetCompletedValue() < FenceValue - 1)
+	{
+		R_CHK(Fence->SetEventOnCompletion(FenceValue - 1, FenceEvent));
+		WaitForSingleObject(FenceEvent, INFINITE);
+	}
+	R_CHK(CommandList->Close());
+
 	CloseHandle(FenceEvent);
 }
 

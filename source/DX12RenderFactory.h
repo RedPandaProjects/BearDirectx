@@ -8,6 +8,7 @@ public:
 	virtual BearRenderBase::BearRenderInterfaceBase* CreateInterface();
 	virtual BearRenderBase::BearRenderContextBase* CreateContext();
 	virtual BearRenderBase::BearRenderViewportBase* CreateViewport(void * Handle, bsize Width, bsize Height, bool Fullscreen, bool VSync);
+	virtual BearRenderBase::BearRenderShaderBase* CreateShader(BearGraphics::BearShaderType Type);
 	inline bool Empty()const { return Device.Get()==0; }
 public:
 	ComPtr<ID3D12Device> Device;

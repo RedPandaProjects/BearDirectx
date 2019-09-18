@@ -45,6 +45,11 @@ BearRenderBase::BearRenderViewportBase * DX12RenderFactory::CreateViewport(void 
 	return  bear_new<DX12RenderViewport>(Handle, Width, Height, Fullscreen, VSync);;;
 }
 
+BearRenderBase::BearRenderShaderBase * DX12RenderFactory::CreateShader(BearGraphics::BearShaderType Type)
+{
+	return nullptr;
+}
+
 void DX12RenderFactory::GetHardwareAdapter(IDXGIFactory2 * pFactory, IDXGIAdapter1 ** ppAdapter)
 {
 	ComPtr<IDXGIAdapter1> adapter;
