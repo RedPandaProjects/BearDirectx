@@ -40,9 +40,9 @@ BearRenderBase::BearRenderContextBase * DX12RenderFactory::CreateContext()
 {
 	return bear_new<DX12RenderContext>();;
 }
-BearRenderBase::BearRenderViewportBase * DX12RenderFactory::CreateViewport(void * Handle, bsize Width, bsize Height, bool Fullscreen, bool VSync)
+BearRenderBase::BearRenderViewportBase * DX12RenderFactory::CreateViewport(void * Handle, bsize Width, bsize Height, bool Fullscreen, bool VSync, const BearGraphics::BearRenderViewportDescription&Description)
 {
-	return  bear_new<DX12RenderViewport>(Handle, Width, Height, Fullscreen, VSync);;;
+	return  bear_new<DX12RenderViewport>(Handle, Width, Height, Fullscreen, VSync, Description);;;
 }
 
 BearRenderBase::BearRenderShaderBase * DX12RenderFactory::CreateShader(BearGraphics::BearShaderType Type)
