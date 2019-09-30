@@ -3,7 +3,7 @@ class DX12RenderViewport :public BearRenderBase::BearRenderViewportBase
 {
 public:
 	BEAR_CLASS_NO_COPY(DX12RenderViewport);
-	DX12RenderViewport(void * Handle, bsize Width, bsize Height, bool Fullscreen, bool VSync);
+	DX12RenderViewport(void * Handle, bsize Width, bsize Height, bool Fullscreen, bool VSync, const BearGraphics::BearRenderViewportDescription&Description);
 	virtual ~DX12RenderViewport();
 	virtual void SetVSync(bool Sync);
 	virtual void SetFullScreen(bool FullScreen);
@@ -12,7 +12,8 @@ public:
 
 	void Flush(bool wait);
 	void Wait();
-
+	
+	BearGraphics::BearRenderViewportDescription Description;
 	ComPtr<ID3D12GraphicsCommandList> CommandList;
 private:
 	ComPtr<ID3D12CommandQueue> CommandQueue;

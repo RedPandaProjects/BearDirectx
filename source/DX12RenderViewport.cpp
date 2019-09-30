@@ -1,6 +1,6 @@
 #include "DX12PCH.h"
 
-DX12RenderViewport::DX12RenderViewport(void * Handle, bsize Width, bsize Height, bool Fullscreen, bool VSync)
+DX12RenderViewport::DX12RenderViewport(void * Handle, bsize Width, bsize Height, bool Fullscreen, bool VSync, const BearGraphics::BearRenderViewportDescription&Description_):Description(Description_)
 {
 
 	D3D12_COMMAND_QUEUE_DESC queueDesc = {};
