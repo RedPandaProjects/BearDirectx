@@ -13,7 +13,8 @@ public:
 public:
 	ComPtr<ID3D12Device> Device;
 	ComPtr<IDXGIFactory4> GIFactory;
-
+	DXGI_MODE_DESC*FindMode(bsize width, bsize height);
 private:
+	BearCore::BearVector<DXGI_MODE_DESC> m_GIVideoMode;
 	void GetHardwareAdapter(IDXGIFactory2* pFactory, IDXGIAdapter1** ppAdapter);
 };

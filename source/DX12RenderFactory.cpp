@@ -21,7 +21,18 @@ DX12RenderFactory::DX12RenderFactory()
 	ComPtr<IDXGIAdapter1> hardwareAdapter;
 
 	GetHardwareAdapter(GIFactory.Get(), &hardwareAdapter);
+	if (hardwareAdapter.Get() == 0)return;
+	IDXGIOutput *Output;
+	hardwareAdapter->EnumOutputs(0, &Output);
+	{
+		UINT count = 0;
 
+		Output->GetDisplayModeList(DXGI_FORMAT_R8G8B8A8_UNORM, 0, &count, 0);
+		m_GIVideoMode.resize(count);
+		Output->GetDisplayModeList(DXGI_FORMAT_R8G8B8A8_UNORM, 0, &count, &m_GIVideoMode[0]);
+	}
+
+	Output->Release();
 	if (FAILED(D3D12CreateDevice(hardwareAdapter.Get(), D3D_FEATURE_LEVEL_11_0, IID_PPV_ARGS(&Device))))
 	{
 		return;
@@ -48,6 +59,19 @@ BearRenderBase::BearRenderViewportBase * DX12RenderFactory::CreateViewport(void 
 BearRenderBase::BearRenderShaderBase * DX12RenderFactory::CreateShader(BearGraphics::BearShaderType Type)
 {
 	return nullptr;
+}
+
+DXGI_MODE_DESC * DX12RenderFactory::FindMode(bsize width, bsize height)
+{
+	auto begin = m_GIVideoMode.begin();
+	auto end = m_GIVideoMode.end();
+	while (begin != end)
+	{
+		if (begin->Width == width && begin->Height == height)
+			return &*begin;
+		begin++;
+	}
+	return 0;
 }
 
 void DX12RenderFactory::GetHardwareAdapter(IDXGIFactory2 * pFactory, IDXGIAdapter1 ** ppAdapter)
