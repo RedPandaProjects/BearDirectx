@@ -17,6 +17,10 @@ using Microsoft::WRL::ComPtr;
 using namespace BearCore;
 #include "DX12RenderInterface.h"
 #include "DX12RenderViewport.h"
+
+#include "DX12RenderIndexBuffer.h"
+#include "DX12RenderVertexBuffer.h"
+
 #include "DX12RenderContext.h"
 #include "DX12RenderFactory.h"
 extern DX12RenderFactory *Factory;

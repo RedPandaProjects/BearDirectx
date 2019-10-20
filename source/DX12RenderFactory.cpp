@@ -61,6 +61,16 @@ BearRenderBase::BearRenderShaderBase * DX12RenderFactory::CreateShader(BearGraph
 	return nullptr;
 }
 
+BearRenderBase::BearRenderIndexBufferBase * DX12RenderFactory::CreateIndexBuffer()
+{
+	return bear_new<DX12RenderIndexBuffer>();
+}
+
+BearRenderBase::BearRenderVertexBufferBase * DX12RenderFactory::CreateVertexBuffer()
+{
+	return  bear_new<DX12RenderVertexBuffer>();
+}
+
 DXGI_MODE_DESC * DX12RenderFactory::FindMode(bsize width, bsize height)
 {
 	auto begin = m_GIVideoMode.begin();
