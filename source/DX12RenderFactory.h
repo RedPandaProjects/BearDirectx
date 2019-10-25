@@ -9,13 +9,14 @@ public:
 	virtual BearRenderBase::BearRenderContextBase* CreateContext();
 	virtual BearRenderBase::BearRenderViewportBase* CreateViewport(void * Handle, bsize Width, bsize Height, bool Fullscreen, bool VSync, const BearGraphics::BearRenderViewportDescription&Description);
 	virtual BearRenderBase::BearRenderShaderBase* CreateShader(BearGraphics::BearShaderType Type);
-
+	virtual  BearRenderBase::BearRenderPipelineBase*   CreatePipeline(const BearGraphics::BearRenderPipelineDescription&Descruotion);
 	virtual BearRenderBase::BearRenderIndexBufferBase* CreateIndexBuffer();
 	virtual BearRenderBase::BearRenderVertexBufferBase* CreateVertexBuffer();
 	inline bool Empty()const { return Device.Get()==0; }
 public:
 	ComPtr<ID3D12Device> Device;
 	ComPtr<IDXGIFactory4> GIFactory;
+	ComPtr<ID3D12RootSignature> RootSignature;
 	DXGI_MODE_DESC*FindMode(bsize width, bsize height);
 private:
 	BearCore::BearVector<DXGI_MODE_DESC> m_GIVideoMode;

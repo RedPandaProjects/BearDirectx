@@ -120,6 +120,7 @@ void DX12RenderViewport::Wait()
 	FrameIndex = SwapChain->GetCurrentBackBufferIndex();
 	auto transition = CD3DX12_RESOURCE_BARRIER::Transition(RenderTargets[FrameIndex].Get(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
 	CommandList->ResourceBarrier(1, &transition);
+
 	m_wait = false;
 }
 

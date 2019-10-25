@@ -2,6 +2,7 @@
 
 DX12RenderInterface::DX12RenderInterface()
 {
+
 }
 
 DX12RenderInterface::~DX12RenderInterface()

@@ -10,11 +10,11 @@ DX12RenderIndexBuffer::~DX12RenderIndexBuffer()
 {
 }
 
-void DX12RenderIndexBuffer::Create( bsize count, void * data, bool dynamic)
+void DX12RenderIndexBuffer::Create( bsize count, void * data)
 {
 	Clear();
 	{
-		CD3DX12_HEAP_PROPERTIES a(dynamic ? D3D12_HEAP_TYPE_UPLOAD : D3D12_HEAP_TYPE_DEFAULT);
+		CD3DX12_HEAP_PROPERTIES a( D3D12_HEAP_TYPE_UPLOAD);
 		auto b = CD3DX12_RESOURCE_DESC::Buffer(static_cast<UINT64>(sizeof(int32)*count));
 		R_CHK(Factory->Device->CreateCommittedResource(
 			&a,

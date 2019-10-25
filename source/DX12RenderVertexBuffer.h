@@ -4,7 +4,7 @@ class DX12RenderVertexBuffer :public BearRenderBase::BearRenderVertexBufferBase
 public:
 	DX12RenderVertexBuffer();
 	virtual ~DX12RenderVertexBuffer();
-	virtual void Create(bsize stride, bsize count, void*data = 0, bool dynamic = false) ;
+	virtual void Create(bsize stride, bsize count, void*data = 0) ;
 	virtual void* Lock();
 	virtual void Unlock();
 	virtual void Clear();

@@ -38,6 +38,16 @@ DX12RenderFactory::DX12RenderFactory()
 		return;
 	}
 
+	{
+		CD3DX12_ROOT_SIGNATURE_DESC RootSignatureDesc;
+		RootSignatureDesc.Init(0, nullptr, 0, nullptr, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
+
+		ComPtr<ID3DBlob> signature;
+		ComPtr<ID3DBlob> error;
+		R_CHK(D3D12SerializeRootSignature(&RootSignatureDesc, D3D_ROOT_SIGNATURE_VERSION_1, &signature, &error));
+		R_CHK(Device->CreateRootSignature(0, signature->GetBufferPointer(), signature->GetBufferSize(), IID_PPV_ARGS(&RootSignature)));
+	}
+
 
 }
 DX12RenderFactory::~DX12RenderFactory()
@@ -58,7 +68,12 @@ BearRenderBase::BearRenderViewportBase * DX12RenderFactory::CreateViewport(void 
 
 BearRenderBase::BearRenderShaderBase * DX12RenderFactory::CreateShader(BearGraphics::BearShaderType Type)
 {
-	return nullptr;
+	return  bear_new<DX12RenderShader>(Type);
+}
+
+BearRenderBase::BearRenderPipelineBase * DX12RenderFactory::CreatePipeline(const BearGraphics::BearRenderPipelineDescription & Descruotion)
+{
+	return  bear_new<DX12RenderPipeline>(Descruotion);
 }
 
 BearRenderBase::BearRenderIndexBufferBase * DX12RenderFactory::CreateIndexBuffer()
