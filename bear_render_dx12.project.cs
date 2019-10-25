@@ -9,9 +9,11 @@ public class bear_render_dx12 :Project
         PCHIncludeFile = "DX12PCH.h";
         AddSourceFiles(Path.Combine(ProjectPath, "source"), true);
         Projects.Private.Add("bear_render_base");
+        Projects.Private.Add("dxc");
       	Include.Private.Add(Path.Combine(ProjectPath,"include"));
         LibrariesStatic.Private.Add("d3d12.lib");
         LibrariesStatic.Private.Add("dxgi.lib");
         LibrariesStatic.Private.Add("d3dcompiler.lib");
+        Defines.Private.Add("DX12_1");
     }
 } 

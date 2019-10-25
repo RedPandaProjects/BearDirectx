@@ -7,4 +7,5 @@ public:
 	virtual ~DX12RenderPipeline();
 	ComPtr<ID3D12PipelineState> PipelineState;
 	D3D_PRIMITIVE_TOPOLOGY TopologyType;
+
 };
