@@ -18,7 +18,29 @@ public:
 	ComPtr<IDXGIFactory4> GIFactory;
 	ComPtr<ID3D12RootSignature> RootSignature;
 	DXGI_MODE_DESC*FindMode(bsize width, bsize height);
+public:
+	void LockCopyCommandList();
+	void UnlockCopyCommandList();
+	ComPtr<ID3D12GraphicsCommandList> CopyCommandList;
+
+	void LockCommandList();
+	void UnlockCommandList();
+	ComPtr<ID3D12GraphicsCommandList> CommandList;
 private:
+	HANDLE m_Copy_FenceEvent;
+	uint64 m_Copy_FenceValue;
+	ComPtr<ID3D12Fence> m_Copy_Fence;
+	ComPtr<ID3D12CommandAllocator> m_Copy_CommandAllocator;
+	ComPtr<ID3D12CommandQueue> m_Copy_CommandQueue;
+	BearMutex m_Copy_CommandMutex;
+private:
+	HANDLE m_Default_FenceEvent;
+	uint64 m_Default_FenceValue;
+	ComPtr<ID3D12Fence> m_Default_Fence;
+	ComPtr<ID3D12CommandAllocator> m_Default_CommandAllocator;
+	ComPtr<ID3D12CommandQueue> m_Default_CommandQueue;
+	BearMutex m_Default_CommandMutex;
+
 	BearCore::BearVector<DXGI_MODE_DESC> m_GIVideoMode;
 	void GetHardwareAdapter(IDXGIFactory2* pFactory, IDXGIAdapter1** ppAdapter);
 };

@@ -48,10 +48,53 @@ DX12RenderFactory::DX12RenderFactory()
 		R_CHK(Device->CreateRootSignature(0, signature->GetBufferPointer(), signature->GetBufferSize(), IID_PPV_ARGS(&RootSignature)));
 	}
 
-
+	{
+		m_Copy_FenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
+		if (m_Copy_FenceEvent == nullptr)
+		{
+			R_CHK(HRESULT_FROM_WIN32(GetLastError()));
+		}
+		R_CHK(Device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_COPY, IID_PPV_ARGS(&m_Copy_CommandAllocator)));
+		R_CHK(Device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_COPY, m_Copy_CommandAllocator.Get(), 0, IID_PPV_ARGS(&CopyCommandList)));
+		{
+			D3D12_COMMAND_QUEUE_DESC queueDesc = {};
+			queueDesc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
+			queueDesc.Type = D3D12_COMMAND_LIST_TYPE_COPY;
+			R_CHK(Device->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&m_Copy_CommandQueue)));
+		}
+		R_CHK(Device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&m_Copy_Fence)));
+		m_Copy_FenceValue = 1;
+	}
+	{
+		m_Default_FenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
+		if (m_Default_FenceEvent == nullptr)
+		{
+			R_CHK(HRESULT_FROM_WIN32(GetLastError()));
+		}
+		R_CHK(Device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&m_Default_CommandAllocator)));
+		R_CHK(Device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, m_Default_CommandAllocator.Get(), 0, IID_PPV_ARGS(&CommandList)));
+		{
+			D3D12_COMMAND_QUEUE_DESC queueDesc = {};
+			queueDesc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
+			queueDesc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
+			R_CHK(Device->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&m_Default_CommandQueue)));
+		}
+		R_CHK(Device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&m_Default_Fence)));
+		m_Default_FenceValue = 1;
+	}
 }
 DX12RenderFactory::~DX12RenderFactory()
 {
+	{
+		R_CHK(CopyCommandList->Close());
+		if (m_Copy_FenceEvent)  CloseHandle(m_Copy_FenceEvent);
+		m_Copy_FenceEvent = 0;
+	}
+	{
+		R_CHK(CommandList->Close());
+		if (m_Default_FenceEvent)  CloseHandle(m_Default_FenceEvent);
+		m_Default_FenceEvent = 0;
+	}
 }
 BearRenderBase::BearRenderInterfaceBase* DX12RenderFactory::CreateInterface()
 {
@@ -98,6 +141,58 @@ DXGI_MODE_DESC * DX12RenderFactory::FindMode(bsize width, bsize height)
 	}
 	return 0;
 }
+
+void DX12RenderFactory::LockCopyCommandList()
+{
+	m_Copy_CommandMutex.Lock();
+}
+
+void DX12RenderFactory::UnlockCopyCommandList()
+{
+	R_CHK(CopyCommandList->Close());
+	ID3D12CommandList* ppCommandLists[] = { CopyCommandList.Get() };
+	m_Copy_CommandQueue->ExecuteCommandLists(_countof(ppCommandLists), ppCommandLists);
+
+	const UINT64 fence = m_Copy_FenceValue;
+	R_CHK(m_Copy_CommandQueue->Signal(m_Copy_Fence.Get(), fence));
+	m_Copy_FenceValue++;
+
+	if (m_Copy_Fence->GetCompletedValue() < fence)
+	{
+		R_CHK(m_Copy_Fence->SetEventOnCompletion(fence, m_Copy_FenceEvent));
+		WaitForSingleObject(m_Copy_FenceEvent, INFINITE);
+	}
+	R_CHK(m_Copy_CommandAllocator->Reset());
+	R_CHK(CopyCommandList->Reset(m_Copy_CommandAllocator.Get(), 0));
+	m_Copy_CommandMutex.Unlock();
+}
+
+void DX12RenderFactory::LockCommandList()
+{
+	m_Default_CommandMutex.Lock();
+}
+
+void DX12RenderFactory::UnlockCommandList()
+{
+	R_CHK(CommandList->Close());
+	ID3D12CommandList* ppCommandLists[] = { CommandList.Get() };
+	m_Default_CommandQueue->ExecuteCommandLists(_countof(ppCommandLists), ppCommandLists);
+
+	const UINT64 fence = m_Default_FenceValue;
+	R_CHK(m_Default_CommandQueue->Signal(m_Default_Fence.Get(), fence));
+	m_Default_FenceValue++;
+
+	if (m_Default_Fence->GetCompletedValue() < fence)
+	{
+		R_CHK(m_Default_Fence->SetEventOnCompletion(fence, m_Default_FenceEvent));
+		WaitForSingleObject(m_Default_FenceEvent, INFINITE);
+	}
+	R_CHK(m_Default_CommandAllocator->Reset());
+	R_CHK(CommandList->Reset(m_Default_CommandAllocator.Get(), 0));
+	m_Default_CommandMutex.Unlock();
+}
+
+
 
 void DX12RenderFactory::GetHardwareAdapter(IDXGIFactory2 * pFactory, IDXGIAdapter1 ** ppAdapter)
 {
