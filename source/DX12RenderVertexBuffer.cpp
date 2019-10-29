@@ -48,6 +48,7 @@ void * DX12RenderVertexBuffer::Lock()
 	}
 	else
 	{
+		if (m_buffer)bear_free(m_buffer);
 		m_buffer = bear_alloc<uint8>(VertexBufferView.SizeInBytes);
 		return m_buffer;
 	}
@@ -73,6 +74,7 @@ void DX12RenderVertexBuffer::Unlock()
 			D3D12_RESOURCE_STATE_GENERIC_READ,
 			nullptr,
 			IID_PPV_ARGS(&UploadHeap)));
+
 		D3D12_SUBRESOURCE_DATA ResourceData = {};
 		ResourceData.pData = m_buffer;
 		ResourceData.RowPitch = VertexBufferView.SizeInBytes;

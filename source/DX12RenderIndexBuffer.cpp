@@ -50,6 +50,7 @@ int32 * DX12RenderIndexBuffer::Lock()
 	}
 	else
 	{
+		if (m_buffer)bear_free(m_buffer);
 		m_buffer = bear_alloc<uint8>(IndexBufferView.SizeInBytes);
 		return (int32*)m_buffer;
 	}
