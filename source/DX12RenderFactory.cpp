@@ -129,6 +129,11 @@ BearRenderBase::BearRenderVertexBufferBase * DX12RenderFactory::CreateVertexBuff
 	return  bear_new<DX12RenderVertexBuffer>();
 }
 
+BearRenderBase::BearRenderUniformBufferBase * DX12RenderFactory::CreateUniformBuffer()
+{
+	return  bear_new<DX12RenderUniformBuffer>();
+}
+
 DXGI_MODE_DESC * DX12RenderFactory::FindMode(bsize width, bsize height)
 {
 	auto begin = m_GIVideoMode.begin();

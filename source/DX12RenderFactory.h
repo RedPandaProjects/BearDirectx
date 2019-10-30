@@ -12,6 +12,7 @@ public:
 	virtual  BearRenderBase::BearRenderPipelineBase*   CreatePipeline(const BearGraphics::BearRenderPipelineDescription&Descruotion);
 	virtual BearRenderBase::BearRenderIndexBufferBase* CreateIndexBuffer();
 	virtual BearRenderBase::BearRenderVertexBufferBase* CreateVertexBuffer();
+	virtual BearRenderBase::BearRenderUniformBufferBase* CreateUniformBuffer();
 	inline bool Empty()const { return Device.Get()==0; }
 public:
 	ComPtr<ID3D12Device> Device;
