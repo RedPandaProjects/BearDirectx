@@ -1,5 +1,20 @@
 #include "DX12PCH.h"
+inline D3D12_SHADER_VISIBILITY TransletionShaderVisible(BearGraphics::BearShaderType Type)
+{
+	switch (Type)
+	{
+	case BearGraphics::ST_Vertex:
+		return D3D12_SHADER_VISIBILITY::D3D12_SHADER_VISIBILITY_VERTEX;
 
+		break;
+	case BearGraphics::ST_Pixel:
+		return D3D12_SHADER_VISIBILITY::D3D12_SHADER_VISIBILITY_PIXEL;
+		break;
+	default:
+		BEAR_RASSERT(0);
+	}
+	return D3D12_SHADER_VISIBILITY::D3D12_SHADER_VISIBILITY_ALL;
+}
 DX12RenderRootSignature::DX12RenderRootSignature(const BearGraphics::BearRenderRootSignatureDescription & Description)
 {
 
@@ -42,7 +57,7 @@ DX12RenderRootSignature::DX12RenderRootSignature(const BearGraphics::BearRenderR
 		for (bsize i = 0; i < CountBuffers; i++)
 		{
 			Ranges[i].Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, static_cast<UINT>(i), static_cast<UINT>(i));
-			RootParameters[i].InitAsDescriptorTable(1, &Ranges[0], D3D12_SHADER_VISIBILITY_PIXEL);
+			RootParameters[i].InitAsDescriptorTable(1, &Ranges[0], TransletionShaderVisible(Description.UniformBuffers[i].Shader));
 		}
 
 		D3D12_ROOT_SIGNATURE_FLAGS rootSignatureFlags =
