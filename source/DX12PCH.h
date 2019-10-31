@@ -21,6 +21,7 @@ using namespace BearCore;
 #include "DX12RenderIndexBuffer.h"
 #include "DX12RenderVertexBuffer.h"
 #include "DX12RenderUniformBuffer.h"
+#include "DX12RenderRootSignature.h"
 
 #include "DX12RenderPipeline.h"
 #include "DX12RenderShader.h"

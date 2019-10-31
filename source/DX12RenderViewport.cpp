@@ -43,7 +43,7 @@ DX12RenderViewport::DX12RenderViewport(void * Handle, bsize Width, bsize Height,
 
 		R_CHK(Factory->Device->CreateDescriptorHeap(&rtvHeapDesc, IID_PPV_ARGS(&RtvHeap)));
 
-		RtvDescriptorSize = Factory->Device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
+		
 	}
 
 	{
@@ -52,7 +52,7 @@ DX12RenderViewport::DX12RenderViewport(void * Handle, bsize Width, bsize Height,
 		{
 			R_CHK(SwapChain->GetBuffer(n, IID_PPV_ARGS(&RenderTargets[n])));
 			Factory->Device->CreateRenderTargetView(RenderTargets[n].Get(), nullptr, rtvHandle);
-			rtvHandle.Offset(1, RtvDescriptorSize);
+			rtvHandle.Offset(1,Factory-> RtvDescriptorSize);
 		}
 	}
 	R_CHK(Factory->Device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&CommandAllocator)));
@@ -161,7 +161,7 @@ void DX12RenderViewport::ReInit(bsize Width, bsize Height)
 
 		R_CHK(Factory->Device->CreateDescriptorHeap(&rtvHeapDesc, IID_PPV_ARGS(&RtvHeap)));
 
-		RtvDescriptorSize = Factory->Device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
+
 	}
 
 	{
@@ -170,7 +170,7 @@ void DX12RenderViewport::ReInit(bsize Width, bsize Height)
 		{
 			R_CHK(SwapChain->GetBuffer(n, IID_PPV_ARGS(&RenderTargets[n])));
 			Factory->Device->CreateRenderTargetView(RenderTargets[n].Get(), nullptr, rtvHandle);
-			rtvHandle.Offset(1, RtvDescriptorSize);
+			rtvHandle.Offset(1, Factory->RtvDescriptorSize);
 		}
 	}
 
@@ -235,7 +235,7 @@ void DX12RenderViewport::Resize(bsize Width, bsize Height)
 
 void * DX12RenderViewport::GetHandle()
 {
-	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(RtvHeap->GetCPUDescriptorHandleForHeapStart(), FrameIndex, RtvDescriptorSize);
+	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(RtvHeap->GetCPUDescriptorHandleForHeapStart(), FrameIndex, Factory->RtvDescriptorSize);
 	RtvHandle = rtvHandle;
 	return &RtvHandle;
 }

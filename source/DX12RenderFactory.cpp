@@ -82,6 +82,8 @@ DX12RenderFactory::DX12RenderFactory()
 		R_CHK(Device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&m_Default_Fence)));
 		m_Default_FenceValue = 1;
 	}
+	CbvSrvUavDescriptorSize = Device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+	RtvDescriptorSize = Device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
 }
 DX12RenderFactory::~DX12RenderFactory()
 {
@@ -132,6 +134,11 @@ BearRenderBase::BearRenderVertexBufferBase * DX12RenderFactory::CreateVertexBuff
 BearRenderBase::BearRenderUniformBufferBase * DX12RenderFactory::CreateUniformBuffer()
 {
 	return  bear_new<DX12RenderUniformBuffer>();
+}
+
+BearRenderBase::BearRenderRootSignatureBase * DX12RenderFactory::CreateRootSignature(const BearGraphics::BearRenderRootSignatureDescription&Descruotion)
+{
+	return bear_new<DX12RenderRootSignature>(Descruotion);;
 }
 
 DXGI_MODE_DESC * DX12RenderFactory::FindMode(bsize width, bsize height)

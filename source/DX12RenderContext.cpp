@@ -89,7 +89,7 @@ void DX12RenderContext::SetPipeline(BearGraphics::BearFactoryPointer<BearRenderB
 	if (m_Status != 1|| Pipeline.empty())return;
 	GetCommandList()->SetPipelineState(static_cast<DX12RenderPipeline*>(Pipeline.get())->PipelineState.Get());
 	GetCommandList()->IASetPrimitiveTopology(static_cast<DX12RenderPipeline*>(Pipeline.get())->TopologyType);
-
+	static_cast<DX12RenderPipeline*>(Pipeline.get())->RootSignaturePointer->Set(GetCommandList().Get());
 }
 
 void DX12RenderContext::SetVertexBuffer(BearGraphics::BearFactoryPointer<BearRenderBase::BearRenderVertexBufferBase> buffer)

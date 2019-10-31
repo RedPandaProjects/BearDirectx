@@ -13,8 +13,11 @@ public:
 	virtual BearRenderBase::BearRenderIndexBufferBase* CreateIndexBuffer();
 	virtual BearRenderBase::BearRenderVertexBufferBase* CreateVertexBuffer();
 	virtual BearRenderBase::BearRenderUniformBufferBase* CreateUniformBuffer();
+	virtual BearRenderBase::BearRenderRootSignatureBase* CreateRootSignature(const BearGraphics::BearRenderRootSignatureDescription&Descruotion);
 	inline bool Empty()const { return Device.Get()==0; }
 public:
+	UINT CbvSrvUavDescriptorSize;
+	UINT RtvDescriptorSize;
 	ComPtr<ID3D12Device> Device;
 	ComPtr<IDXGIFactory4> GIFactory;
 	ComPtr<ID3D12RootSignature> RootSignature;

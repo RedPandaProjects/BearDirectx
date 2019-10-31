@@ -27,7 +27,7 @@ private:
 	constexpr static bsize FrameCount = 2;
 	UINT FrameIndex;
 	ComPtr<ID3D12Resource> RenderTargets[FrameCount];
-	UINT RtvDescriptorSize;
+
 	CD3DX12_CPU_DESCRIPTOR_HANDLE RtvHandle;
 
 	HANDLE FenceEvent;

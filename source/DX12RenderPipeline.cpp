@@ -50,7 +50,6 @@ DX12RenderPipeline::DX12RenderPipeline(const BearGraphics::BearRenderPipelineDes
 		Desc.InputLayout.pInputElementDescs = elemets;
 		Desc.InputLayout.NumElements =static_cast<UINT>( count);
 	};
-	Desc.pRootSignature =Factory->RootSignature.Get();
 	{
 		auto ps = static_cast<const DX12RenderShader*>(desc.Shaders.Pixel.get());
 		if(ps&&ps->IsType(BearGraphics::ST_Pixel))
@@ -86,6 +85,11 @@ DX12RenderPipeline::DX12RenderPipeline(const BearGraphics::BearRenderPipelineDes
 	Desc.NumRenderTargets = 1;
 	Desc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
 	Desc.SampleDesc.Count = 1;
+
+	RootSignature = desc.RootSignature;
+	RootSignaturePointer = static_cast<DX12RenderRootSignature*>(RootSignature.get());
+	Desc.pRootSignature = RootSignaturePointer->RootSignature.Get();
+
 	R_CHK(Factory->Device->CreateGraphicsPipelineState(&Desc, IID_PPV_ARGS(&PipelineState)));
 }
 
