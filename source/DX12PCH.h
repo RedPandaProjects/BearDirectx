@@ -12,7 +12,7 @@
 #include "BearRenderBase.h"
 
 using Microsoft::WRL::ComPtr;
-#define R_CHK(a) BEAR_ASSERT(SUCCEEDED(a))
+#define R_CHK(a) BEAR_RASSERT(SUCCEEDED(a))
 
 using namespace BearCore;
 #include "DX12RenderInterface.h"

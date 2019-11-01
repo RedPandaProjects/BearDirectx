@@ -31,9 +31,10 @@ inline DXGI_FORMAT TranslateVertexFormat(BearGraphics::BearVertexFormat format)
 DX12RenderPipeline::DX12RenderPipeline(const BearGraphics::BearRenderPipelineDescription & desc)
 {
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC Desc = {};
+	D3D12_INPUT_ELEMENT_DESC  elemets[16];
 	{
 		bsize count = 0;
-		D3D12_INPUT_ELEMENT_DESC  elemets[16];
+		
 		for (bsize i = 0; i < 16 && !desc.InputLayout.Elements[i].empty(); i++)
 		{
 			auto& cElement = desc.InputLayout.Elements[i];

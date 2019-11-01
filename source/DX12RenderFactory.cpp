@@ -3,7 +3,7 @@ DX12RenderFactory::DX12RenderFactory()
 {
 	UINT dxgiFactoryFlags = 0;
 
-#if defined(_DEBUG)
+#if defined(DEBUG)
 	{
 		ComPtr<ID3D12Debug> debugController;
 		if (SUCCEEDED(D3D12GetDebugInterface(IID_PPV_ARGS(&debugController))))

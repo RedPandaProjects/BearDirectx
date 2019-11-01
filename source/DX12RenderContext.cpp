@@ -150,9 +150,15 @@ void DX12RenderContext::Draw(bsize count, bsize offset)
 
 void DX12RenderContext::DrawIndex(bsize count, bsize offset)
 {
+	if (m_Status != 1)return;
 	GetCommandList()->DrawIndexedInstanced(static_cast<UINT>(count), 1, static_cast<UINT>(offset), 0,0);
 }
 
+void DX12RenderContext::SetRootSignature(BearGraphics::BearFactoryPointer<BearRenderBase::BearRenderRootSignatureBase> RootSignature)
+{
+	if (m_Status != 1||RootSignature.empty())return;
+	static_cast<DX12RenderRootSignature*>(RootSignature.get())->Set(GetCommandList().Get());
+}
 
 void DX12RenderContext::PreDestroy()
 {
