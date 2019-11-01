@@ -1,13 +1,15 @@
 #include "DX12PCH.h"
-inline D3D12_SHADER_VISIBILITY TransletionShaderVisible(BearGraphics::BearShaderType Type)
+inline D3D12_SHADER_VISIBILITY TransletionShaderVisible(BearGraphics::BearShaderType Type, D3D12_ROOT_SIGNATURE_FLAGS&flags)
 {
 	switch (Type)
 	{
 	case BearGraphics::ST_Vertex:
+		flags = flags & ~D3D12_ROOT_SIGNATURE_FLAGS::D3D12_ROOT_SIGNATURE_FLAG_DENY_VERTEX_SHADER_ROOT_ACCESS;
 		return D3D12_SHADER_VISIBILITY::D3D12_SHADER_VISIBILITY_VERTEX;
 
 		break;
 	case BearGraphics::ST_Pixel:
+		flags = flags & ~D3D12_ROOT_SIGNATURE_FLAGS::D3D12_ROOT_SIGNATURE_FLAG_DENY_PIXEL_SHADER_ROOT_ACCESS;
 		return D3D12_SHADER_VISIBILITY::D3D12_SHADER_VISIBILITY_PIXEL;
 		break;
 	default:
@@ -48,7 +50,13 @@ DX12RenderRootSignature::DX12RenderRootSignature(const BearGraphics::BearRenderR
 		{
 			featureData.HighestVersion = D3D_ROOT_SIGNATURE_VERSION_1_0;
 		}
-
+		D3D12_ROOT_SIGNATURE_FLAGS RootSignatureFlags =
+			D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT |
+			D3D12_ROOT_SIGNATURE_FLAG_DENY_PIXEL_SHADER_ROOT_ACCESS|
+			D3D12_ROOT_SIGNATURE_FLAG_DENY_VERTEX_SHADER_ROOT_ACCESS |
+			D3D12_ROOT_SIGNATURE_FLAG_DENY_HULL_SHADER_ROOT_ACCESS |
+			D3D12_ROOT_SIGNATURE_FLAG_DENY_DOMAIN_SHADER_ROOT_ACCESS |
+			D3D12_ROOT_SIGNATURE_FLAG_DENY_GEOMETRY_SHADER_ROOT_ACCESS;
 
 		bsize Count = CountBuffers;
 		CD3DX12_DESCRIPTOR_RANGE1 Ranges[128];
@@ -57,19 +65,14 @@ DX12RenderRootSignature::DX12RenderRootSignature(const BearGraphics::BearRenderR
 		for (bsize i = 0; i < CountBuffers; i++)
 		{
 			Ranges[i].Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, static_cast<UINT>(i), static_cast<UINT>(i));
-			RootParameters[i].InitAsDescriptorTable(1, &Ranges[0], TransletionShaderVisible(Description.UniformBuffers[i].Shader));
+			RootParameters[i].InitAsDescriptorTable(1, &Ranges[0], TransletionShaderVisible(Description.UniformBuffers[i].Shader, RootSignatureFlags));
 		}
 
-		D3D12_ROOT_SIGNATURE_FLAGS rootSignatureFlags =
-			D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT |
-			D3D12_ROOT_SIGNATURE_FLAG_DENY_VERTEX_SHADER_ROOT_ACCESS |
-			D3D12_ROOT_SIGNATURE_FLAG_DENY_HULL_SHADER_ROOT_ACCESS |
-			D3D12_ROOT_SIGNATURE_FLAG_DENY_DOMAIN_SHADER_ROOT_ACCESS |
-			D3D12_ROOT_SIGNATURE_FLAG_DENY_GEOMETRY_SHADER_ROOT_ACCESS;
+
 	
 
 		CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC rootSignatureDesc;
-		rootSignatureDesc.Init_1_1(static_cast<UINT>(Count),RootParameters,0,0, rootSignatureFlags);
+		rootSignatureDesc.Init_1_1(static_cast<UINT>(Count),RootParameters,0,0, RootSignatureFlags);
 
 		ComPtr<ID3DBlob> signature;
 		ComPtr<ID3DBlob> error;
