@@ -84,6 +84,7 @@ DX12RenderFactory::DX12RenderFactory()
 	}
 	CbvSrvUavDescriptorSize = Device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 	RtvDescriptorSize = Device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
+	SamplerDescriptorSize = Device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER);
 }
 DX12RenderFactory::~DX12RenderFactory()
 {
@@ -136,9 +137,24 @@ BearRenderBase::BearRenderUniformBufferBase * DX12RenderFactory::CreateUniformBu
 	return  bear_new<DX12RenderUniformBuffer>();
 }
 
-BearRenderBase::BearRenderRootSignatureBase * DX12RenderFactory::CreateRootSignature(const BearGraphics::BearRenderRootSignatureDescription&Descruotion)
+BearRenderBase::BearRenderRootSignatureBase * DX12RenderFactory::CreateRootSignature(const BearGraphics::BearRenderRootSignatureDescription&Description)
 {
-	return bear_new<DX12RenderRootSignature>(Descruotion);;
+	return bear_new<DX12RenderRootSignature>(Description);
+}
+
+BearRenderBase::BearRenderDescriptorHeapBase * DX12RenderFactory::CreateDescriptorHeap(const BearGraphics::BearRenderDescriptorHeapDescription & Description)
+{
+	return bear_new<DX12RenderDescriptorHeap>(Description);
+}
+
+BearRenderBase::BearRenderSamplerStateBase* DX12RenderFactory::CreateSamplerState(const BearGraphics::BearRenderSamplerDescription & Description)
+{
+	return bear_new<DX12RenderSamplerState>(Description);
+}
+
+BearRenderBase::BearRenderTexture2DBase * DX12RenderFactory::CreateTexture2D()
+{
+	return nullptr;
 }
 
 DXGI_MODE_DESC * DX12RenderFactory::FindMode(bsize width, bsize height)

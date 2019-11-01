@@ -17,7 +17,7 @@ public:
 	virtual void SetScissor(bool Enable, float x, float y, float x1, float y1);
 	virtual void Draw(bsize count, bsize offset = 0);
 	virtual void DrawIndex(bsize count, bsize offset = 0);
-	virtual void SetRootSignature(BearGraphics::BearFactoryPointer<BearRenderBase::BearRenderRootSignatureBase> RootSignature);
+	virtual void  SetDescriptorHeap(BearGraphics::BearFactoryPointer<BearRenderBase::BearRenderDescriptorHeapBase> DescriptorHeap);
 private:
 	inline 	ComPtr<ID3D12GraphicsCommandList>&GetCommandList() {if (!m_viewport.empty()) return static_cast<DX12RenderViewport*>(m_viewport.get())->CommandList; BEAR_ASSERT(false); return static_cast<DX12RenderViewport*>(m_viewport.get())->CommandList;	}
 	BearGraphics::BearFactoryPointer<BearRenderBase::BearRenderViewportBase> m_viewport;

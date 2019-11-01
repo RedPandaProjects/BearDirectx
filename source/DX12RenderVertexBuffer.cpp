@@ -88,6 +88,7 @@ void DX12RenderVertexBuffer::Unlock()
 	
 		Factory->LockCommandList();
 		auto var3 = CD3DX12_RESOURCE_BARRIER::Transition(VertexBuffer.Get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
+		Factory->CommandList->ResourceBarrier(1, &var3);
 		Factory->UnlockCommandList();
 	
 	}

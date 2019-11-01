@@ -9,13 +9,18 @@ public:
 	virtual BearRenderBase::BearRenderContextBase* CreateContext();
 	virtual BearRenderBase::BearRenderViewportBase* CreateViewport(void * Handle, bsize Width, bsize Height, bool Fullscreen, bool VSync, const BearGraphics::BearRenderViewportDescription&Description);
 	virtual BearRenderBase::BearRenderShaderBase* CreateShader(BearGraphics::BearShaderType Type);
-	virtual  BearRenderBase::BearRenderPipelineBase*   CreatePipeline(const BearGraphics::BearRenderPipelineDescription&Descruotion);
+	virtual  BearRenderBase::BearRenderPipelineBase*   CreatePipeline(const BearGraphics::BearRenderPipelineDescription&Description);
 	virtual BearRenderBase::BearRenderIndexBufferBase* CreateIndexBuffer();
 	virtual BearRenderBase::BearRenderVertexBufferBase* CreateVertexBuffer();
 	virtual BearRenderBase::BearRenderUniformBufferBase* CreateUniformBuffer();
-	virtual BearRenderBase::BearRenderRootSignatureBase* CreateRootSignature(const BearGraphics::BearRenderRootSignatureDescription&Descruotion);
+	virtual BearRenderBase::BearRenderRootSignatureBase* CreateRootSignature(const BearGraphics::BearRenderRootSignatureDescription&Description);
+	virtual BearRenderBase::BearRenderDescriptorHeapBase* CreateDescriptorHeap(const BearGraphics::BearRenderDescriptorHeapDescription&Description);
+	virtual BearRenderBase::BearRenderSamplerStateBase *CreateSamplerState(const BearGraphics::BearRenderSamplerDescription&Description);
+	virtual BearRenderBase::BearRenderTexture2DBase *CreateTexture2D();
+
 	inline bool Empty()const { return Device.Get()==0; }
 public:
+	UINT SamplerDescriptorSize;
 	UINT CbvSrvUavDescriptorSize;
 	UINT RtvDescriptorSize;
 	ComPtr<ID3D12Device> Device;
