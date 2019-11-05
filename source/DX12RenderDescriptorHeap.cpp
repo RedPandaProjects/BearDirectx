@@ -29,6 +29,7 @@ DX12RenderDescriptorHeap::DX12RenderDescriptorHeap(const BearGraphics::BearRende
 			cbvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER;
 			R_CHK(Factory->Device->CreateDescriptorHeap(&cbvHeapDesc, IID_PPV_ARGS(&SamplerHeap)));
 		}
+		if (CountBuffers|| CountTexture)
 		{
 			CD3DX12_CPU_DESCRIPTOR_HANDLE CbvHandle(CbvHeap->GetCPUDescriptorHandleForHeapStart());
 			for (bsize i = 0; i < CountBuffers; i++)
@@ -44,6 +45,7 @@ DX12RenderDescriptorHeap::DX12RenderDescriptorHeap(const BearGraphics::BearRende
 				CbvHandle.Offset(Factory->CbvSrvUavDescriptorSize);
 			}
 		}
+		if(CountSampler)
 		{
 			CD3DX12_CPU_DESCRIPTOR_HANDLE CbvHandle(SamplerHeap->GetCPUDescriptorHandleForHeapStart());
 			for (bsize i = 0; i < CountSampler; i++)
@@ -63,8 +65,21 @@ DX12RenderDescriptorHeap::~DX12RenderDescriptorHeap()
 
 void DX12RenderDescriptorHeap::Set(ID3D12GraphicsCommandList * CommandLine)
 {
-	ID3D12DescriptorHeap* Heaps[] = { CbvHeap.Get(),SamplerHeap.Get() };
-	CommandLine->SetDescriptorHeaps(_countof(Heaps), Heaps);
-	CommandLine->SetGraphicsRootDescriptorTable(0, CbvHeap->GetGPUDescriptorHandleForHeapStart());
-	CommandLine->SetGraphicsRootDescriptorTable(1, SamplerHeap->GetGPUDescriptorHandleForHeapStart());
+	ID3D12DescriptorHeap* Heaps[2];
+	UINT Count = 0;
+	if (CbvHeap.Get())
+	{
+		Heaps[Count++] = CbvHeap.Get();
+	}
+
+	if (SamplerHeap.Get())
+	{
+		Heaps[Count++] = SamplerHeap.Get();
+	}
+	CommandLine->SetDescriptorHeaps(Count, Heaps);
+	CD3DX12_GPU_DESCRIPTOR_HANDLE CbvHandle(CbvHeap->GetGPUDescriptorHandleForHeapStart());
+	CommandLine->SetGraphicsRootDescriptorTable(0, CbvHandle);
+	CbvHandle.Offset(Factory->CbvSrvUavDescriptorSize);
+	CommandLine->SetGraphicsRootDescriptorTable(1, CbvHandle);
+	CommandLine->SetGraphicsRootDescriptorTable(2, SamplerHeap->GetGPUDescriptorHandleForHeapStart());
 }

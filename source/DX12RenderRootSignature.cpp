@@ -61,11 +61,11 @@ DX12RenderRootSignature::DX12RenderRootSignature(const BearGraphics::BearRenderR
 		offset += CountBuffers;
 		for (bsize i = 0; i < CountTexture; i++)
 		{
-			Ranges[i+ offset].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, static_cast<UINT>(i), static_cast<UINT>(i+ CountBuffers));
+			Ranges[i+ offset].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, static_cast<UINT>(i), static_cast<UINT>(i));
 			RootParameters[i+ offset].InitAsDescriptorTable(1, &Ranges[i + offset], TransletionShaderVisible(Description.UniformBuffers[i].Shader, RootSignatureFlags));
 		}
 		offset += CountTexture;
-		for (bsize i = 0; i < CountTexture; i++)
+		for (bsize i = 0; i < CountSampler; i++)
 		{
 			Ranges[i+ offset].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER, 1, static_cast<UINT>(i), static_cast<UINT>(i ));
 			RootParameters[i+ offset].InitAsDescriptorTable(1, &Ranges[i + offset], TransletionShaderVisible(Description.UniformBuffers[i].Shader, RootSignatureFlags));

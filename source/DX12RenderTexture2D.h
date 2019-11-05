@@ -4,6 +4,7 @@ class DX12RenderTexture2D :public BearRenderBase::BearRenderTexture2DBase
 {
 	BEAR_CLASS_NO_COPY(DX12RenderTexture2D);
 public:
+	DX12RenderTexture2D();
 	virtual void Create(bsize width, bsize height, bsize mip, BearGraphics::BearTexturePixelFormat format, void*data, bool dynamic = false);
 	virtual void* Lock();
 	virtual void  Unlock();

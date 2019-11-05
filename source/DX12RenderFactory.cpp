@@ -154,7 +154,7 @@ BearRenderBase::BearRenderSamplerStateBase* DX12RenderFactory::CreateSamplerStat
 
 BearRenderBase::BearRenderTexture2DBase * DX12RenderFactory::CreateTexture2D()
 {
-	return nullptr;
+	return bear_new<DX12RenderTexture2D>();;
 }
 
 DXGI_MODE_DESC * DX12RenderFactory::FindMode(bsize width, bsize height)
