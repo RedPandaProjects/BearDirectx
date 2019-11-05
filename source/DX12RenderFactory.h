@@ -19,6 +19,7 @@ public:
 	virtual BearRenderBase::BearRenderTexture2DBase *CreateTexture2D();
 
 	inline bool Empty()const { return Device.Get()==0; }
+	static DXGI_FORMAT Translation(BearGraphics::BearTexturePixelFormat format);
 public:
 	UINT SamplerDescriptorSize;
 	UINT CbvSrvUavDescriptorSize;
@@ -52,4 +53,8 @@ private:
 
 	BearCore::BearVector<DXGI_MODE_DESC> m_GIVideoMode;
 	void GetHardwareAdapter(IDXGIFactory2* pFactory, IDXGIAdapter1** ppAdapter);
+public:
+	ComPtr < IDxcCompiler> DxcCompiler;
+	ComPtr < IDxcLibrary> DxcLibrary;
+	 IDxcIncludeHandler* DxcIncludeHandler;
 };

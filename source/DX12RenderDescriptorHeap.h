@@ -8,4 +8,8 @@ public:
 	void Set(ID3D12GraphicsCommandList*CommandLine);
 	ComPtr<ID3D12DescriptorHeap> CbvHeap;
 	ComPtr<ID3D12DescriptorHeap> SamplerHeap;
+private:
+	bsize CountBuffers;
+	bsize CountTexture;
+	bsize CountSampler;
 };

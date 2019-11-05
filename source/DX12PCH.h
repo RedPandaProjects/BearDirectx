@@ -8,6 +8,9 @@
 #include "d3dx12.h"
 #include <wrl.h>
 #include <shellapi.h>
+#ifdef RTX
+#include "dxc/dxcapi.h"
+#endif
 #pragma warning(pop)
 #include "BearRenderBase.h"
 

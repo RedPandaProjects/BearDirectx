@@ -85,9 +85,19 @@ DX12RenderFactory::DX12RenderFactory()
 	CbvSrvUavDescriptorSize = Device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 	RtvDescriptorSize = Device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
 	SamplerDescriptorSize = Device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER);
+	{
+
+		R_CHK(DxcCreateInstance(CLSID_DxcCompiler, IID_PPV_ARGS(&DxcCompiler)));
+		R_CHK(DxcCreateInstance(CLSID_DxcLibrary, IID_PPV_ARGS(&DxcLibrary)));
+		R_CHK(DxcLibrary->CreateIncludeHandler(&DxcIncludeHandler));
+		
+	}
 }
 DX12RenderFactory::~DX12RenderFactory()
 {
+	{
+		DxcIncludeHandler->Release();
+	}
 	{
 		R_CHK(CopyCommandList->Close());
 		if (m_Copy_FenceEvent)  CloseHandle(m_Copy_FenceEvent);
@@ -155,6 +165,56 @@ BearRenderBase::BearRenderSamplerStateBase* DX12RenderFactory::CreateSamplerStat
 BearRenderBase::BearRenderTexture2DBase * DX12RenderFactory::CreateTexture2D()
 {
 	return bear_new<DX12RenderTexture2D>();;
+}
+
+DXGI_FORMAT DX12RenderFactory::Translation(BearGraphics::BearTexturePixelFormat format)
+{
+	switch (format)
+	{
+	case BearGraphics::TPF_R8:
+		return DXGI_FORMAT_R8_UNORM;
+		break;
+	case BearGraphics::TPF_R8G8:
+		return DXGI_FORMAT_R8G8_UNORM;
+		break;
+	case BearGraphics::TPF_R8G8B8:
+		BEAR_RASSERT(!"not support R8G8B8");
+		break;
+	case BearGraphics::TPF_R8G8B8A8:
+		return DXGI_FORMAT_R8G8B8A8_UNORM;
+		break;
+	case BearGraphics::TPF_R32F:
+		return DXGI_FORMAT_R32_FLOAT;
+		break;
+	case BearGraphics::TPF_R32G32F:
+		return DXGI_FORMAT_R32G32_FLOAT;
+		break;
+	case BearGraphics::TPF_R32G32B32F:
+		return DXGI_FORMAT_R32G32B32_FLOAT;
+		break;
+	case BearGraphics::TPF_R32G32B32A32F:
+		return DXGI_FORMAT_R32G32B32A32_FLOAT;
+		break;
+	case BearGraphics::TPF_BC1:
+	case BearGraphics::TPF_BC1a:
+		return DXGI_FORMAT_BC1_UNORM;
+	case BearGraphics::TPF_BC2:
+		return DXGI_FORMAT_BC2_UNORM;
+	case BearGraphics::TPF_BC3:
+		return DXGI_FORMAT_BC3_UNORM;
+	case BearGraphics::TPF_BC4:
+		return DXGI_FORMAT_BC4_UNORM;
+	case BearGraphics::TPF_BC5:
+		return DXGI_FORMAT_BC5_UNORM;
+	case BearGraphics::TPF_BC6:
+		return DXGI_FORMAT_BC6H_UF16;
+	case BearGraphics::TPF_BC7:
+		return DXGI_FORMAT_BC7_UNORM;
+	default:
+		BEAR_ASSERT(0);;
+	}
+	return DXGI_FORMAT_UNKNOWN;
+
 }
 
 DXGI_MODE_DESC * DX12RenderFactory::FindMode(bsize width, bsize height)

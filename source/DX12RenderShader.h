@@ -7,6 +7,7 @@ public:
 	virtual ~DX12RenderShader();
 	virtual bool CompileText(const bchar*Text, BearCore::BearString &OutError);
 	ComPtr<ID3DBlob> Shader;
+	IDxcBlob* RTXShader;
 	inline bool IsType(BearGraphics::BearShaderType type)const { return Type == type; }
 private:
 	BearGraphics::BearShaderType Type;

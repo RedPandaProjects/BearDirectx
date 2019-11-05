@@ -15,5 +15,6 @@ public class bear_render_dx12 :Project
         LibrariesStatic.Private.Add("dxgi.lib");
         LibrariesStatic.Private.Add("d3dcompiler.lib");
         Defines.Private.Add("DX12_1");
+        Defines.Private.Add("RTX");
     }
 } 
