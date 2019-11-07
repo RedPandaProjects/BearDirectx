@@ -9,6 +9,7 @@ public:
 	ComPtr<ID3D12DescriptorHeap> CbvHeap;
 	ComPtr<ID3D12DescriptorHeap> SamplerHeap;
 private:
+	bsize CountUAV;
 	bsize CountBuffers;
 	bsize CountTexture;
 	bsize CountSampler;

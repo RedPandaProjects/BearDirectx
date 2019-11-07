@@ -37,7 +37,37 @@ DX12RenderFactory::DX12RenderFactory()
 	{
 		return;
 	}
+	{
+#if defined(_DEBUG)
+		ComPtr<ID3D12InfoQueue> InfoQueue;
+		if (SUCCEEDED(Device.As(&InfoQueue)))
+		{
+			InfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_CORRUPTION, TRUE);
+			InfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_ERROR, TRUE);
+			InfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_WARNING, TRUE);
 
+			D3D12_MESSAGE_SEVERITY Severities[] =
+			{
+				D3D12_MESSAGE_SEVERITY_INFO
+			};
+
+			// Suppress individual messages by their ID
+			D3D12_MESSAGE_ID DenyIds[] = {
+				D3D12_MESSAGE_ID_CLEARRENDERTARGETVIEW_MISMATCHINGCLEARVALUE,   // I'm really not sure how to avoid this message.
+				D3D12_MESSAGE_ID_MAP_INVALID_NULLRANGE,                         // This warning occurs when using capture frame while graphics debugging.
+				D3D12_MESSAGE_ID_UNMAP_INVALID_NULLRANGE,                       // This warning occurs when using capture frame while graphics debugging.
+			};
+
+			D3D12_INFO_QUEUE_FILTER NewFilter = {};
+			NewFilter.DenyList.NumSeverities = _countof(Severities);
+			NewFilter.DenyList.pSeverityList = Severities;
+			NewFilter.DenyList.NumIDs = _countof(DenyIds);
+			NewFilter.DenyList.pIDList = DenyIds;
+
+			R_CHK(InfoQueue->PushStorageFilter(&NewFilter));
+		}
+#endif
+	}
 	{
 		CD3DX12_ROOT_SIGNATURE_DESC RootSignatureDesc;
 		RootSignatureDesc.Init(0, nullptr, 0, nullptr, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
@@ -167,6 +197,53 @@ BearRenderBase::BearRenderTexture2DBase * DX12RenderFactory::CreateTexture2D()
 	return bear_new<DX12RenderTexture2D>();;
 }
 
+BearRenderBase::BearRenderTexture2DUAVBase * DX12RenderFactory::CreateTexture2DUAV()
+{
+	return bear_new<DX12RenderTexture2DUAV>();;
+}
+
+BearRenderBase::BearRenderTargetViewBase * DX12RenderFactory::CreateTargetView(const BearGraphics::BearRenderTargetViewDescription & Description)
+{
+	return bear_new<DX12RenderTargetView>(Description);;
+}
+
+BearRenderBase::BearRenderFrameBufferBase * DX12RenderFactory::CreateFrameBuffer(const BearGraphics::BearRenderFrameBufferDescription & Description)
+{
+	return bear_new<DX12RenderFrameBuffer>(Description);;
+}
+
+
+
+DXGI_FORMAT DX12RenderFactory::Translation(BearGraphics::BearTextureUAVPixelFormat format)
+{
+	switch (format)
+	{
+
+	case BearGraphics::TPUF_R8:
+		return DXGI_FORMAT_R8_UNORM;
+		break;
+	case BearGraphics::TPUF_R8G8:
+		return DXGI_FORMAT_R8G8_UNORM;
+		break;
+	case BearGraphics::TPUF_R8G8B8A8:
+		return DXGI_FORMAT_R8G8B8A8_UNORM;
+		break;
+	case BearGraphics::TPUF_R32F:
+		return DXGI_FORMAT_R32_FLOAT;
+		break;
+	case BearGraphics::TPUF_R32G32F:
+		return DXGI_FORMAT_R32G32_UINT;
+		break;
+	case BearGraphics::TPUF_R32G32B32A32F:
+		return DXGI_FORMAT_R32G32B32A32_FLOAT;
+		break;
+	default:
+		BEAR_ASSERT(0);;
+		break;
+	}
+	return DXGI_FORMAT_UNKNOWN;
+}
+
 DXGI_FORMAT DX12RenderFactory::Translation(BearGraphics::BearTexturePixelFormat format)
 {
 	switch (format)
@@ -215,6 +292,40 @@ DXGI_FORMAT DX12RenderFactory::Translation(BearGraphics::BearTexturePixelFormat 
 	}
 	return DXGI_FORMAT_UNKNOWN;
 
+}
+
+DXGI_FORMAT DX12RenderFactory::Translation(BearGraphics::BearRenderTargetFormat format)
+{
+	switch (format)
+	{
+	case BearGraphics::RTF_NONE:
+		break;
+	case BearGraphics::RTF_R8:
+		return DXGI_FORMAT_R8_UNORM;
+		break;
+	case BearGraphics::RTF_R8G8:
+		return DXGI_FORMAT_R8G8_UNORM;
+		break;
+	case BearGraphics::RTF_R8G8B8A8:
+		return DXGI_FORMAT_R8G8B8A8_UNORM;
+		break;
+	case BearGraphics::RTF_R32F:
+		return DXGI_FORMAT_R32_FLOAT;
+		break;
+	case BearGraphics::RTF_R32G32F:
+		return DXGI_FORMAT_R32G32_FLOAT;
+		break;
+	case BearGraphics::RTF_R32G32B32F:
+		return DXGI_FORMAT_R32G32B32_FLOAT;
+		break;
+	case BearGraphics::RTF_R32G32B32A32F:
+		return DXGI_FORMAT_R32G32B32A32_FLOAT;
+		break;
+	default:
+		BEAR_ASSERT(0);;
+		break;
+	}
+	return DXGI_FORMAT_UNKNOWN;
 }
 
 DXGI_MODE_DESC * DX12RenderFactory::FindMode(bsize width, bsize height)

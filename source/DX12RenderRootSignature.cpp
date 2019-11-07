@@ -19,7 +19,10 @@ inline D3D12_SHADER_VISIBILITY TransletionShaderVisible(BearGraphics::BearShader
 }
 DX12RenderRootSignature::DX12RenderRootSignature(const BearGraphics::BearRenderRootSignatureDescription & Description)
 {
-
+	CountUAV = 0;
+	{
+		for (; CountUAV < 16 && Description.UAVResources[CountUAV].Shader != BearGraphics::ST_Null; CountUAV++);
+	}
 	CountBuffers = 0;
 	{
 		for (; CountBuffers < 16 && Description.UniformBuffers[CountBuffers].Shader!=BearGraphics::ST_Null; CountBuffers++);
@@ -53,10 +56,16 @@ DX12RenderRootSignature::DX12RenderRootSignature(const BearGraphics::BearRenderR
 		CD3DX12_DESCRIPTOR_RANGE1 Ranges[64];
 		CD3DX12_ROOT_PARAMETER1 RootParameters[64];
 		bsize offset = 0;
+		for (bsize i = 0; i < CountUAV; i++)
+		{
+			Ranges[i].Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, static_cast<UINT>(i), static_cast<UINT>(i));
+			RootParameters[i].InitAsDescriptorTable(1, &Ranges[i], TransletionShaderVisible(Description.UAVResources[i].Shader, RootSignatureFlags));
+		}
+		offset += CountUAV;
 		for (bsize i = 0; i < CountBuffers; i++)
 		{
-			Ranges[i].Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, static_cast<UINT>(i), static_cast<UINT>(i));
-			RootParameters[i].InitAsDescriptorTable(1, &Ranges[i], TransletionShaderVisible(Description.UniformBuffers[i].Shader, RootSignatureFlags));
+			Ranges[i + offset].Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, static_cast<UINT>(i), static_cast<UINT>(i));
+			RootParameters[i + offset].InitAsDescriptorTable(1, &Ranges[i + offset], TransletionShaderVisible(Description.UniformBuffers[i].Shader, RootSignatureFlags));
 		}
 		offset += CountBuffers;
 		for (bsize i = 0; i < CountTexture; i++)

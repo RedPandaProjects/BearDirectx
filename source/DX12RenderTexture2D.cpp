@@ -62,6 +62,49 @@ void DX12RenderTexture2D::Create(bsize width, bsize height, bsize mips, bsize de
 	}
 }
 
+void DX12RenderTexture2D::Create(bsize width, bsize height, BearGraphics::BearRenderTargetFormat format)
+{
+	Clear();
+	m_format = BearGraphics::TPF_NONE;
+	m_dynamic = false;
+	bear_fill(TextureDesc);
+	TextureDesc.MipLevels = static_cast<UINT16>(1);
+	TextureDesc.Format = Factory->Translation(format);
+	TextureDesc.Width = static_cast<uint32>(width);
+	TextureDesc.Height = static_cast<uint32>(height);
+	TextureDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
+	TextureDesc.DepthOrArraySize = static_cast<UINT16>(1);
+	TextureDesc.SampleDesc.Count = 1;
+	TextureDesc.SampleDesc.Quality = 0;
+	TextureDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+	CD3DX12_HEAP_PROPERTIES var1(D3D12_HEAP_TYPE_DEFAULT);
+	D3D12_CLEAR_VALUE ClearValue;
+	ClearValue.Format = TextureDesc.Format;
+	bear_copy(ClearValue.Color, BearColor::Black.GetFloat().array,4);
+	R_CHK(Factory->Device->CreateCommittedResource(
+		&var1,
+		D3D12_HEAP_FLAG_NONE,
+		&TextureDesc,
+		D3D12_RESOURCE_STATE_RENDER_TARGET ,
+		nullptr,
+		IID_PPV_ARGS(&TextureBuffer)));
+
+	bear_fill(TextureView);
+	TextureView.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+	TextureView.Format = TextureDesc.Format;
+	if (TextureDesc.DepthOrArraySize > 1)
+	{
+		TextureView.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2DARRAY;
+		TextureView.Texture2DArray.MipLevels = static_cast<UINT>(1);
+		TextureView.Texture2DArray.ArraySize = static_cast<UINT>(1);
+	}
+	else
+	{
+		TextureView.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+		TextureView.Texture2D.MipLevels = static_cast<UINT>(1);
+	}
+}
+
 void * DX12RenderTexture2D::Lock(bsize mip, bsize depth)
 {
 	if (TextureBuffer.Get() == 0)
@@ -150,9 +193,12 @@ DX12RenderTexture2D::~DX12RenderTexture2D()
 	Clear();
 }
 
-void * DX12RenderTexture2D::GetHandle()
+
+
+void DX12RenderTexture2D::SetResource(void * heap)
 {
-	return &TextureView;
+	D3D12_CPU_DESCRIPTOR_HANDLE* Handle = reinterpret_cast<D3D12_CPU_DESCRIPTOR_HANDLE*>(heap);
+	Factory->Device->CreateShaderResourceView(TextureBuffer.Get(), &TextureView, *Handle);
 }
 
 void DX12RenderTexture2D::AllocUploadBuffer()

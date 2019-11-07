@@ -7,6 +7,7 @@ public:
 	virtual ~DX12RenderRootSignature();
 	void Set(ID3D12GraphicsCommandList*CommandLine);
 	ComPtr<ID3D12RootSignature> RootSignature;
+	bsize CountUAV;
 	bsize CountBuffers;
 	bsize CountTexture;
 	bsize CountSampler;

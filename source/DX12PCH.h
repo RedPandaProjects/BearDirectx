@@ -28,6 +28,9 @@ using namespace BearCore;
 #include "DX12RenderDescriptorHeap.h"
 #include "DX12RenderSamplerState.h"
 #include "DX12RenderTexture2D.h"
+#include "DX12RenderTexture2DUAV.h"
+#include "DX12RenderTargetView.h"
+#include "DX12RenderFrameBuffer.h"
 
 #include "DX12RenderPipeline.h"
 #include "DX12RenderShader.h"

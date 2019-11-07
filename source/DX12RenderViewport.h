@@ -9,7 +9,7 @@ public:
 	virtual void SetFullScreen(bool FullScreen);
 	virtual void Resize(bsize Width, bsize Height);
 	virtual void*GetHandle();
-
+	virtual void SetResource(void*);
 	void Flush(bool wait);
 	void Wait();
 	
@@ -17,9 +17,12 @@ public:
 	ComPtr<ID3D12GraphicsCommandList> CommandList;
 private:
 	void ReInit(bsize Width, bsize Height);
-	ComPtr<ID3D12CommandQueue> CommandQueue;
 
+	ComPtr<ID3D12CommandQueue> CommandQueue;
 	ComPtr<ID3D12CommandAllocator> CommandAllocator;
+	HANDLE FenceEvent;
+	ComPtr<ID3D12Fence> Fence;
+	UINT64 FenceValue;
 
 	ComPtr<IDXGISwapChain3> SwapChain;
 	ComPtr<ID3D12DescriptorHeap> RtvHeap;
@@ -30,9 +33,7 @@ private:
 
 	CD3DX12_CPU_DESCRIPTOR_HANDLE RtvHandle;
 
-	HANDLE FenceEvent;
-	ComPtr<ID3D12Fence> Fence;
-	UINT64 FenceValue;
+
 	DXGI_SWAP_CHAIN_DESC1 swapChainDesc = {};
 	bool m_Fullscreen;
 	bool m_VSync;

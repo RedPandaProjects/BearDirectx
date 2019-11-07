@@ -239,3 +239,8 @@ void * DX12RenderViewport::GetHandle()
 	RtvHandle = rtvHandle;
 	return &RtvHandle;
 }
+
+void DX12RenderViewport::SetResource(void *)
+{
+	BEAR_ASSERT(0);
+}

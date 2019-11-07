@@ -8,6 +8,7 @@ public:
 	virtual void Wait();
 	virtual void Flush(bool wait);
 	virtual void AttachViewportAsFrameBuffer(BearGraphics::BearFactoryPointer<BearRenderBase::BearRenderViewportBase> Viewport);
+	virtual void AttachFrameBuffer(BearGraphics::BearFactoryPointer<BearRenderBase::BearRenderFrameBufferBase> Framebuffer);
 	virtual void DetachFrameBuffer();
 	virtual void ClearFrameBuffer();
 	virtual void SetPipeline(BearGraphics::BearFactoryPointer<BearRenderBase::BearRenderPipelineBase> Pipeline);
@@ -19,12 +20,22 @@ public:
 	virtual void DrawIndex(bsize count, bsize offset = 0);
 	virtual void  SetDescriptorHeap(BearGraphics::BearFactoryPointer<BearRenderBase::BearRenderDescriptorHeapBase> DescriptorHeap);
 private:
-	inline 	ComPtr<ID3D12GraphicsCommandList>&GetCommandList() {if (!m_viewport.empty()) return static_cast<DX12RenderViewport*>(m_viewport.get())->CommandList; BEAR_ASSERT(false); return static_cast<DX12RenderViewport*>(m_viewport.get())->CommandList;	}
+	inline 	ComPtr<ID3D12GraphicsCommandList>&GetCommandList() {if (!m_viewport.empty()) return static_cast<DX12RenderViewport*>(m_viewport.get())->CommandList;  return m_commandList;	}
+	inline bool Empty() { return m_viewport.empty() && m_framebuffer.empty(); }
 	BearGraphics::BearFactoryPointer<BearRenderBase::BearRenderViewportBase> m_viewport;
+	BearGraphics::BearFactoryPointer<BearRenderBase::BearRenderFrameBufferBase> m_framebuffer;
+
 	int8 m_Status;
 	void PreDestroy();
 	CD3DX12_VIEWPORT m_viewportRect;
 	CD3DX12_RECT m_scissorRect;
-	
+private:
+	void AllocCommandList();
+	ComPtr<ID3D12GraphicsCommandList> m_commandList;
+	ComPtr<ID3D12CommandAllocator> m_commandAllocator;
+	ComPtr<ID3D12CommandQueue> m_commandQueue;
+	HANDLE m_fenceEvent;
+	ComPtr<ID3D12Fence> m_fence;
+	UINT64 m_fenceValue;
 
 };
