@@ -8,8 +8,8 @@ DX12RenderDescriptorHeap::DX12RenderDescriptorHeap(const BearGraphics::BearRende
 	{
 
 		for (; CountBuffers < 16 && !Description.UniformBuffers[CountBuffers].Buffer.empty(); CountBuffers++);
-		for (; CountTexture < 16 && !Description.TextureBuffers[CountTexture].Texture.empty(); CountTexture++);
-		for (; CountSampler < 16 && !Description.SamplerBuffers[CountSampler].Sampler.empty(); CountSampler++);
+		for (; CountTexture < 16 && !Description.Textures[CountTexture].Texture.empty(); CountTexture++);
+		for (; CountSampler < 16 && !Description.Samplers[CountSampler].Sampler.empty(); CountSampler++);
 
 		BEAR_RASSERT(!Description.RootSignature.empty());
 		BEAR_RASSERT(CountBuffers == static_cast<const DX12RenderRootSignature*>(Description.RootSignature.get())->CountBuffers);
@@ -40,7 +40,7 @@ DX12RenderDescriptorHeap::DX12RenderDescriptorHeap(const BearGraphics::BearRende
 			}
 			for (bsize i = 0; i < CountTexture; i++)
 			{
-				auto *buffer = static_cast<const DX12RenderTexture2D*>(Description.TextureBuffers[i].Texture.get());
+				auto *buffer = static_cast<const DX12RenderTexture2D*>(Description.Textures[i].Texture.get());
 				Factory->Device->CreateShaderResourceView(buffer->TextureBuffer.Get(), &buffer->TextureView, CbvHandle);
 				CbvHandle.Offset(Factory->CbvSrvUavDescriptorSize);
 			}
@@ -50,7 +50,7 @@ DX12RenderDescriptorHeap::DX12RenderDescriptorHeap(const BearGraphics::BearRende
 			CD3DX12_CPU_DESCRIPTOR_HANDLE CbvHandle(SamplerHeap->GetCPUDescriptorHandleForHeapStart());
 			for (bsize i = 0; i < CountSampler; i++)
 			{
-				auto *buffer = static_cast<const DX12RenderSamplerState*>(Description.SamplerBuffers[i].Sampler.get());
+				auto *buffer = static_cast<const DX12RenderSamplerState*>(Description.Samplers[i].Sampler.get());
 				Factory->Device->CreateSampler(&buffer->Sampler, CbvHandle);
 				CbvHandle.Offset(Factory->SamplerDescriptorSize);
 			}
@@ -83,6 +83,7 @@ void DX12RenderDescriptorHeap::Set(ID3D12GraphicsCommandList * CommandLine)
 		CD3DX12_GPU_DESCRIPTOR_HANDLE CbvHandle(CbvHeap->GetGPUDescriptorHandleForHeapStart());
 		for (bsize i = 0; i < CountBuffers + CountTexture; i++)
 		{
+
 			CommandLine->SetGraphicsRootDescriptorTable(static_cast<UINT>(Offset++), CbvHandle);
 			CbvHandle.Offset(Factory->CbvSrvUavDescriptorSize);
 		}

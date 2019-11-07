@@ -26,11 +26,11 @@ DX12RenderRootSignature::DX12RenderRootSignature(const BearGraphics::BearRenderR
 	}
 	CountTexture = 0;
 	{
-		for (; CountTexture < 16 && Description.TextureBuffers[CountTexture].Shader != BearGraphics::ST_Null; CountTexture++);
+		for (; CountTexture < 16 && Description.Textures[CountTexture].Shader != BearGraphics::ST_Null; CountTexture++);
 	}
 	CountSampler = 0;
 	{
-		for (; CountSampler < 16 && Description.SamplerStates[CountSampler].Shader != BearGraphics::ST_Null; CountSampler++);
+		for (; CountSampler < 16 && Description.Samplers[CountSampler].Shader != BearGraphics::ST_Null; CountSampler++);
 	}
 	{
 		D3D12_FEATURE_DATA_ROOT_SIGNATURE featureData = {};
@@ -62,13 +62,13 @@ DX12RenderRootSignature::DX12RenderRootSignature(const BearGraphics::BearRenderR
 		for (bsize i = 0; i < CountTexture; i++)
 		{
 			Ranges[i+ offset].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, static_cast<UINT>(i), static_cast<UINT>(i));
-			RootParameters[i+ offset].InitAsDescriptorTable(1, &Ranges[i + offset], TransletionShaderVisible(Description.UniformBuffers[i].Shader, RootSignatureFlags));
+			RootParameters[i+ offset].InitAsDescriptorTable(1, &Ranges[i + offset], TransletionShaderVisible(Description.Textures[i].Shader, RootSignatureFlags));
 		}
 		offset += CountTexture;
 		for (bsize i = 0; i < CountSampler; i++)
 		{
-			Ranges[i+ offset].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER, 1, static_cast<UINT>(i), static_cast<UINT>(i ));
-			RootParameters[i+ offset].InitAsDescriptorTable(1, &Ranges[i + offset], TransletionShaderVisible(Description.UniformBuffers[i].Shader, RootSignatureFlags));
+			Ranges[i+ offset].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER, 1, static_cast<UINT>(i), static_cast<UINT>(i));
+			RootParameters[i+ offset].InitAsDescriptorTable(1, &Ranges[i + offset], TransletionShaderVisible(Description.Samplers[i].Shader, RootSignatureFlags));
 		}
 
 	

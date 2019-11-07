@@ -2,12 +2,14 @@
 
 DX12RenderTexture2D::DX12RenderTexture2D()
 {
+	m_buffer = 0;
 }
 
 void DX12RenderTexture2D::Create(bsize width, bsize height, bsize mips, bsize depth, BearGraphics::BearTexturePixelFormat format, void * data, bool dynamic)
 {
 	Clear();
 	m_format = format;
+	m_dynamic = dynamic;
 	bear_fill(TextureDesc);
 	TextureDesc.MipLevels = static_cast<UINT16>(mips);
 	TextureDesc.Format = Factory->Translation(format);
@@ -24,7 +26,7 @@ void DX12RenderTexture2D::Create(bsize width, bsize height, bsize mips, bsize de
 		&var1,
 		D3D12_HEAP_FLAG_NONE,
 		&TextureDesc,
-		D3D12_RESOURCE_STATE_COPY_DEST,
+		D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
 		nullptr,
 		IID_PPV_ARGS(&TextureBuffer)));
 
@@ -42,7 +44,7 @@ void DX12RenderTexture2D::Create(bsize width, bsize height, bsize mips, bsize de
 		TextureView.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
 		TextureView.Texture2D.MipLevels = static_cast<UINT>(mips);
 	}
-
+	if (m_dynamic)AllocUploadBuffer();
 
 	if (data)
 	{
@@ -52,10 +54,11 @@ void DX12RenderTexture2D::Create(bsize width, bsize height, bsize mips, bsize de
 			{
 				bsize  size = BearGraphics::BearTextureUtils::GetSizeDepth(BearGraphics::BearTextureUtils::GetMip(TextureDesc.Width, y), BearGraphics::BearTextureUtils::GetMip(TextureDesc.Height, y), m_format);
 				bear_copy(Lock(y,x), ptr, size);
+				Unlock();
 				ptr += size;
 			}
 	
-		Unlock();
+
 	}
 }
 
@@ -63,66 +66,81 @@ void * DX12RenderTexture2D::Lock(bsize mip, bsize depth)
 {
 	if (TextureBuffer.Get() == 0)
 		return 0;
-	if (m_dynamic)
+	if (m_buffer)Unlock();
+	if (!m_dynamic)
 	{
-		BEAR_ASSERT(false);
-		return 0;
+		AllocUploadBuffer();
 	}
-	else
-	{
-		m_mip = mip;
-		m_depth= depth;
-		m_buffer = bear_alloc<uint8>(BearGraphics::BearTextureUtils::GetSizeDepth(BearGraphics::BearTextureUtils::GetMip(TextureDesc.Width, mip), BearGraphics::BearTextureUtils::GetMip(TextureDesc.Height, mip),m_format));
-		return m_buffer;
-	}
-	
+	m_mip = mip;
+	m_depth = depth;
+	CD3DX12_RANGE readRange(0, 0);
+	R_CHK(UploadBuffer->Map(0, &readRange, reinterpret_cast<void**>(&m_buffer)));
+	return m_buffer;
 }
 
 void DX12RenderTexture2D::Unlock()
 {
 	if (TextureBuffer.Get() == 0)
-		return ;
-	if (m_dynamic)
+		return;
+	if (m_buffer == 0)return;
+	UploadBuffer->Unmap(0, nullptr);
+	Factory->LockCommandList();
+	auto var3 = CD3DX12_RESOURCE_BARRIER::Transition(TextureBuffer.Get(), D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_COPY_DEST);
+	Factory->CommandList->ResourceBarrier(1, &var3);
 	{
-		BEAR_ASSERT(false);
+			D3D12_SUBRESOURCE_FOOTPRINT PitchedDesc = {  };
+			PitchedDesc.Format = TextureDesc.Format;
+			PitchedDesc.Width = static_cast<UINT>(BearGraphics::BearTextureUtils::GetMip(TextureDesc.Width, m_mip));
+			if (BearGraphics::BearTextureUtils::isCompressor(m_format))
+				PitchedDesc.Width = bear_max(UINT(4), PitchedDesc.Width);
+			PitchedDesc.Height = static_cast<UINT>(BearGraphics::BearTextureUtils::GetMip(TextureDesc.Height, m_mip));
+			if (BearGraphics::BearTextureUtils::isCompressor(m_format))
+				PitchedDesc.Height = bear_max(UINT(4), PitchedDesc.Height);
+			PitchedDesc.Depth = 1;
+			PitchedDesc.RowPitch = static_cast<UINT> (BearGraphics::BearTextureUtils::GetSizeWidth(PitchedDesc.Width, m_format));
+			bsize Delta = ((PitchedDesc.RowPitch + D3D12_TEXTURE_DATA_PITCH_ALIGNMENT -1) &~(D3D12_TEXTURE_DATA_PITCH_ALIGNMENT-1) )- PitchedDesc.RowPitch;
+			PitchedDesc.RowPitch = (PitchedDesc.RowPitch+ D3D12_TEXTURE_DATA_PITCH_ALIGNMENT-1) &~ (D3D12_TEXTURE_DATA_PITCH_ALIGNMENT-1);
+
+			if (Delta)
+			{
+				auto dst = m_buffer;
+				auto src = m_buffer;
+				dst += PitchedDesc.RowPitch*(BearGraphics::BearTextureUtils::GetCountBlock(PitchedDesc.Height, m_format) -1);
+				src += (PitchedDesc.RowPitch- Delta)*(BearGraphics::BearTextureUtils::GetCountBlock(PitchedDesc.Height, m_format) - 1);
+				for (bint i = BearGraphics::BearTextureUtils::GetCountBlock(PitchedDesc.Height, m_format); i >= 0; i--)
+				{
+					bear_move(dst, src, PitchedDesc.RowPitch - Delta);
+					dst -= PitchedDesc.RowPitch;
+					src -= (PitchedDesc.RowPitch - Delta);
+				}
+			}
+
+			D3D12_PLACED_SUBRESOURCE_FOOTPRINT PlacedTexture2D = { 0 };
+			PlacedTexture2D.Offset = 0;
+			PlacedTexture2D.Footprint = PitchedDesc;
+
+		CD3DX12_TEXTURE_COPY_LOCATION Dst(TextureBuffer.Get(), D3D12CalcSubresource(static_cast<UINT>(m_mip), static_cast<UINT>(m_depth), 0, TextureDesc.MipLevels, TextureDesc.DepthOrArraySize));
+		CD3DX12_TEXTURE_COPY_LOCATION Src(UploadBuffer.Get(), PlacedTexture2D);
+		Factory->CommandList->CopyTextureRegion(&Dst, 0, 0, 0, &Src, 0);
 	}
-	else
+	auto var4 = CD3DX12_RESOURCE_BARRIER::Transition(TextureBuffer.Get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+	Factory->CommandList->ResourceBarrier(1, &var4);
+	Factory->UnlockCommandList();
+
+	m_buffer = 0;
+
+	if (!m_dynamic)
 	{
-
-
-		const UINT64 uploadBufferSize = GetRequiredIntermediateSize(TextureBuffer.Get(), 0, 1);
-		ComPtr<ID3D12Resource> UploadHeap;
-		CD3DX12_HEAP_PROPERTIES var1(D3D12_HEAP_TYPE_UPLOAD);
-		auto var2 = CD3DX12_RESOURCE_DESC::Buffer(uploadBufferSize);
-		R_CHK(Factory->Device->CreateCommittedResource(
-			&var1,
-			D3D12_HEAP_FLAG_NONE,
-			&var2,
-			D3D12_RESOURCE_STATE_GENERIC_READ,
-			nullptr,
-			IID_PPV_ARGS(&UploadHeap)));
-
-		D3D12_SUBRESOURCE_DATA ResourceData = {};
-		ResourceData.pData = m_buffer;
-		ResourceData.RowPitch = BearGraphics::BearTextureUtils::GetSizeWidth(TextureDesc.Width, m_format);
-		ResourceData.SlicePitch = ResourceData.RowPitch*TextureDesc.Height;
-		Factory->LockCopyCommandList();
-		UpdateSubresources<1>(Factory->CopyCommandList.Get(), TextureBuffer.Get(), UploadHeap.Get(), 0, D3D12CalcSubresource(static_cast<UINT>(m_mip), static_cast<UINT>(m_depth),0,TextureDesc.MipLevels, TextureDesc.DepthOrArraySize), 1, &ResourceData);
-		Factory->UnlockCopyCommandList();
-		bear_free(m_buffer); m_buffer = 0;
-		//actory->CommandList->CopyTextureRegion()
-		Factory->LockCommandList();
-		auto var3 = CD3DX12_RESOURCE_BARRIER::Transition(TextureBuffer.Get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
-		Factory->CommandList->ResourceBarrier(1, &var3);
-		Factory->UnlockCommandList();
+		FreeUploadBuffer();
 	}
 }
 
 void DX12RenderTexture2D::Clear()
 {
-	if (m_buffer)bear_free(m_buffer);
+	if (m_buffer)Unlock();
 	m_buffer = 0;
 	TextureBuffer.Reset();
+	UploadBuffer.Reset();
 	m_dynamic = false;
 	m_format = BearGraphics::TPF_NONE;
 }
@@ -135,4 +153,32 @@ DX12RenderTexture2D::~DX12RenderTexture2D()
 void * DX12RenderTexture2D::GetHandle()
 {
 	return &TextureView;
+}
+
+void DX12RenderTexture2D::AllocUploadBuffer()
+{
+
+	bsize SizeWidth = 0;
+	bsize SizeDepth = 0;
+	{
+		SizeWidth = (BearGraphics::BearTextureUtils::GetSizeWidth(TextureDesc.Width, m_format));
+		SizeWidth = (SizeWidth + D3D12_TEXTURE_DATA_PITCH_ALIGNMENT - 1)&~(D3D12_TEXTURE_DATA_PITCH_ALIGNMENT-1);
+		SizeDepth = SizeWidth * BearGraphics::BearTextureUtils::GetCountBlock(TextureDesc.Height, m_format);
+		SizeDepth = (SizeDepth + D3D12_TEXTURE_DATA_PLACEMENT_ALIGNMENT - 1)&~(D3D12_TEXTURE_DATA_PLACEMENT_ALIGNMENT-1);
+	}
+	CD3DX12_HEAP_PROPERTIES var1(D3D12_HEAP_TYPE_UPLOAD);
+	auto var2 = CD3DX12_RESOURCE_DESC::Buffer(SizeDepth);
+	R_CHK(Factory->Device->CreateCommittedResource(
+		&var1,
+		D3D12_HEAP_FLAG_NONE,
+		&var2,
+		D3D12_RESOURCE_STATE_GENERIC_READ,
+		nullptr,
+		IID_PPV_ARGS(&UploadBuffer)));
+
+}
+
+void DX12RenderTexture2D::FreeUploadBuffer()
+{
+	UploadBuffer.Reset();
 }

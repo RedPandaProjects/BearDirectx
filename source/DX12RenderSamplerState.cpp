@@ -3,7 +3,7 @@
 DX12RenderSamplerState::DX12RenderSamplerState(const BearGraphics::BearRenderSamplerDescription & Description)
 {
 	ZeroMemory(&Sampler, sizeof(D3D12_SAMPLER_DESC));
-	Sampler.Filter = D3D12_FILTER_MIN_MAG_MIP_LINEAR;
+	Sampler.Filter = D3D12_FILTER_MIN_MAG_MIP_POINT;
 	Sampler.AddressU = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
 	Sampler.AddressV = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
 	Sampler.AddressW = D3D12_TEXTURE_ADDRESS_MODE_WRAP;

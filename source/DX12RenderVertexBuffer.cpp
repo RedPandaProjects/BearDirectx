@@ -2,7 +2,7 @@
 
 DX12RenderVertexBuffer::DX12RenderVertexBuffer()
 {
-	m_dynamic = false; m_buffer = 0;
+	m_dynamic = false;
 }
 
 DX12RenderVertexBuffer::~DX12RenderVertexBuffer()
@@ -21,7 +21,7 @@ void DX12RenderVertexBuffer::Create(bsize stride, bsize count, void * data, bool
 			&a,
 			D3D12_HEAP_FLAG_NONE,
 			&b,
-			dynamic ? D3D12_RESOURCE_STATE_GENERIC_READ :D3D12_RESOURCE_STATE_COPY_DEST,
+			dynamic ? D3D12_RESOURCE_STATE_GENERIC_READ : D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER,
 			nullptr,
 			IID_PPV_ARGS(&VertexBuffer)));
 	}
@@ -39,6 +39,7 @@ void DX12RenderVertexBuffer::Create(bsize stride, bsize count, void * data, bool
 void * DX12RenderVertexBuffer::Lock()
 {
 	if (VertexBuffer.Get() == 0)return 0;
+	if (UploadHeapBuffer.Get())Unlock();
 	if (m_dynamic)
 	{
 		UINT8* pVertexDataBegin;
@@ -48,9 +49,23 @@ void * DX12RenderVertexBuffer::Lock()
 	}
 	else
 	{
-		if (m_buffer)bear_free(m_buffer);
-		m_buffer = bear_alloc<uint8>(VertexBufferView.SizeInBytes);
-		return m_buffer;
+		const UINT64 uploadBufferSize = GetRequiredIntermediateSize(VertexBuffer.Get(), 0, 1);
+
+		CD3DX12_HEAP_PROPERTIES var1(D3D12_HEAP_TYPE_UPLOAD);
+		auto var2 = CD3DX12_RESOURCE_DESC::Buffer(uploadBufferSize);
+		R_CHK(Factory->Device->CreateCommittedResource(
+			&var1,
+			D3D12_HEAP_FLAG_NONE,
+			&var2,
+			D3D12_RESOURCE_STATE_GENERIC_READ,
+			nullptr,
+			IID_PPV_ARGS(&UploadHeapBuffer)));
+		{
+			UINT8* pVertexDataBegin;
+			CD3DX12_RANGE readRange(0, 0);
+			R_CHK(UploadHeapBuffer->Map(0, &readRange, reinterpret_cast<void**>(&pVertexDataBegin)));
+			return pVertexDataBegin;
+		}
 	}
 }
 
@@ -61,41 +76,31 @@ void DX12RenderVertexBuffer::Unlock()
 	{
 		VertexBuffer->Unmap(0, nullptr);
 	}
-	else if(m_buffer)
+	else if(UploadHeapBuffer.Get())
 	{
-		const UINT64 uploadBufferSize = GetRequiredIntermediateSize(VertexBuffer.Get(), 0, 1);
-		ComPtr<ID3D12Resource> UploadHeap;
-		CD3DX12_HEAP_PROPERTIES var1(D3D12_HEAP_TYPE_UPLOAD);
-		auto var2 = CD3DX12_RESOURCE_DESC::Buffer (uploadBufferSize);
-		R_CHK(Factory->Device->CreateCommittedResource(
-			&var1,
-			D3D12_HEAP_FLAG_NONE,
-			&var2,
-			D3D12_RESOURCE_STATE_GENERIC_READ,
-			nullptr,
-			IID_PPV_ARGS(&UploadHeap)));
+		
+		Factory->LockCommandList();
+		auto var1 = CD3DX12_RESOURCE_BARRIER::Transition(VertexBuffer.Get(), D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER, D3D12_RESOURCE_STATE_COPY_DEST);
+		Factory->CommandList->ResourceBarrier(1, &var1);
+		Factory->UnlockCommandList();
 
-		D3D12_SUBRESOURCE_DATA ResourceData = {};
-		ResourceData.pData = m_buffer;
-		ResourceData.RowPitch = VertexBufferView.SizeInBytes;
-		ResourceData.SlicePitch = VertexBufferView.SizeInBytes;
-
+		UploadHeapBuffer->Unmap(0, nullptr);
 		Factory->LockCopyCommandList();
-		UpdateSubresources<1>(Factory->CopyCommandList.Get(), VertexBuffer.Get(), UploadHeap.Get(), 0, 0, 1, &ResourceData);
+		Factory->CopyCommandList->CopyBufferRegion(VertexBuffer.Get(), 0, UploadHeapBuffer.Get(), 0, VertexBufferView.SizeInBytes);
 		Factory->UnlockCopyCommandList();
-		bear_free(m_buffer); m_buffer = 0;
 
 	
 		Factory->LockCommandList();
-		auto var3 = CD3DX12_RESOURCE_BARRIER::Transition(VertexBuffer.Get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
-		Factory->CommandList->ResourceBarrier(1, &var3);
+		auto var2 = CD3DX12_RESOURCE_BARRIER::Transition(VertexBuffer.Get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
+		Factory->CommandList->ResourceBarrier(1, &var2);
 		Factory->UnlockCommandList();
-	
+		UploadHeapBuffer.Reset();
 	}
 }
 
 void DX12RenderVertexBuffer::Clear()
 {
-	if (m_buffer)bear_free(m_buffer); m_buffer = 0;
+	if (UploadHeapBuffer.Get())Unlock();
 	VertexBuffer.Reset();
+	m_dynamic = false;
 }

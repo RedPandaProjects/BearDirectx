@@ -18,7 +18,12 @@ private:
 	D3D12_RESOURCE_DESC TextureDesc;
 	BearGraphics::BearTexturePixelFormat m_format;
 	bool m_dynamic;
-	uint8*m_buffer;
+private:
 	bsize m_mip;
 	bsize m_depth;
+	UINT8*m_buffer;
+private:
+	ComPtr<ID3D12Resource> UploadBuffer;
+	void AllocUploadBuffer();
+	void FreeUploadBuffer();
 };

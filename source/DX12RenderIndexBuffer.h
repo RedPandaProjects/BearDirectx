@@ -13,5 +13,5 @@ public:
 	D3D12_INDEX_BUFFER_VIEW IndexBufferView;
 private:
 	bool m_dynamic;
-	uint8*m_buffer;
+	ComPtr<ID3D12Resource> UploadHeapBuffer;
 };

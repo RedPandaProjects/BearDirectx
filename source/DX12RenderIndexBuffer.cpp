@@ -1,7 +1,7 @@
 #include "DX12PCH.h"
 
 
-DX12RenderIndexBuffer::DX12RenderIndexBuffer():m_dynamic(false),m_buffer(0)
+DX12RenderIndexBuffer::DX12RenderIndexBuffer():m_dynamic(false)
 {
 }
 
@@ -21,7 +21,7 @@ void DX12RenderIndexBuffer::Create( bsize count, void * data, bool dynamic )
 			&a,
 			D3D12_HEAP_FLAG_NONE,
 			&b,
-			dynamic ? D3D12_RESOURCE_STATE_GENERIC_READ : D3D12_RESOURCE_STATE_COPY_DEST,
+			dynamic ? D3D12_RESOURCE_STATE_GENERIC_READ : D3D12_RESOURCE_STATE_INDEX_BUFFER,
 			nullptr,
 			IID_PPV_ARGS(&IndexBuffer)));
 
@@ -41,31 +41,18 @@ int32 * DX12RenderIndexBuffer::Lock()
 {
 	
 	if (IndexBuffer.Get() == 0)return 0;
+	if (UploadHeapBuffer.Get())Unlock();
 	if (m_dynamic)
 	{
-		UINT8* pDataBegin;
+		int32* pVertexDataBegin;
 		CD3DX12_RANGE readRange(0, 0);
-		R_CHK(IndexBuffer->Map(0, &readRange, reinterpret_cast<void**>(&pDataBegin)));
-		return (int32*)pDataBegin;
+		R_CHK(IndexBuffer->Map(0, &readRange, reinterpret_cast<void**>(&pVertexDataBegin)));
+		return pVertexDataBegin;
 	}
 	else
 	{
-		if (m_buffer)bear_free(m_buffer);
-		m_buffer = bear_alloc<uint8>(IndexBufferView.SizeInBytes);
-		return (int32*)m_buffer;
-	}
-}
-
-void DX12RenderIndexBuffer::Unlock()
-{
-	if (m_dynamic)
-	{
-		IndexBuffer->Unmap(0, nullptr);
-	}
-	else if (m_buffer)
-	{
 		const UINT64 uploadBufferSize = GetRequiredIntermediateSize(IndexBuffer.Get(), 0, 1);
-		ComPtr<ID3D12Resource> UploadHeap;
+
 		CD3DX12_HEAP_PROPERTIES var1(D3D12_HEAP_TYPE_UPLOAD);
 		auto var2 = CD3DX12_RESOURCE_DESC::Buffer(uploadBufferSize);
 		R_CHK(Factory->Device->CreateCommittedResource(
@@ -74,26 +61,48 @@ void DX12RenderIndexBuffer::Unlock()
 			&var2,
 			D3D12_RESOURCE_STATE_GENERIC_READ,
 			nullptr,
-			IID_PPV_ARGS(&UploadHeap)));
-		D3D12_SUBRESOURCE_DATA ResourceData = {};
-		ResourceData.pData = m_buffer;
-		ResourceData.RowPitch = IndexBufferView.SizeInBytes;
-		ResourceData.SlicePitch = IndexBufferView.SizeInBytes;
-		Factory->LockCopyCommandList();
-		UpdateSubresources<1>(Factory->CopyCommandList.Get(), IndexBuffer.Get(), UploadHeap.Get(), 0, 0, 1, &ResourceData);
-		Factory->UnlockCopyCommandList();
-		bear_free(m_buffer); m_buffer = 0;
+			IID_PPV_ARGS(&UploadHeapBuffer)));
+		{
+			int32* pVertexDataBegin;
+			CD3DX12_RANGE readRange(0, 0);
+			R_CHK(UploadHeapBuffer->Map(0, &readRange, reinterpret_cast<void**>(&pVertexDataBegin)));
+			return pVertexDataBegin;
+		}
+	}
+}
+
+void DX12RenderIndexBuffer::Unlock()
+{
+	if (IndexBuffer.Get() == 0)return;
+	if (m_dynamic)
+	{
+		IndexBuffer->Unmap(0, nullptr);
+	}
+	else if (UploadHeapBuffer.Get())
+	{
 
 		Factory->LockCommandList();
-		auto var3 = CD3DX12_RESOURCE_BARRIER::Transition(IndexBuffer.Get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_INDEX_BUFFER);
-		Factory->CommandList->ResourceBarrier(1, &var3);
+		auto var1 = CD3DX12_RESOURCE_BARRIER::Transition(IndexBuffer.Get(), D3D12_RESOURCE_STATE_INDEX_BUFFER, D3D12_RESOURCE_STATE_COPY_DEST);
+		Factory->CommandList->ResourceBarrier(1, &var1);
 		Factory->UnlockCommandList();
+
+		UploadHeapBuffer->Unmap(0, nullptr);
+		Factory->LockCopyCommandList();
+		Factory->CopyCommandList->CopyBufferRegion(IndexBuffer.Get(), 0, UploadHeapBuffer.Get(), 0, IndexBufferView.SizeInBytes);
+		Factory->UnlockCopyCommandList();
+
+
+		Factory->LockCommandList();
+		auto var2 = CD3DX12_RESOURCE_BARRIER::Transition(IndexBuffer.Get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_INDEX_BUFFER);
+		Factory->CommandList->ResourceBarrier(1, &var2);
+		Factory->UnlockCommandList();
+		UploadHeapBuffer.Reset();
 	}
 }
 
 void DX12RenderIndexBuffer::Clear()
 {
-	if (m_buffer)bear_free(m_buffer);
-	m_buffer = 0;
+	if (UploadHeapBuffer.Get())Unlock();
 	IndexBuffer.Reset();
+	m_dynamic = false;
 }
