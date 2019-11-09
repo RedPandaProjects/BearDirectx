@@ -10,6 +10,7 @@ public:
 	virtual BearRenderBase::BearRenderViewportBase* CreateViewport(void * Handle, bsize Width, bsize Height, bool Fullscreen, bool VSync, const BearGraphics::BearRenderViewportDescription&Description);
 	virtual BearRenderBase::BearRenderShaderBase* CreateShader(BearGraphics::BearShaderType Type);
 	virtual  BearRenderBase::BearRenderPipelineBase*   CreatePipeline(const BearGraphics::BearRenderPipelineDescription&Description);
+
 	virtual BearRenderBase::BearRenderIndexBufferBase* CreateIndexBuffer();
 	virtual BearRenderBase::BearRenderVertexBufferBase* CreateVertexBuffer();
 	virtual BearRenderBase::BearRenderUniformBufferBase* CreateUniformBuffer();
@@ -21,6 +22,10 @@ public:
 
 	virtual BearRenderBase::BearRenderTargetViewBase *CreateTargetView(const BearGraphics::BearRenderTargetViewDescription&Description);
 	virtual BearRenderBase::BearRenderFrameBufferBase *CreateFrameBuffer(const BearGraphics::BearRenderFrameBufferDescription&Description);
+
+	virtual BearRenderBase::BearRenderAccelerationStructuresBase *CreateAccelerationStructures(const BearGraphics::BearRenderAccelerationStructuresDescription&Description);
+	virtual  BearRenderBase::BearRenderPipelineBase*   CreatePipeline(const BearGraphics::BearRenderRTXPipelineDescription&Description);
+
 	inline bool Empty()const { return Device.Get()==0; }
 	static DXGI_FORMAT Translation(BearGraphics::BearTextureUAVPixelFormat format);
 	static DXGI_FORMAT Translation(BearGraphics::BearTexturePixelFormat format);
@@ -34,13 +39,19 @@ public:
 	ComPtr<ID3D12RootSignature> RootSignature;
 	DXGI_MODE_DESC*FindMode(bsize width, bsize height);
 public:
+	ComPtr<ID3D12Device5> RTXDevice;
+public:
 	void LockCopyCommandList();
 	void UnlockCopyCommandList();
 	ComPtr<ID3D12GraphicsCommandList> CopyCommandList;
 
 	void LockCommandList();
 	void UnlockCommandList();
+#ifdef RTX
+	ComPtr<ID3D12GraphicsCommandList4> CommandList;
+#else
 	ComPtr<ID3D12GraphicsCommandList> CommandList;
+#endif
 private:
 	HANDLE m_Copy_FenceEvent;
 	uint64 m_Copy_FenceValue;

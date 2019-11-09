@@ -20,7 +20,7 @@ public:
 	virtual void DrawIndex(bsize count, bsize offset = 0);
 	virtual void  SetDescriptorHeap(BearGraphics::BearFactoryPointer<BearRenderBase::BearRenderDescriptorHeapBase> DescriptorHeap);
 private:
-	inline 	ComPtr<ID3D12GraphicsCommandList>&GetCommandList() {if (!m_viewport.empty()) return static_cast<DX12RenderViewport*>(m_viewport.get())->CommandList;  return m_commandList;	}
+	inline 	ComPtr<ID3D12GraphicsCommandList4>&GetCommandList() {if (!m_viewport.empty()) return static_cast<DX12RenderViewport*>(m_viewport.get())->CommandList;  return m_commandList;	}
 	inline bool Empty() { return m_viewport.empty() && m_framebuffer.empty(); }
 	BearGraphics::BearFactoryPointer<BearRenderBase::BearRenderViewportBase> m_viewport;
 	BearGraphics::BearFactoryPointer<BearRenderBase::BearRenderFrameBufferBase> m_framebuffer;
@@ -31,7 +31,11 @@ private:
 	CD3DX12_RECT m_scissorRect;
 private:
 	void AllocCommandList();
+#ifdef RTX
+	ComPtr<ID3D12GraphicsCommandList4> m_commandList;
+#else
 	ComPtr<ID3D12GraphicsCommandList> m_commandList;
+#endif
 	ComPtr<ID3D12CommandAllocator> m_commandAllocator;
 	ComPtr<ID3D12CommandQueue> m_commandQueue;
 	HANDLE m_fenceEvent;

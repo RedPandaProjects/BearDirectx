@@ -4,23 +4,23 @@ DX12RenderDescriptorHeap::DX12RenderDescriptorHeap(const BearGraphics::BearRende
 {
 	 CountUAV = 0;
 	 CountBuffers = 0;
-	 CountTexture = 0;
+	 CountSRV = 0;
 	 CountSampler = 0;
 	{
 		 for (; CountUAV < 16 && !Description.UAVResources[CountUAV].UAVResource.empty(); CountUAV++);
 		for (; CountBuffers < 16 && !Description.UniformBuffers[CountBuffers].Buffer.empty(); CountBuffers++);
-		for (; CountTexture < 16 && !Description.Textures[CountTexture].Texture.empty(); CountTexture++);
+		for (; CountSRV < 16 && !Description.SRVResources[CountSRV].SRVResource.empty(); CountSRV++);
 		for (; CountSampler < 16 && !Description.Samplers[CountSampler].Sampler.empty(); CountSampler++);
 
 		BEAR_RASSERT(!Description.RootSignature.empty());
 		BEAR_ASSERT(CountUAV == static_cast<const DX12RenderRootSignature*>(Description.RootSignature.get())->CountUAV);
 		BEAR_ASSERT(CountBuffers == static_cast<const DX12RenderRootSignature*>(Description.RootSignature.get())->CountBuffers);
-		BEAR_ASSERT(CountTexture == static_cast<const DX12RenderRootSignature*>(Description.RootSignature.get())->CountTexture);
+		BEAR_ASSERT(CountSRV == static_cast<const DX12RenderRootSignature*>(Description.RootSignature.get())->CountSRV);
 		BEAR_ASSERT(CountSampler == static_cast<const DX12RenderRootSignature*>(Description.RootSignature.get())->CountSampler);
-		if (CountBuffers|| CountTexture|| CountUAV)
+		if (CountBuffers|| CountSRV|| CountUAV)
 		{
 			D3D12_DESCRIPTOR_HEAP_DESC cbvHeapDesc = {};
-			cbvHeapDesc.NumDescriptors = static_cast<UINT>(CountBuffers+ CountTexture+ CountUAV);
+			cbvHeapDesc.NumDescriptors = static_cast<UINT>(CountBuffers+ CountSRV+ CountUAV);
 			cbvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
 			cbvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
 			R_CHK(Factory->Device->CreateDescriptorHeap(&cbvHeapDesc, IID_PPV_ARGS(&CbvHeap)));
@@ -33,7 +33,7 @@ DX12RenderDescriptorHeap::DX12RenderDescriptorHeap(const BearGraphics::BearRende
 			cbvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER;
 			R_CHK(Factory->Device->CreateDescriptorHeap(&cbvHeapDesc, IID_PPV_ARGS(&SamplerHeap)));
 		}
-		if (CountBuffers|| CountTexture|| CountUAV)
+		if (CountBuffers|| CountSRV|| CountUAV)
 		{
 			CD3DX12_CPU_DESCRIPTOR_HANDLE CbvHandle(CbvHeap->GetCPUDescriptorHandleForHeapStart());
 			for (bsize i = 0; i < CountUAV; i++)
@@ -48,9 +48,9 @@ DX12RenderDescriptorHeap::DX12RenderDescriptorHeap(const BearGraphics::BearRende
 				Factory->Device->CreateConstantBufferView(&buffer->UniformBufferView, CbvHandle);
 				CbvHandle.Offset(Factory->CbvSrvUavDescriptorSize);
 			}
-			for (bsize i = 0; i < CountTexture; i++)
+			for (bsize i = 0; i < CountSRV; i++)
 			{
-				auto *buffer = Description.Textures[i].Texture.get();
+				auto *buffer = Description.SRVResources[i].SRVResource.get();
 				const_cast<BearRenderBase::BearRenderShaderResourceViewBase*>(buffer)->SetResource(&CbvHandle);
 				CbvHandle.Offset(Factory->CbvSrvUavDescriptorSize);
 			}
@@ -91,7 +91,7 @@ void DX12RenderDescriptorHeap::Set(ID3D12GraphicsCommandList * CommandLine)
 	if(CbvHeap.Get())
 	{
 		CD3DX12_GPU_DESCRIPTOR_HANDLE CbvHandle(CbvHeap->GetGPUDescriptorHandleForHeapStart());
-		for (bsize i = 0; i < CountBuffers + CountTexture+CountUAV; i++)
+		for (bsize i = 0; i < CountBuffers + CountSRV+CountUAV; i++)
 		{
 
 			CommandLine->SetGraphicsRootDescriptorTable(static_cast<UINT>(Offset++), CbvHandle);

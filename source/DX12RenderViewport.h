@@ -14,7 +14,11 @@ public:
 	void Wait();
 	
 	BearGraphics::BearRenderViewportDescription Description;
+#ifdef RTX
+	ComPtr<ID3D12GraphicsCommandList4> CommandList;
+#else
 	ComPtr<ID3D12GraphicsCommandList> CommandList;
+#endif
 private:
 	void ReInit(bsize Width, bsize Height);
 

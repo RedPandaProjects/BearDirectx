@@ -11,6 +11,6 @@ public:
 private:
 	bsize CountUAV;
 	bsize CountBuffers;
-	bsize CountTexture;
+	bsize CountSRV;
 	bsize CountSampler;
 };

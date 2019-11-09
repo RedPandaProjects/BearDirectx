@@ -14,5 +14,6 @@ public:
 private:
 	bool m_dynamic;
 	ComPtr<ID3D12Resource> UploadHeapBuffer;
+	
 
 };

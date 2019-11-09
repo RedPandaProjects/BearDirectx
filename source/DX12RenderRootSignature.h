@@ -9,6 +9,6 @@ public:
 	ComPtr<ID3D12RootSignature> RootSignature;
 	bsize CountUAV;
 	bsize CountBuffers;
-	bsize CountTexture;
+	bsize CountSRV;
 	bsize CountSampler;
 };

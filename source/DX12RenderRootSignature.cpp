@@ -12,6 +12,11 @@ inline D3D12_SHADER_VISIBILITY TransletionShaderVisible(BearGraphics::BearShader
 		flags = flags & ~D3D12_ROOT_SIGNATURE_FLAGS::D3D12_ROOT_SIGNATURE_FLAG_DENY_PIXEL_SHADER_ROOT_ACCESS;
 		return D3D12_SHADER_VISIBILITY::D3D12_SHADER_VISIBILITY_PIXEL;
 		break;
+	case BearGraphics::ST_RayGeneration:
+	case BearGraphics::ST_Miss:
+	case BearGraphics::ST_Hit:
+		return D3D12_SHADER_VISIBILITY::D3D12_SHADER_VISIBILITY_ALL;
+		break;
 	default:
 		BEAR_RASSERT(0);
 	}
@@ -27,9 +32,9 @@ DX12RenderRootSignature::DX12RenderRootSignature(const BearGraphics::BearRenderR
 	{
 		for (; CountBuffers < 16 && Description.UniformBuffers[CountBuffers].Shader!=BearGraphics::ST_Null; CountBuffers++);
 	}
-	CountTexture = 0;
+	CountSRV = 0;
 	{
-		for (; CountTexture < 16 && Description.Textures[CountTexture].Shader != BearGraphics::ST_Null; CountTexture++);
+		for (; CountSRV < 16 && Description.SRVResources[CountSRV].Shader != BearGraphics::ST_Null; CountSRV++);
 	}
 	CountSampler = 0;
 	{
@@ -52,7 +57,7 @@ DX12RenderRootSignature::DX12RenderRootSignature(const BearGraphics::BearRenderR
 			D3D12_ROOT_SIGNATURE_FLAG_DENY_DOMAIN_SHADER_ROOT_ACCESS |
 			D3D12_ROOT_SIGNATURE_FLAG_DENY_GEOMETRY_SHADER_ROOT_ACCESS;
 
-		bsize Count = CountBuffers+CountTexture+CountSampler;
+		bsize Count = CountBuffers+CountSRV+CountSampler;
 		CD3DX12_DESCRIPTOR_RANGE1 Ranges[64];
 		CD3DX12_ROOT_PARAMETER1 RootParameters[64];
 		bsize offset = 0;
@@ -68,12 +73,12 @@ DX12RenderRootSignature::DX12RenderRootSignature(const BearGraphics::BearRenderR
 			RootParameters[i + offset].InitAsDescriptorTable(1, &Ranges[i + offset], TransletionShaderVisible(Description.UniformBuffers[i].Shader, RootSignatureFlags));
 		}
 		offset += CountBuffers;
-		for (bsize i = 0; i < CountTexture; i++)
+		for (bsize i = 0; i < CountSRV; i++)
 		{
 			Ranges[i+ offset].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, static_cast<UINT>(i), static_cast<UINT>(i));
-			RootParameters[i+ offset].InitAsDescriptorTable(1, &Ranges[i + offset], TransletionShaderVisible(Description.Textures[i].Shader, RootSignatureFlags));
+			RootParameters[i+ offset].InitAsDescriptorTable(1, &Ranges[i + offset], TransletionShaderVisible(Description.SRVResources[i].Shader, RootSignatureFlags));
 		}
-		offset += CountTexture;
+		offset += CountSRV;
 		for (bsize i = 0; i < CountSampler; i++)
 		{
 			Ranges[i+ offset].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER, 1, static_cast<UINT>(i), static_cast<UINT>(i));
@@ -83,6 +88,8 @@ DX12RenderRootSignature::DX12RenderRootSignature(const BearGraphics::BearRenderR
 	
 
 		CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC rootSignatureDesc;
+		if (Description.Local)
+			RootSignatureFlags = D3D12_ROOT_SIGNATURE_FLAG_LOCAL_ROOT_SIGNATURE;
 		rootSignatureDesc.Init_1_1(static_cast<UINT>(Count),RootParameters,0,0, RootSignatureFlags);
 
 		ComPtr<ID3DBlob> signature;

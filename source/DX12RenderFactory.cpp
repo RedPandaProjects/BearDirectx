@@ -37,6 +37,10 @@ DX12RenderFactory::DX12RenderFactory()
 	{
 		return;
 	}
+	if(FAILED(Device->QueryInterface(IID_PPV_ARGS(&RTXDevice))))
+	{
+		return;
+	}
 	{
 #if defined(_DEBUG)
 		ComPtr<ID3D12InfoQueue> InfoQueue;
@@ -122,6 +126,9 @@ DX12RenderFactory::DX12RenderFactory()
 		R_CHK(DxcLibrary->CreateIncludeHandler(&DxcIncludeHandler));
 		
 	}
+	{
+
+	}
 }
 DX12RenderFactory::~DX12RenderFactory()
 {
@@ -157,9 +164,14 @@ BearRenderBase::BearRenderShaderBase * DX12RenderFactory::CreateShader(BearGraph
 	return  bear_new<DX12RenderShader>(Type);
 }
 
-BearRenderBase::BearRenderPipelineBase * DX12RenderFactory::CreatePipeline(const BearGraphics::BearRenderPipelineDescription & Descruotion)
+BearRenderBase::BearRenderPipelineBase * DX12RenderFactory::CreatePipeline(const BearGraphics::BearRenderPipelineDescription & Description)
 {
-	return  bear_new<DX12RenderPipeline>(Descruotion);
+	return  bear_new<DX12RenderPipeline>(Description);
+}
+
+BearRenderBase::BearRenderPipelineBase * DX12RenderFactory::CreatePipeline(const BearGraphics::BearRenderRTXPipelineDescription & Description)
+{
+	return  bear_new<DX12RenderRTXPipeline>(Description);;
 }
 
 BearRenderBase::BearRenderIndexBufferBase * DX12RenderFactory::CreateIndexBuffer()
@@ -200,6 +212,11 @@ BearRenderBase::BearRenderTexture2DBase * DX12RenderFactory::CreateTexture2D()
 BearRenderBase::BearRenderTexture2DUAVBase * DX12RenderFactory::CreateTexture2DUAV()
 {
 	return bear_new<DX12RenderTexture2DUAV>();;
+}
+
+BearRenderBase::BearRenderAccelerationStructuresBase * DX12RenderFactory::CreateAccelerationStructures(const BearGraphics::BearRenderAccelerationStructuresDescription & Description)
+{
+	return nullptr;
 }
 
 BearRenderBase::BearRenderTargetViewBase * DX12RenderFactory::CreateTargetView(const BearGraphics::BearRenderTargetViewDescription & Description)
