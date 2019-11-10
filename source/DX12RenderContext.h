@@ -19,6 +19,8 @@ public:
 	virtual void Draw(bsize count, bsize offset = 0);
 	virtual void DrawIndex(bsize count, bsize offset = 0);
 	virtual void  SetDescriptorHeap(BearGraphics::BearFactoryPointer<BearRenderBase::BearRenderDescriptorHeapBase> DescriptorHeap);
+
+	virtual void DispatchRays(const BearGraphics::BearRenderDispatchRaysDescription&Description);
 private:
 	inline 	ComPtr<ID3D12GraphicsCommandList4>&GetCommandList() {if (!m_viewport.empty()) return static_cast<DX12RenderViewport*>(m_viewport.get())->CommandList;  return m_commandList;	}
 	inline bool Empty() { return m_viewport.empty() && m_framebuffer.empty(); }

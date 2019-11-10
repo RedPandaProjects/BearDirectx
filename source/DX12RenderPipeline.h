@@ -9,4 +9,5 @@ public:
 	D3D_PRIMITIVE_TOPOLOGY TopologyType;
 	BearGraphics::BearFactoryPointer<BearRenderBase::BearRenderRootSignatureBase> RootSignature;
 	DX12RenderRootSignature *RootSignaturePointer;
+	virtual void Set(void*cmdlist);
 };

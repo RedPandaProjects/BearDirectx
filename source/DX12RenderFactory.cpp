@@ -216,7 +216,7 @@ BearRenderBase::BearRenderTexture2DUAVBase * DX12RenderFactory::CreateTexture2DU
 
 BearRenderBase::BearRenderAccelerationStructuresBase * DX12RenderFactory::CreateAccelerationStructures(const BearGraphics::BearRenderAccelerationStructuresDescription & Description)
 {
-	return nullptr;
+	return bear_new<DX12RenderAccelerationStructures>(Description);;;
 }
 
 BearRenderBase::BearRenderTargetViewBase * DX12RenderFactory::CreateTargetView(const BearGraphics::BearRenderTargetViewDescription & Description)

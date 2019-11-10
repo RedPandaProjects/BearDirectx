@@ -9,4 +9,5 @@ public:
 	BearGraphics::BearFactoryPointer<BearRenderBase::BearRenderRootSignatureBase> RootSignature;
 	BearGraphics::BearFactoryPointer<BearRenderBase::BearRenderRootSignatureBase> LocalRootSignature;
 	DX12RenderRootSignature *RootSignaturePointer;
+	virtual void Set(void*cmdlist) ;
 };

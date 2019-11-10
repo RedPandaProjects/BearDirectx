@@ -13,8 +13,9 @@
 #endif
 #pragma warning(pop)
 #include "BearRenderBase.h"
-
+#include <atlbase.h>
 using Microsoft::WRL::ComPtr;
+using ATL::CComPtr;
 #define R_CHK(a) BEAR_RASSERT(SUCCEEDED(a))
 
 using namespace BearCore;

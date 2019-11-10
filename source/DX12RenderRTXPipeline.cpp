@@ -3,7 +3,7 @@
 DX12RenderRTXPipeline::DX12RenderRTXPipeline(const BearGraphics::BearRenderRTXPipelineDescription & desc)
 {
 	BearVector< D3D12_STATE_SUBOBJECT> Objects;
-	const bchar16*ShaderNames[] = { L"RayGeneration",L"Miss",L"Hit" };
+	const bchar16*ShaderNames[] = { L"RayGen",L"Miss",L"ClosestHit" };
 	///////////////////////////////////////////////////////////////////
 	RootSignature = desc.RootSignature.Global;
 	LocalRootSignature = desc.RootSignature.Local;
@@ -26,10 +26,12 @@ DX12RenderRTXPipeline::DX12RenderRTXPipeline(const BearGraphics::BearRenderRTXPi
 	D3D12_RAYTRACING_SHADER_CONFIG ShaderConfig = {};
 	D3D12_STATE_SUBOBJECT SubobjectShaderConfig = {};
 	//For Local Root Signature
+	CComPtr<ID3D12RootSignature> LocalRootSig;
 	D3D12_STATE_SUBOBJECT SubobjectLocalRootSignature = {};
 	D3D12_SUBOBJECT_TO_EXPORTS_ASSOCIATION LocalRootSignatureAssociation = {};
 	D3D12_STATE_SUBOBJECT SubobjectLocalRootSignatureAssociation = {};
 	//For Global RootSignature
+	CComPtr<ID3D12RootSignature> GlobalRootSig;
 	D3D12_STATE_SUBOBJECT SubobjectGLobalRootSignature;
 	//For Pipeline Config
 	D3D12_RAYTRACING_PIPELINE_CONFIG PipelineConfig = {};
@@ -103,7 +105,7 @@ DX12RenderRTXPipeline::DX12RenderRTXPipeline(const BearGraphics::BearRenderRTXPi
 	// Hit Group
 	{
 		HitGroup.HitGroupExport = L"HitGroup";
-		HitGroup.ClosestHitShaderImport = L"Hit";
+		HitGroup.ClosestHitShaderImport = ShaderNames[2];
 		HitGroup.Type = D3D12_HIT_GROUP_TYPE_TRIANGLES;
 		{
 			SubobjectHitGroup.Type = D3D12_STATE_SUBOBJECT_TYPE_HIT_GROUP;
@@ -122,7 +124,8 @@ DX12RenderRTXPipeline::DX12RenderRTXPipeline(const BearGraphics::BearRenderRTXPi
 
 	{
 		SubobjectLocalRootSignature.Type  =  D3D12_STATE_SUBOBJECT_TYPE_LOCAL_ROOT_SIGNATURE;
-		SubobjectLocalRootSignature.pDesc = (static_cast<DX12RenderRootSignature*>(LocalRootSignature.get())->RootSignature.Get());
+		SubobjectLocalRootSignature.pDesc = &LocalRootSig;
+		LocalRootSig = (static_cast<DX12RenderRootSignature*>(LocalRootSignature.get())->RootSignature).Get();
 		Objects.push_back(SubobjectLocalRootSignature);
 
 		
@@ -137,7 +140,8 @@ DX12RenderRTXPipeline::DX12RenderRTXPipeline(const BearGraphics::BearRenderRTXPi
 	}
 	{
 		SubobjectGLobalRootSignature.Type = D3D12_STATE_SUBOBJECT_TYPE_GLOBAL_ROOT_SIGNATURE;
-		SubobjectGLobalRootSignature.pDesc = (RootSignaturePointer->RootSignature.Get());
+		SubobjectGLobalRootSignature.pDesc = &GlobalRootSig;
+		GlobalRootSig = RootSignaturePointer->RootSignature.Get();
 		Objects.push_back(SubobjectGLobalRootSignature);
 	}
 	{
@@ -156,4 +160,9 @@ DX12RenderRTXPipeline::DX12RenderRTXPipeline(const BearGraphics::BearRenderRTXPi
 
 DX12RenderRTXPipeline::~DX12RenderRTXPipeline()
 {
+}
+
+void DX12RenderRTXPipeline::Set(void * cmdlist)
+{
+	static_cast<ID3D12GraphicsCommandList4*>(cmdlist)->SetPipelineState1(PipelineState.Get());
 }

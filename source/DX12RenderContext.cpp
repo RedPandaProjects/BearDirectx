@@ -125,9 +125,8 @@ void DX12RenderContext::SetPipeline(BearGraphics::BearFactoryPointer<BearRenderB
 {
 	if (Empty())return;
 	if (m_Status != 1|| Pipeline.empty())return;
-	GetCommandList()->SetPipelineState(static_cast<DX12RenderPipeline*>(Pipeline.get())->PipelineState.Get());
-	GetCommandList()->IASetPrimitiveTopology(static_cast<DX12RenderPipeline*>(Pipeline.get())->TopologyType);
-	static_cast<DX12RenderPipeline*>(Pipeline.get())->RootSignaturePointer->Set(GetCommandList().Get());
+	Pipeline->Set(GetCommandList().Get());
+	
 }
 
 void DX12RenderContext::SetVertexBuffer(BearGraphics::BearFactoryPointer<BearRenderBase::BearRenderVertexBufferBase> buffer)
@@ -205,6 +204,10 @@ void DX12RenderContext::SetDescriptorHeap(BearGraphics::BearFactoryPointer<BearR
 	if (Empty())return;
 	if (m_Status != 1|| DescriptorHeap.empty())return;
 	static_cast<DX12RenderDescriptorHeap*>(DescriptorHeap.get())->Set(GetCommandList().Get());
+}
+
+void DX12RenderContext::DispatchRays(const BearGraphics::BearRenderDispatchRaysDescription & Description)
+{
 }
 
 void DX12RenderContext::PreDestroy()

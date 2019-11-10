@@ -98,3 +98,16 @@ DX12RenderPipeline::~DX12RenderPipeline()
 {
 
 }
+
+void DX12RenderPipeline::Set(void * cmdlist)
+{
+#ifdef RTX
+	static_cast<ID3D12GraphicsCommandList4*>(cmdlist)->SetPipelineState(PipelineState.Get());
+	static_cast<ID3D12GraphicsCommandList4*>(cmdlist)->IASetPrimitiveTopology(TopologyType);
+	RootSignaturePointer->Set(static_cast<ID3D12GraphicsCommandList4*>(cmdlist));
+#else
+	static_cast<ID3D12GraphicsCommandList*>(cmdlist)->SetPipelineState(PipelineState.Get());
+	static_cast<ID3D12GraphicsCommandList*>(cmdlist)->IASetPrimitiveTopology(TopologyType);
+	RootSignaturePointer->Set(static_cast<ID3D12GraphicsCommandList*>(cmdlist));
+#endif
+}
