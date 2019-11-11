@@ -2,7 +2,6 @@
 
 DX12RenderViewport::DX12RenderViewport(void * Handle, bsize Width, bsize Height, bool Fullscreen, bool VSync, const BearGraphics::BearRenderViewportDescription&Description_):Description(Description_), m_Fullscreen(Fullscreen),m_VSync(VSync), m_Width(Width),m_Height(Height)
 {
-	m_wait = false;
 	D3D12_COMMAND_QUEUE_DESC queueDesc = {};
 	queueDesc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
 	queueDesc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
@@ -55,85 +54,21 @@ DX12RenderViewport::DX12RenderViewport(void * Handle, bsize Width, bsize Height,
 			rtvHandle.Offset(1,Factory-> RtvDescriptorSize);
 		}
 	}
-	R_CHK(Factory->Device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&CommandAllocator)));
-
-	R_CHK(CommandAllocator->Reset());
-	R_CHK(Factory->Device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, CommandAllocator.Get(), nullptr, IID_PPV_ARGS(&CommandList)));
-	CommandList->Close();
-	R_CHK(CommandList->Reset(CommandAllocator.Get(), 0));
-
-
-	R_CHK(Factory->Device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&Fence)));
-	FenceValue = 0;
-
-	FenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
-	if (FenceEvent == nullptr)
-	{
-		R_CHK(HRESULT_FROM_WIN32(GetLastError()));
-	}
 	auto transition = CD3DX12_RESOURCE_BARRIER::Transition(RenderTargets[FrameIndex].Get(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
-	CommandList->ResourceBarrier(1, &transition); m_Status = 1;
+	Factory->LockCommandList();
+	Factory->CommandList->ResourceBarrier(1, &transition);
+	Factory->UnlockCommandList(CommandQueue.Get());
+	
 
 }
 
 DX12RenderViewport::~DX12RenderViewport()
 {	
-	if(FenceValue)
-	if (Fence->GetCompletedValue() < FenceValue - 1)
-	{
-		R_CHK(Fence->SetEventOnCompletion(FenceValue - 1, FenceEvent));
-		WaitForSingleObject(FenceEvent, INFINITE);
-	}
-	R_CHK(CommandList->Close());
 
-	CloseHandle(FenceEvent);
-}
-
-void DX12RenderViewport::Flush(bool wait)
-{
-	m_Status = 1;
-	auto transition = CD3DX12_RESOURCE_BARRIER::Transition(RenderTargets[FrameIndex].Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
-	CommandList->ResourceBarrier(1,&transition);
-
-	R_CHK(CommandList->Close());
-
-	ID3D12CommandList* ppCommandLists[] = { CommandList.Get() };
-	CommandQueue->ExecuteCommandLists(_countof(ppCommandLists), ppCommandLists);
-	R_CHK(SwapChain->Present(m_VSync, 0));
-
-	R_CHK(CommandQueue->Signal(Fence.Get(), FenceValue++));
-	if (wait)Wait();
-}
-
-void DX12RenderViewport::Wait()
-{
-	if (m_Status != 1)return;
-	if (FenceValue == 0)return;
-	m_Status = 0;
-	if (Fence->GetCompletedValue() < FenceValue-1)
-	{
-		R_CHK(Fence->SetEventOnCompletion(FenceValue-1, FenceEvent));
-		WaitForSingleObject(FenceEvent, INFINITE);
-	}
-	R_CHK(CommandAllocator->Reset());
-	R_CHK(CommandList->Reset(CommandAllocator.Get(), 0));
-	FrameIndex = SwapChain->GetCurrentBackBufferIndex();
-	auto transition = CD3DX12_RESOURCE_BARRIER::Transition(RenderTargets[FrameIndex].Get(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
-	CommandList->ResourceBarrier(1, &transition);
-
-	m_wait = false;
 }
 
 void DX12RenderViewport::ReInit(bsize Width, bsize Height)
 {
-	if (m_Status == 1)
-	{
-		Wait();
-	}
-	R_CHK(CommandList->Close());
-	R_CHK(CommandAllocator->Reset());
-	R_CHK(CommandList->Reset(CommandAllocator.Get(), 0));
-	m_Status = 0;
 	
 
 	for (UINT n = 0; n < FrameCount; n++)
@@ -176,7 +111,9 @@ void DX12RenderViewport::ReInit(bsize Width, bsize Height)
 
 
 	auto transition = CD3DX12_RESOURCE_BARRIER::Transition(RenderTargets[FrameIndex].Get(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
-	CommandList->ResourceBarrier(1, &transition);
+	Factory->LockCommandList();
+	Factory->CommandList->ResourceBarrier(1, &transition);
+	Factory->UnlockCommandList();
 	m_Width = Width;
 	m_Height = Height;
 }
@@ -243,4 +180,22 @@ void * DX12RenderViewport::GetHandle()
 void DX12RenderViewport::SetResource(void *)
 {
 	BEAR_ASSERT(0);
+}
+
+void DX12RenderViewport::ToPresent(ID3D12GraphicsCommandList * CommandList)
+{
+	auto transition = CD3DX12_RESOURCE_BARRIER::Transition(RenderTargets[FrameIndex].Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
+	CommandList->ResourceBarrier(1, &transition);
+}
+
+void DX12RenderViewport::Swap()
+{
+	R_CHK(SwapChain->Present(m_VSync, 0));
+}
+
+void DX12RenderViewport::ToRT(ID3D12GraphicsCommandList * CommandList)
+{
+	FrameIndex = SwapChain->GetCurrentBackBufferIndex();
+	auto transition = CD3DX12_RESOURCE_BARRIER::Transition(RenderTargets[FrameIndex].Get(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
+	CommandList->ResourceBarrier(1, &transition);
 }

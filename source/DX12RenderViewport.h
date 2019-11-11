@@ -10,23 +10,16 @@ public:
 	virtual void Resize(bsize Width, bsize Height);
 	virtual void*GetHandle();
 	virtual void SetResource(void*);
-	void Flush(bool wait);
-	void Wait();
+	void ToRT(ID3D12GraphicsCommandList*Cmd);
+	void Swap();
+	void ToPresent(ID3D12GraphicsCommandList*Cmd);
 	
 	BearGraphics::BearRenderViewportDescription Description;
-#ifdef RTX
-	ComPtr<ID3D12GraphicsCommandList4> CommandList;
-#else
-	ComPtr<ID3D12GraphicsCommandList> CommandList;
-#endif
+	ComPtr<ID3D12CommandQueue> CommandQueue;
 private:
 	void ReInit(bsize Width, bsize Height);
 
-	ComPtr<ID3D12CommandQueue> CommandQueue;
-	ComPtr<ID3D12CommandAllocator> CommandAllocator;
-	HANDLE FenceEvent;
-	ComPtr<ID3D12Fence> Fence;
-	UINT64 FenceValue;
+
 
 	ComPtr<IDXGISwapChain3> SwapChain;
 	ComPtr<ID3D12DescriptorHeap> RtvHeap;
@@ -43,6 +36,4 @@ private:
 	bool m_VSync;
 	bsize m_Width;
 	bsize m_Height;
-	bool m_wait;
-	int8 m_Status;
 };

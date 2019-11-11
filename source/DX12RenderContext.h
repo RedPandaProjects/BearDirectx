@@ -22,7 +22,6 @@ public:
 
 	virtual void DispatchRays(const BearGraphics::BearRenderDispatchRaysDescription&Description);
 private:
-	inline 	ComPtr<ID3D12GraphicsCommandList4>&GetCommandList() {if (!m_viewport.empty()) return static_cast<DX12RenderViewport*>(m_viewport.get())->CommandList;  return m_commandList;	}
 	inline bool Empty() { return m_viewport.empty() && m_framebuffer.empty(); }
 	BearGraphics::BearFactoryPointer<BearRenderBase::BearRenderViewportBase> m_viewport;
 	BearGraphics::BearFactoryPointer<BearRenderBase::BearRenderFrameBufferBase> m_framebuffer;
@@ -34,9 +33,9 @@ private:
 private:
 	void AllocCommandList();
 #ifdef RTX
-	ComPtr<ID3D12GraphicsCommandList4> m_commandList;
+	ComPtr<ID3D12GraphicsCommandList4> CommandList;
 #else
-	ComPtr<ID3D12GraphicsCommandList> m_commandList;
+	ComPtr<ID3D12GraphicsCommandList> CommandList;
 #endif
 	ComPtr<ID3D12CommandAllocator> m_commandAllocator;
 	ComPtr<ID3D12CommandQueue> m_commandQueue;

@@ -46,7 +46,7 @@ public:
 	ComPtr<ID3D12GraphicsCommandList> CopyCommandList;
 
 	void LockCommandList();
-	void UnlockCommandList();
+	void UnlockCommandList(ID3D12CommandQueue*CommandQueue=0);
 #ifdef RTX
 	ComPtr<ID3D12GraphicsCommandList4> CommandList;
 #else

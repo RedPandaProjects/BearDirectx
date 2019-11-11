@@ -388,16 +388,24 @@ void DX12RenderFactory::LockCommandList()
 	m_Default_CommandMutex.Lock();
 }
 
-void DX12RenderFactory::UnlockCommandList()
+void DX12RenderFactory::UnlockCommandList(ID3D12CommandQueue * CommandQueue)
 {
 	R_CHK(CommandList->Close());
 	ID3D12CommandList* ppCommandLists[] = { CommandList.Get() };
-	m_Default_CommandQueue->ExecuteCommandLists(_countof(ppCommandLists), ppCommandLists);
-
+	if(CommandQueue)
+		CommandQueue->ExecuteCommandLists(_countof(ppCommandLists), ppCommandLists);
+	else
+		m_Default_CommandQueue->ExecuteCommandLists(_countof(ppCommandLists), ppCommandLists);
 	const UINT64 fence = m_Default_FenceValue;
-	R_CHK(m_Default_CommandQueue->Signal(m_Default_Fence.Get(), fence));
+	if (CommandQueue)
+	{
+		R_CHK(CommandQueue->Signal(m_Default_Fence.Get(), fence));
+	}
+	else
+	{
+		R_CHK(m_Default_CommandQueue->Signal(m_Default_Fence.Get(), fence));
+	}
 	m_Default_FenceValue++;
-
 	if (m_Default_Fence->GetCompletedValue() < fence)
 	{
 		R_CHK(m_Default_Fence->SetEventOnCompletion(fence, m_Default_FenceEvent));
