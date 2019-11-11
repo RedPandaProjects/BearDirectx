@@ -16,6 +16,9 @@ public:
 	ComPtr<ID3D12Resource> TextureBuffer;
 	D3D12_UNORDERED_ACCESS_VIEW_DESC TextureView;
 	D3D12_SHADER_RESOURCE_VIEW_DESC TextureViewForShader;
+
+	void ToResource(ID3D12GraphicsCommandList*CommandList);
+	void ToUnordered(ID3D12GraphicsCommandList * CommandList);
 private:
 	D3D12_RESOURCE_DESC TextureDesc;
 };

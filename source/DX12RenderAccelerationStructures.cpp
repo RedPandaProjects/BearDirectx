@@ -155,5 +155,9 @@ DX12RenderAccelerationStructures::~DX12RenderAccelerationStructures()
 void DX12RenderAccelerationStructures::SetResource(void * heap)
 {
 	D3D12_CPU_DESCRIPTOR_HANDLE* Handle = reinterpret_cast<D3D12_CPU_DESCRIPTOR_HANDLE*>(heap);
-	Factory->Device->CreateShaderResourceView(m_topLevelAccelerationStructure.Get(), nullptr, *Handle);
+	D3D12_SHADER_RESOURCE_VIEW_DESC desc = {};
+	desc.ViewDimension = D3D12_SRV_DIMENSION::D3D12_SRV_DIMENSION_RAYTRACING_ACCELERATION_STRUCTURE;
+	desc.RaytracingAccelerationStructure.Location = m_topLevelAccelerationStructure->GetGPUVirtualAddress();
+	desc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+	Factory->Device->CreateShaderResourceView(0, &desc, *Handle);
 }

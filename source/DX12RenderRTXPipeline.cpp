@@ -1,9 +1,9 @@
 #include "DX12PCH.h"
-
+static const bchar16*ShaderNames[] = { L"RayGen",L"Miss",L"ClosestHit" };
 DX12RenderRTXPipeline::DX12RenderRTXPipeline(const BearGraphics::BearRenderRTXPipelineDescription & desc)
 {
 	BearVector< D3D12_STATE_SUBOBJECT> Objects;
-	const bchar16*ShaderNames[] = { L"RayGen",L"Miss",L"ClosestHit" };
+
 	///////////////////////////////////////////////////////////////////
 	RootSignature = desc.RootSignature.Global;
 	LocalRootSignature = desc.RootSignature.Local;
@@ -162,7 +162,29 @@ DX12RenderRTXPipeline::~DX12RenderRTXPipeline()
 {
 }
 
+void * DX12RenderRTXPipeline::GetRayGenerationIdentifier()
+{
+	ComPtr<ID3D12StateObjectPropertiesPrototype> stateObjectProperties;
+	R_CHK(PipelineState.As(&stateObjectProperties));
+	return stateObjectProperties->GetShaderIdentifier(ShaderNames[0]);
+}
+
+void * DX12RenderRTXPipeline::MissGenerationIdentifier()
+{
+	ComPtr<ID3D12StateObjectPropertiesPrototype> stateObjectProperties;
+	R_CHK(PipelineState.As(&stateObjectProperties));
+	return stateObjectProperties->GetShaderIdentifier(ShaderNames[1]);
+}
+
+void * DX12RenderRTXPipeline::HitGenerationIdentifier()
+{
+	ComPtr<ID3D12StateObjectPropertiesPrototype> stateObjectProperties;
+	R_CHK(PipelineState.As(&stateObjectProperties));
+	return stateObjectProperties->GetShaderIdentifier(L"HitGroup");
+}
+
 void DX12RenderRTXPipeline::Set(void * cmdlist)
 {
+	static_cast<ID3D12GraphicsCommandList4*>(cmdlist)->SetComputeRootSignature(RootSignaturePointer->RootSignature.Get());
 	static_cast<ID3D12GraphicsCommandList4*>(cmdlist)->SetPipelineState1(PipelineState.Get());
 }

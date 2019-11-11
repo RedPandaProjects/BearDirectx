@@ -23,7 +23,7 @@ void DX12RenderTexture2DUAV::Create(bsize width, bsize height, bsize depth, Bear
 		&var1,
 		D3D12_HEAP_FLAG_NONE,
 		&TextureDesc,
-		D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE| D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
+		D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
 		nullptr,
 		IID_PPV_ARGS(&TextureBuffer)));
 
@@ -42,6 +42,7 @@ void DX12RenderTexture2DUAV::Create(bsize width, bsize height, bsize depth, Bear
 	}
 	{
 		bear_fill(TextureViewForShader);
+		TextureViewForShader.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
 		TextureViewForShader.Format = TextureDesc.Format;
 		if (TextureDesc.DepthOrArraySize > 1)
 		{
@@ -55,7 +56,7 @@ void DX12RenderTexture2DUAV::Create(bsize width, bsize height, bsize depth, Bear
 			TextureViewForShader.Texture2D.MipLevels = 1;
 		}
 	}
-
+	
 }
 
 void DX12RenderTexture2DUAV::Clear()
@@ -81,3 +82,18 @@ void DX12RenderTexture2DUAV::SetUnorderedAccess(void *heap)
 	D3D12_CPU_DESCRIPTOR_HANDLE* Handle = reinterpret_cast<D3D12_CPU_DESCRIPTOR_HANDLE*>(heap);
 	Factory->Device->CreateUnorderedAccessView(TextureBuffer.Get(), nullptr, &TextureView, *Handle);
 }
+
+
+
+void DX12RenderTexture2DUAV::ToResource(ID3D12GraphicsCommandList * CommandList)
+{
+	auto var3 = CD3DX12_RESOURCE_BARRIER::Transition(TextureBuffer.Get(), D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+	CommandList->ResourceBarrier(1, &var3);
+}
+
+void DX12RenderTexture2DUAV::ToUnordered(ID3D12GraphicsCommandList * CommandList)
+{
+	auto var3 = CD3DX12_RESOURCE_BARRIER::Transition(TextureBuffer.Get(), D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+	CommandList->ResourceBarrier(1, &var3);
+}
+

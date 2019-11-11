@@ -57,7 +57,7 @@ DX12RenderRootSignature::DX12RenderRootSignature(const BearGraphics::BearRenderR
 			D3D12_ROOT_SIGNATURE_FLAG_DENY_DOMAIN_SHADER_ROOT_ACCESS |
 			D3D12_ROOT_SIGNATURE_FLAG_DENY_GEOMETRY_SHADER_ROOT_ACCESS;
 
-		bsize Count = CountBuffers+CountSRV+CountSampler;
+		bsize Count = CountBuffers+CountSRV+CountSampler+ CountUAV;
 		CD3DX12_DESCRIPTOR_RANGE1 Ranges[64];
 		CD3DX12_ROOT_PARAMETER1 RootParameters[64];
 		bsize offset = 0;

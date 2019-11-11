@@ -24,7 +24,7 @@ public:
 	virtual BearRenderBase::BearRenderFrameBufferBase *CreateFrameBuffer(const BearGraphics::BearRenderFrameBufferDescription&Description);
 
 	virtual BearRenderBase::BearRenderAccelerationStructuresBase *CreateAccelerationStructures(const BearGraphics::BearRenderAccelerationStructuresDescription&Description);
-	virtual  BearRenderBase::BearRenderPipelineBase*   CreatePipeline(const BearGraphics::BearRenderRTXPipelineDescription&Description);
+	virtual  BearRenderBase::BearRenderRTXPipelineBase*   CreateRTXPipeline(const BearGraphics::BearRenderRTXPipelineDescription&Description);
 
 	inline bool Empty()const { return Device.Get()==0; }
 	static DXGI_FORMAT Translation(BearGraphics::BearTextureUAVPixelFormat format);

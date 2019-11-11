@@ -13,4 +13,5 @@ private:
 	bsize CountBuffers;
 	bsize CountSRV;
 	bsize CountSampler;
+	bool CS;
 };

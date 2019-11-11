@@ -169,7 +169,7 @@ BearRenderBase::BearRenderPipelineBase * DX12RenderFactory::CreatePipeline(const
 	return  bear_new<DX12RenderPipeline>(Description);
 }
 
-BearRenderBase::BearRenderPipelineBase * DX12RenderFactory::CreatePipeline(const BearGraphics::BearRenderRTXPipelineDescription & Description)
+BearRenderBase::BearRenderRTXPipelineBase * DX12RenderFactory::CreateRTXPipeline(const BearGraphics::BearRenderRTXPipelineDescription & Description)
 {
 	return  bear_new<DX12RenderRTXPipeline>(Description);;
 }
