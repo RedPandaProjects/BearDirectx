@@ -206,7 +206,7 @@ void DX12RenderContext::SetDescriptorHeap(BearGraphics::BearFactoryPointer<BearR
 	if (m_Status != 1|| DescriptorHeap.empty())return;
 	static_cast<DX12RenderDescriptorHeap*>(DescriptorHeap.get())->Set(CommandList.Get());
 }
-
+/*
 void DX12RenderContext::DispatchRays(const BearGraphics::BearRenderDispatchRaysDescription & Description)
 {
 	D3D12_DISPATCH_RAYS_DESC Desc = {};
@@ -243,7 +243,7 @@ void DX12RenderContext::DispatchRays(const BearGraphics::BearRenderDispatchRaysD
 	}
 	CommandList->DispatchRays(&Desc);
 }
-
+*/
 void DX12RenderContext::PreDestroy()
 {
 	if (Empty())return;

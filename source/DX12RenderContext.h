@@ -20,7 +20,6 @@ public:
 	virtual void DrawIndex(bsize count, bsize offset = 0);
 	virtual void  SetDescriptorHeap(BearGraphics::BearFactoryPointer<BearRenderBase::BearRenderDescriptorHeapBase> DescriptorHeap);
 
-	virtual void DispatchRays(const BearGraphics::BearRenderDispatchRaysDescription&Description);
 private:
 	inline bool Empty() { return m_viewport.empty() && m_framebuffer.empty(); }
 	BearGraphics::BearFactoryPointer<BearRenderBase::BearRenderViewportBase> m_viewport;

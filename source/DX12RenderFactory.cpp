@@ -169,10 +169,6 @@ BearRenderBase::BearRenderPipelineBase * DX12RenderFactory::CreatePipeline(const
 	return  bear_new<DX12RenderPipeline>(Description);
 }
 
-BearRenderBase::BearRenderRTXPipelineBase * DX12RenderFactory::CreateRTXPipeline(const BearGraphics::BearRenderRTXPipelineDescription & Description)
-{
-	return  bear_new<DX12RenderRTXPipeline>(Description);;
-}
 
 BearRenderBase::BearRenderIndexBufferBase * DX12RenderFactory::CreateIndexBuffer()
 {
@@ -214,10 +210,6 @@ BearRenderBase::BearRenderTexture2DUAVBase * DX12RenderFactory::CreateTexture2DU
 	return bear_new<DX12RenderTexture2DUAV>();;
 }
 
-BearRenderBase::BearRenderAccelerationStructuresBase * DX12RenderFactory::CreateAccelerationStructures(const BearGraphics::BearRenderAccelerationStructuresDescription & Description)
-{
-	return bear_new<DX12RenderAccelerationStructures>(Description);;;
-}
 
 BearRenderBase::BearRenderTargetViewBase * DX12RenderFactory::CreateTargetView(const BearGraphics::BearRenderTargetViewDescription & Description)
 {

@@ -33,8 +33,6 @@ using namespace BearCore;
 #include "DX12RenderTargetView.h"
 #include "DX12RenderFrameBuffer.h"
 
-#include "DX12RenderAccelerationStructures.h"
-#include "DX12RenderRTXPipeline.h"
 
 #include "DX12RenderPipeline.h"
 #include "DX12RenderShader.h"
