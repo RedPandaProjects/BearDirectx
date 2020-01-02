@@ -1,9 +1,9 @@
 using BearBuildTool.Projects;
 using System.IO;
 using System;
-public class bear_render_dx12 :Project
+public class bear_render_dx12_1 :Project
 {
-	public bear_render_dx12(string ProjectPath)
+	public bear_render_dx12_1(string ProjectPath)
 	{
         PCHFile = Path.Combine(ProjectPath, "source", "DX12PCH.cpp");
         PCHIncludeFile = "DX12PCH.h";
@@ -14,6 +14,7 @@ public class bear_render_dx12 :Project
         LibrariesStatic.Private.Add("d3d12.lib");
         LibrariesStatic.Private.Add("dxgi.lib");
         LibrariesStatic.Private.Add("d3dcompiler.lib");
-        Defines.Private.Add("DX12");
+        Defines.Private.Add("DX12_1");
+        Defines.Private.Add("RTX");
     }
 } 

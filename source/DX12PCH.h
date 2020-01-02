@@ -12,34 +12,15 @@
 #include "dxc/dxcapi.h"
 #endif
 #pragma warning(pop)
-#include "BearRenderBase.h"
 #include <atlbase.h>
 using Microsoft::WRL::ComPtr;
 using ATL::CComPtr;
+
+#include "BearRenderBase.h"
+
 #define R_CHK(a) BEAR_RASSERT(SUCCEEDED(a))
 
-using namespace BearCore;
-#include "DX12RenderInterface.h"
-#include "DX12RenderViewport.h"
-
-#include "DX12RenderIndexBuffer.h"
-#include "DX12RenderVertexBuffer.h"
-#include "DX12RenderUniformBuffer.h"
-#include "DX12RenderRootSignature.h"
-#include "DX12RenderDescriptorHeap.h"
-#include "DX12RenderSamplerState.h"
-#include "DX12RenderTexture2D.h"
-#include "DX12RenderTexture2DUAV.h"
-#include "DX12RenderTargetView.h"
-#include "DX12RenderFrameBuffer.h"
-
-
-#include "DX12RenderPipeline.h"
-#include "DX12RenderShader.h"
-
-
-#include "DX12RenderContext.h"
-#include "DX12RenderFactory.h"
-
-
-extern DX12RenderFactory *Factory;
+#include "DX12Factory.h"
+extern DX12Factory* Factory;
+#include "DX12Viewport.h"
+#include "DX12Context.h"
