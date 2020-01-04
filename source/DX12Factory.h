@@ -7,6 +7,7 @@ public:
 	inline bool Empty() const { return Device.Get() == 0; }
 	virtual BearRHI::BearRHIViewport*  CreateViewport(void* Handle, bsize Width, bsize Height, bool Fullscreen, bool VSync, const BearRenderViewportDescription& Description);
 	virtual BearRHI::BearRHIContext* CreateContext();
+	virtual BearRHI::BearRHIShader* CreateShader(BearShaderType Type);
 public:
 	UINT SamplerDescriptorSize;
 	UINT CbvSrvUavDescriptorSize;

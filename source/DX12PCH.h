@@ -24,3 +24,4 @@ using ATL::CComPtr;
 extern DX12Factory* Factory;
 #include "DX12Viewport.h"
 #include "DX12Context.h"
+#include "DX12Shader.h"

@@ -130,6 +130,11 @@ BearRHI::BearRHIContext *DX12Factory::CreateContext()
 	return bear_new<DX12Context>();
 }
 
+BearRHI::BearRHIShader* DX12Factory::CreateShader(BearShaderType Type)
+{
+	return bear_new< DX12Shader>(Type);
+}
+
 void DX12Factory::GetHardwareAdapter(IDXGIFactory2 *pFactory, IDXGIAdapter1 **ppAdapter, D3D_FEATURE_LEVEL &Level)
 {
 	ComPtr<IDXGIAdapter1> adapter;
