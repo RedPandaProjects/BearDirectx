@@ -135,6 +135,17 @@ BearRHI::BearRHIShader* DX12Factory::CreateShader(BearShaderType Type)
 	return bear_new< DX12Shader>(Type);
 }
 
+BearRHI::BearRHIVertexBuffer* DX12Factory::CreateVertexBuffer(bsize stride, bsize count, bool dynamic)
+{
+	return nullptr;
+}
+
+BearRHI::BearRHIIndexBuffer* DX12Factory::CreateIndexBuffer(bsize count, bool dynamic)
+{
+	return nullptr;
+}
+
+
 void DX12Factory::GetHardwareAdapter(IDXGIFactory2 *pFactory, IDXGIAdapter1 **ppAdapter, D3D_FEATURE_LEVEL &Level)
 {
 	ComPtr<IDXGIAdapter1> adapter;

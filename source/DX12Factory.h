@@ -8,6 +8,8 @@ public:
 	virtual BearRHI::BearRHIViewport*  CreateViewport(void* Handle, bsize Width, bsize Height, bool Fullscreen, bool VSync, const BearRenderViewportDescription& Description);
 	virtual BearRHI::BearRHIContext* CreateContext();
 	virtual BearRHI::BearRHIShader* CreateShader(BearShaderType Type);
+	virtual BearRHI::BearRHIVertexBuffer* CreateVertexBuffer(bsize stride, bsize count, bool dynamic);
+	virtual BearRHI::BearRHIIndexBuffer* CreateIndexBuffer(bsize count, bool dynamic);
 public:
 	UINT SamplerDescriptorSize;
 	UINT CbvSrvUavDescriptorSize;

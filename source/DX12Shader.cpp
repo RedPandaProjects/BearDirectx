@@ -27,7 +27,7 @@ public:
 		auto steam = m_Includer->OpenAsStream(pFileName);
 #endif
 		if(*steam== nullptr)return -1;
-		* pBytes = steam->Size();
+		* pBytes =static_cast<UINT>( steam->Size());
 		m_Data = steam->Read();
 		*ppData = *m_Data;
 
