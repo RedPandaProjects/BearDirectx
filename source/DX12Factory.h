@@ -5,15 +5,17 @@ public:
 	DX12Factory();
 	virtual ~DX12Factory();
 	inline bool Empty() const { return Device.Get() == 0; }
-	virtual BearRHI::BearRHIViewport*  CreateViewport(void* Handle, bsize Width, bsize Height, bool Fullscreen, bool VSync, const BearRenderViewportDescription& Description);
+	virtual BearRHI::BearRHIViewport*  CreateViewport(void* Handle, bsize Width, bsize Height, bool Fullscreen, bool VSync, const BearViewportDescription& Description);
 	virtual BearRHI::BearRHIContext* CreateContext();
 	virtual BearRHI::BearRHIShader* CreateShader(BearShaderType Type);
 	virtual BearRHI::BearRHIVertexBuffer* CreateVertexBuffer();
 	virtual BearRHI::BearRHIIndexBuffer* CreateIndexBuffer();
+	virtual BearRHI::BearRHIPipeline* CreatePipeline(const BearPipelineDescription& Description);
 public:
 	UINT SamplerDescriptorSize;
 	UINT CbvSrvUavDescriptorSize;
 	UINT RtvDescriptorSize;
+	ComPtr<ID3D12RootSignature> RootSignature;
 	ComPtr<ID3D12Device> Device;
 	ComPtr<IDXGIFactory4> GIFactory;
 #ifdef RTX

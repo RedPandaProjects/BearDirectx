@@ -11,7 +11,7 @@ void DX12VertexBuffer::Create(bsize Stride, bsize Count, bool Dynamic)
 	m_dynamic = Dynamic;
 	{
 		CD3DX12_HEAP_PROPERTIES a(Dynamic ? D3D12_HEAP_TYPE_UPLOAD : D3D12_HEAP_TYPE_DEFAULT);
-		auto b = CD3DX12_RESOURCE_DESC::Buffer(static_cast<UINT64>(Count * Count));
+		auto b = CD3DX12_RESOURCE_DESC::Buffer(static_cast<UINT64>(Stride * Count));
 		R_CHK(Factory->Device->CreateCommittedResource(
 			&a,
 			D3D12_HEAP_FLAG_NONE,

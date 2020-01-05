@@ -104,6 +104,15 @@ DX12Factory::DX12Factory()
 		R_CHK(Device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&m_Default_Fence)));
 		m_Default_FenceValue = 1;
 	}
+	{
+		CD3DX12_ROOT_SIGNATURE_DESC RootSignatureDesc;
+		RootSignatureDesc.Init(0, nullptr, 0, nullptr, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
+
+		ComPtr<ID3DBlob> signature;
+		ComPtr<ID3DBlob> error;
+		R_CHK(D3D12SerializeRootSignature(&RootSignatureDesc, D3D_ROOT_SIGNATURE_VERSION_1, &signature, &error));
+		R_CHK(Device->CreateRootSignature(0, signature->GetBufferPointer(), signature->GetBufferSize(), IID_PPV_ARGS(&RootSignature)));
+	}
 }
 
 DX12Factory::~DX12Factory()
@@ -120,7 +129,7 @@ DX12Factory::~DX12Factory()
 		m_Default_FenceEvent = 0;
 	}
 }
-BearRHI::BearRHIViewport *DX12Factory::CreateViewport(void* Handle, bsize Width, bsize Height, bool Fullscreen, bool VSync, const BearRenderViewportDescription &Description)
+BearRHI::BearRHIViewport *DX12Factory::CreateViewport(void* Handle, bsize Width, bsize Height, bool Fullscreen, bool VSync, const BearViewportDescription&Description)
 {
 	return bear_new<DX12Viewport>(Handle, Width,Height,Fullscreen,VSync,Description);
 }
@@ -143,6 +152,11 @@ BearRHI::BearRHIVertexBuffer* DX12Factory::CreateVertexBuffer()
 BearRHI::BearRHIIndexBuffer* DX12Factory::CreateIndexBuffer()
 {
 	return bear_new<DX12IndexBuffer>();
+}
+
+BearRHI::BearRHIPipeline* DX12Factory::CreatePipeline(const BearPipelineDescription& Description)
+{
+	return bear_new<DX12Pipeline>(Description);
 }
 
 

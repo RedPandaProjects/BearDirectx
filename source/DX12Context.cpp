@@ -100,9 +100,9 @@ void DX12Context::ClearFrameBuffer()
         
     }
 
-   /* CommandList->SetGraphicsRootSignature(Factory->RootSignature.Get());
+   /* CommandList->SetGraphicsRootSignature(Factory->RootSignature.Get());*/
     CommandList->RSSetViewports(1, &m_viewportRect);
-    CommandList->RSSetScissorRects(1, &m_scissorRect);*/
+    CommandList->RSSetScissorRects(1, &m_scissorRect);
 }
 void DX12Context::Copy(BearFactoryPointer<BearRHI::BearRHIVertexBuffer> Dst, BearFactoryPointer<BearRHI::BearRHIVertexBuffer> Src)
 {
@@ -116,6 +116,76 @@ void DX12Context::Copy(BearFactoryPointer<BearRHI::BearRHIVertexBuffer> Dst, Bea
     auto var2 = CD3DX12_RESOURCE_BARRIER::Transition(static_cast<DX12VertexBuffer*>(Dst.get())->VertexBuffer.Get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
     CommandList->ResourceBarrier(1, &var2);
  
+}
+void DX12Context::SetPipeline(BearFactoryPointer<BearRHI::BearRHIPipeline> Pipeline)
+{
+    if (Empty())return;
+    if (m_Status != 1 || Pipeline.empty())return;
+    static_cast<DX12Pipeline*>( Pipeline.get())->Set(CommandList.Get());
+}
+void DX12Context::SetVertexBuffer(BearFactoryPointer<BearRHI::BearRHIVertexBuffer> buffer)
+{
+    if (Empty())return;
+    if (m_Status != 1 || buffer.empty())return;
+    CommandList->IASetVertexBuffers(0, 1, &static_cast<DX12VertexBuffer*>(buffer.get())->VertexBufferView);
+
+}
+void DX12Context::SetIndexBuffer(BearFactoryPointer<BearRHI::BearRHIIndexBuffer> buffer)
+{
+    if (Empty())return;
+    if (m_Status != 1 || buffer.empty())return;
+    CommandList->IASetIndexBuffer(&static_cast<DX12IndexBuffer*>(buffer.get())->IndexBufferView);
+
+}
+void DX12Context::SetViewport(float x, float y, float width, float height, float minDepth, float maxDepth)
+{
+    m_viewportRect.TopLeftX = x;
+    m_viewportRect.TopLeftY = y;
+    m_viewportRect.Width = width;
+    m_viewportRect.Height = height;
+
+    m_viewportRect.MinDepth = minDepth;
+    m_viewportRect.MaxDepth = maxDepth;
+    if (Empty())return;
+    if (m_Status != 1)return;
+    CommandList->RSSetViewports(1, &m_viewportRect);
+}
+void DX12Context::SetScissor(bool Enable, float x, float y, float x1, float y1)
+{
+    if (Enable)
+    {
+        m_scissorRect.left = static_cast<LONG>(x);
+        m_scissorRect.right = static_cast<LONG>(x1);
+        m_scissorRect.top = static_cast<LONG>(y);
+        m_scissorRect.bottom = static_cast<LONG>(y1);
+        if (m_Status != 1)return;
+        if (Empty())return;
+        CommandList->RSSetScissorRects(1, &m_scissorRect);
+    }
+    else
+    {
+        m_scissorRect.left = 0;
+        m_scissorRect.right = D3D12_REQ_TEXTURE2D_U_OR_V_DIMENSION;
+        m_scissorRect.top = 0;
+        m_scissorRect.bottom = D3D12_REQ_TEXTURE2D_U_OR_V_DIMENSION;
+        if (m_Status != 1)return;
+        if (Empty())return;
+        CommandList->RSSetScissorRects(1, &m_scissorRect);
+    }
+}
+void DX12Context::Draw(bsize count, bsize offset)
+{
+    if (Empty())return;
+    if (m_Status != 1)return;
+    CommandList->DrawInstanced(static_cast<UINT>(count), 1, static_cast<UINT>(offset), 0);
+
+}
+void DX12Context::DrawIndex(bsize count, bsize offset_index, bsize  offset_vertex)
+{
+    if (Empty())return;
+    if (m_Status != 1)return;
+    CommandList->DrawIndexedInstanced(static_cast<UINT>(count), 1, static_cast<UINT>(offset_index), static_cast<UINT>(offset_vertex), 0);
+
 }
 void DX12Context::Copy(BearFactoryPointer<BearRHI::BearRHIIndexBuffer> Dst, BearFactoryPointer<BearRHI::BearRHIIndexBuffer> Src)
 {
