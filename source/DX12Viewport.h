@@ -12,6 +12,7 @@ public:
 
 	void Swap();
 
+	bool m_is_rt;
 	void ToPresent(ID3D12GraphicsCommandList*Cmd);
 	void ToRT(ID3D12GraphicsCommandList* Cmd);
 

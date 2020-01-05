@@ -12,6 +12,7 @@ DX12Context::DX12Context()
     m_viewportRect.MinDepth = 0;
     m_viewportRect.TopLeftX = 0;
     m_viewportRect.TopLeftY = 0;
+    m_Status = 0;
     AllocCommandList();
 }
 
@@ -31,8 +32,7 @@ DX12Context::~DX12Context()
 
 void DX12Context::Wait()
 {
-    if (Empty())
-        return;
+
     if (m_Status != 2)
         return;
 
@@ -43,19 +43,24 @@ void DX12Context::Wait()
     }
     R_CHK(m_commandAllocator->Reset());
     R_CHK(CommandList->Reset(m_commandAllocator.Get(), 0));
-    static_cast<DX12Viewport *>(m_viewport.get())->ToRT(CommandList.Get());
+    if (!m_viewport.empty())
+        static_cast<DX12Viewport*>(m_viewport.get())->ToRT(CommandList.Get());
     m_Status = 0;
 }
 
 void DX12Context::Flush(bool wait)
 {
-    if (Empty())
-        return;
     if (m_Status != 1)
         return;
 
     ID3D12CommandList* ppCommandLists[] = { CommandList.Get() };
-
+    if (Empty())
+    {
+        R_CHK(CommandList->Close());
+        m_commandQueue->ExecuteCommandLists(_countof(ppCommandLists), ppCommandLists);
+        R_CHK(m_commandQueue->Signal(m_fence.Get(), m_fenceValue++));
+    }
+    else
     {
         auto viewport = static_cast<DX12Viewport*>(m_viewport.get());
         viewport->ToPresent(CommandList.Get());
@@ -110,11 +115,12 @@ void DX12Context::Copy(BearFactoryPointer<BearRHI::BearRHIVertexBuffer> Dst, Bea
     if (Dst.empty() || Src.empty())return;
     if (static_cast<DX12VertexBuffer*>(Dst.get())->VertexBuffer.Get() == nullptr)return;
     if (static_cast<DX12VertexBuffer*>(Src.get())->VertexBuffer.Get() == nullptr)return;
-    auto var1 = CD3DX12_RESOURCE_BARRIER::Transition(static_cast<DX12VertexBuffer*>(Dst.get())->VertexBuffer.Get(), D3D12_RESOURCE_STATE_INDEX_BUFFER, D3D12_RESOURCE_STATE_COPY_DEST);
+    auto var1 = CD3DX12_RESOURCE_BARRIER::Transition(static_cast<DX12VertexBuffer*>(Dst.get())->VertexBuffer.Get(), D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER, D3D12_RESOURCE_STATE_COPY_DEST);
     CommandList->ResourceBarrier(1, &var1);
     CommandList->CopyBufferRegion(static_cast<DX12VertexBuffer*>(Dst.get())->VertexBuffer.Get(), 0, static_cast<DX12VertexBuffer*>(Src.get())->VertexBuffer.Get(), 0, static_cast<DX12VertexBuffer*>(Dst.get())->VertexBufferView.SizeInBytes);
     auto var2 = CD3DX12_RESOURCE_BARRIER::Transition(static_cast<DX12VertexBuffer*>(Dst.get())->VertexBuffer.Get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
     CommandList->ResourceBarrier(1, &var2);
+    m_Status = 1;
  
 }
 void DX12Context::SetPipeline(BearFactoryPointer<BearRHI::BearRHIPipeline> Pipeline)
@@ -198,12 +204,11 @@ void DX12Context::Copy(BearFactoryPointer<BearRHI::BearRHIIndexBuffer> Dst, Bear
     CommandList->CopyBufferRegion(static_cast<DX12IndexBuffer*>(Dst.get())->IndexBuffer.Get(), 0, static_cast<DX12IndexBuffer*>(Src.get())->IndexBuffer.Get(), 0, static_cast<DX12IndexBuffer*>(Dst.get())->IndexBufferView.SizeInBytes);
     auto var2 = CD3DX12_RESOURCE_BARRIER::Transition(static_cast<DX12IndexBuffer*>(Dst.get())->IndexBuffer.Get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_INDEX_BUFFER);
     CommandList->ResourceBarrier(1, &var2);
+    m_Status = 1;
 }
 
 void DX12Context::PreDestroy()
 {
-    if (Empty())
-        return;
     if (m_Status == 1)
         Flush(true);
     if (m_Status == 2)

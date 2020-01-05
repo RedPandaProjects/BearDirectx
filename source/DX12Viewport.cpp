@@ -59,7 +59,7 @@ DX12Viewport::DX12Viewport(void * Handle, bsize Width, bsize Height, bool Fullsc
 	Factory->LockCommandList();
 	Factory->CommandList->ResourceBarrier(1, &transition);
 	Factory->UnlockCommandList(CommandQueue.Get());
-	
+	m_is_rt = true;
 
 }
 
@@ -117,6 +117,7 @@ void DX12Viewport::ReInit(bsize Width, bsize Height)
 	Factory->UnlockCommandList();
 	m_Width = Width;
 	m_Height = Height;
+	m_is_rt = true;
 }
 
 void DX12Viewport::SetVSync(bool Sync)
@@ -180,8 +181,10 @@ CD3DX12_CPU_DESCRIPTOR_HANDLE DX12Viewport::GetHandle()
 
 void DX12Viewport::ToPresent(ID3D12GraphicsCommandList * CommandList)
 {
+	if (!m_is_rt)return;
 	auto transition = CD3DX12_RESOURCE_BARRIER::Transition(m_RenderTargets[m_FrameIndex].Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
 	CommandList->ResourceBarrier(1, &transition);
+	m_is_rt = false;
 }
 
 void DX12Viewport::Swap()
@@ -191,7 +194,9 @@ void DX12Viewport::Swap()
 
 void DX12Viewport::ToRT(ID3D12GraphicsCommandList * CommandList)
 {
+	if (m_is_rt)return;
 	m_FrameIndex = m_SwapChain->GetCurrentBackBufferIndex();
 	auto transition = CD3DX12_RESOURCE_BARRIER::Transition(m_RenderTargets[m_FrameIndex].Get(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
 	CommandList->ResourceBarrier(1, &transition);
+	m_is_rt = true;
 }
