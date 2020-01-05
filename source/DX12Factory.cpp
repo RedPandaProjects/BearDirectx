@@ -135,14 +135,14 @@ BearRHI::BearRHIShader* DX12Factory::CreateShader(BearShaderType Type)
 	return bear_new< DX12Shader>(Type);
 }
 
-BearRHI::BearRHIVertexBuffer* DX12Factory::CreateVertexBuffer(bsize stride, bsize count, bool dynamic)
+BearRHI::BearRHIVertexBuffer* DX12Factory::CreateVertexBuffer()
 {
-	return nullptr;
+	return bear_new<DX12VertexBuffer>();
 }
 
-BearRHI::BearRHIIndexBuffer* DX12Factory::CreateIndexBuffer(bsize count, bool dynamic)
+BearRHI::BearRHIIndexBuffer* DX12Factory::CreateIndexBuffer()
 {
-	return nullptr;
+	return bear_new<DX12IndexBuffer>();
 }
 
 

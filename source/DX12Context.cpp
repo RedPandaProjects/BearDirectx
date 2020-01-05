@@ -104,6 +104,31 @@ void DX12Context::ClearFrameBuffer()
     CommandList->RSSetViewports(1, &m_viewportRect);
     CommandList->RSSetScissorRects(1, &m_scissorRect);*/
 }
+void DX12Context::Copy(BearFactoryPointer<BearRHI::BearRHIVertexBuffer> Dst, BearFactoryPointer<BearRHI::BearRHIVertexBuffer> Src)
+{
+    if (m_Status == 2)return;
+    if (Dst.empty() || Src.empty())return;
+    if (static_cast<DX12VertexBuffer*>(Dst.get())->VertexBuffer.Get() == nullptr)return;
+    if (static_cast<DX12VertexBuffer*>(Src.get())->VertexBuffer.Get() == nullptr)return;
+    auto var1 = CD3DX12_RESOURCE_BARRIER::Transition(static_cast<DX12VertexBuffer*>(Dst.get())->VertexBuffer.Get(), D3D12_RESOURCE_STATE_INDEX_BUFFER, D3D12_RESOURCE_STATE_COPY_DEST);
+    CommandList->ResourceBarrier(1, &var1);
+    CommandList->CopyBufferRegion(static_cast<DX12VertexBuffer*>(Dst.get())->VertexBuffer.Get(), 0, static_cast<DX12VertexBuffer*>(Src.get())->VertexBuffer.Get(), 0, static_cast<DX12VertexBuffer*>(Dst.get())->VertexBufferView.SizeInBytes);
+    auto var2 = CD3DX12_RESOURCE_BARRIER::Transition(static_cast<DX12VertexBuffer*>(Dst.get())->VertexBuffer.Get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
+    CommandList->ResourceBarrier(1, &var2);
+ 
+}
+void DX12Context::Copy(BearFactoryPointer<BearRHI::BearRHIIndexBuffer> Dst, BearFactoryPointer<BearRHI::BearRHIIndexBuffer> Src)
+{
+    if (m_Status == 2)return;
+    if (Dst.empty() || Src.empty())return;
+    if (static_cast<DX12IndexBuffer*>(Dst.get())->IndexBuffer.Get() == nullptr)return;
+    if (static_cast<DX12IndexBuffer*>(Src.get())->IndexBuffer.Get() == nullptr)return;
+    auto var1 = CD3DX12_RESOURCE_BARRIER::Transition(static_cast<DX12IndexBuffer*>(Dst.get())->IndexBuffer.Get(), D3D12_RESOURCE_STATE_INDEX_BUFFER, D3D12_RESOURCE_STATE_COPY_DEST);
+    CommandList->ResourceBarrier(1, &var1);
+    CommandList->CopyBufferRegion(static_cast<DX12IndexBuffer*>(Dst.get())->IndexBuffer.Get(), 0, static_cast<DX12IndexBuffer*>(Src.get())->IndexBuffer.Get(), 0, static_cast<DX12IndexBuffer*>(Dst.get())->IndexBufferView.SizeInBytes);
+    auto var2 = CD3DX12_RESOURCE_BARRIER::Transition(static_cast<DX12IndexBuffer*>(Dst.get())->IndexBuffer.Get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_INDEX_BUFFER);
+    CommandList->ResourceBarrier(1, &var2);
+}
 
 void DX12Context::PreDestroy()
 {
