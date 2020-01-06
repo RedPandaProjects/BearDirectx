@@ -14,6 +14,7 @@ public:
 
 	virtual void Copy(BearFactoryPointer<BearRHI::BearRHIIndexBuffer> Dst, BearFactoryPointer<BearRHI::BearRHIIndexBuffer> Src);
 	virtual void Copy(BearFactoryPointer<BearRHI::BearRHIVertexBuffer> Dst, BearFactoryPointer<BearRHI::BearRHIVertexBuffer> Src);
+	virtual void Copy(BearFactoryPointer<BearRHI::BearRHIUniformBuffer> Dst, BearFactoryPointer<BearRHI::BearRHIUniformBuffer> Src);
 
 	virtual void SetPipeline(BearFactoryPointer<BearRHI::BearRHIPipeline> Pipeline);
 	virtual void SetVertexBuffer(BearFactoryPointer<BearRHI::BearRHIVertexBuffer> buffer);
@@ -22,6 +23,8 @@ public:
 	virtual void SetScissor(bool Enable, float x, float y, float x1, float y1);
 	virtual void Draw(bsize count, bsize offset = 0);
 	virtual void DrawIndex(bsize count, bsize  offset_index = 0, bsize  offset_vertex = 0);
+
+	virtual void SetDescriptorHeap(BearFactoryPointer<BearRHI::BearRHIDescriptorHeap> DescriptorHeap);
 
 private:
 	inline bool Empty() { return m_viewport.empty() ; }

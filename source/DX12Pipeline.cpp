@@ -88,7 +88,11 @@ DX12Pipeline::DX12Pipeline(const BearPipelineDescription & desc)
 	Desc.SampleDesc.Count = 1;
 
 
-	Desc.pRootSignature = Factory->RootSignature.Get();
+	RootSignature = desc.RootSignature;
+	BEAR_ASSERT(RootSignature.empty() == false);
+	RootSignaturePointer = static_cast<DX12RootSignature*>(RootSignature.get());
+	Desc.pRootSignature = RootSignaturePointer->RootSignature.Get();
+
 
 	R_CHK(Factory->Device->CreateGraphicsPipelineState(&Desc, IID_PPV_ARGS(&PipelineState)));
 }
@@ -108,7 +112,7 @@ void DX12Pipeline::Set(
 {
 	CommandList->SetPipelineState(PipelineState.Get());
 	CommandList->IASetPrimitiveTopology(TopologyType);
-	CommandList->SetGraphicsRootSignature(Factory->RootSignature.Get());
+	RootSignaturePointer->Set(CommandList);
 }
 
 

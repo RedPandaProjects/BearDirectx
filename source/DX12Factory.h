@@ -10,6 +10,9 @@ public:
 	virtual BearRHI::BearRHIShader* CreateShader(BearShaderType Type);
 	virtual BearRHI::BearRHIVertexBuffer* CreateVertexBuffer();
 	virtual BearRHI::BearRHIIndexBuffer* CreateIndexBuffer();
+	virtual BearRHI::BearRHIUniformBuffer* CreateUniformBuffer();
+	virtual BearRHI::BearRHIRootSignature* CreateRootSignature(const BearRootSignatureDescription& Description);
+	virtual BearRHI::BearRHIDescriptorHeap* CreateDescriptorHeap(const BearDescriptorHeapDescription& Description);
 	virtual BearRHI::BearRHIPipeline* CreatePipeline(const BearPipelineDescription& Description);
 public:
 	UINT SamplerDescriptorSize;

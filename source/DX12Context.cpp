@@ -123,6 +123,20 @@ void DX12Context::Copy(BearFactoryPointer<BearRHI::BearRHIVertexBuffer> Dst, Bea
     m_Status = 1;
  
 }
+void DX12Context::Copy(BearFactoryPointer<BearRHI::BearRHIUniformBuffer> Dst, BearFactoryPointer<BearRHI::BearRHIUniformBuffer> Src)
+{
+    if (m_Status == 2)return;
+    if (Dst.empty() || Src.empty())return;
+    if (static_cast<DX12UniformBuffer*>(Dst.get())->UniformBuffer.Get() == nullptr)return;
+    if (static_cast<DX12UniformBuffer*>(Src.get())->UniformBuffer.Get() == nullptr)return;
+    auto var1 = CD3DX12_RESOURCE_BARRIER::Transition(static_cast<DX12UniformBuffer*>(Dst.get())->UniformBuffer.Get(), D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER, D3D12_RESOURCE_STATE_COPY_DEST);
+    CommandList->ResourceBarrier(1, &var1);
+    CommandList->CopyBufferRegion(static_cast<DX12UniformBuffer*>(Dst.get())->UniformBuffer.Get(), 0, static_cast<DX12UniformBuffer*>(Src.get())->UniformBuffer.Get(), 0, static_cast<DX12UniformBuffer*>(Dst.get())->UniformBufferView.SizeInBytes);
+    auto var2 = CD3DX12_RESOURCE_BARRIER::Transition(static_cast<DX12UniformBuffer*>(Dst.get())->UniformBuffer.Get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
+    CommandList->ResourceBarrier(1, &var2);
+    m_Status = 1;
+
+}
 void DX12Context::SetPipeline(BearFactoryPointer<BearRHI::BearRHIPipeline> Pipeline)
 {
     if (Empty())return;
@@ -192,6 +206,12 @@ void DX12Context::DrawIndex(bsize count, bsize offset_index, bsize  offset_verte
     if (m_Status != 1)return;
     CommandList->DrawIndexedInstanced(static_cast<UINT>(count), 1, static_cast<UINT>(offset_index), static_cast<UINT>(offset_vertex), 0);
 
+}
+void DX12Context::SetDescriptorHeap(BearFactoryPointer<BearRHI::BearRHIDescriptorHeap> DescriptorHeap)
+{
+    if (Empty())return;
+    if (m_Status != 1 || DescriptorHeap.empty())return;
+    static_cast<DX12DescriptorHeap*>(DescriptorHeap.get())->Set(CommandList.Get());// DescriptorHeap
 }
 void DX12Context::Copy(BearFactoryPointer<BearRHI::BearRHIIndexBuffer> Dst, BearFactoryPointer<BearRHI::BearRHIIndexBuffer> Src)
 {

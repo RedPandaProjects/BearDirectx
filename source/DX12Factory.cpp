@@ -154,6 +154,21 @@ BearRHI::BearRHIIndexBuffer* DX12Factory::CreateIndexBuffer()
 	return bear_new<DX12IndexBuffer>();
 }
 
+BearRHI::BearRHIUniformBuffer* DX12Factory::CreateUniformBuffer()
+{
+	return bear_new<DX12UniformBuffer>();
+}
+
+BearRHI::BearRHIRootSignature* DX12Factory::CreateRootSignature(const BearRootSignatureDescription& Description)
+{
+	return bear_new< DX12RootSignature>(Description);
+}
+
+BearRHI::BearRHIDescriptorHeap* DX12Factory::CreateDescriptorHeap(const BearDescriptorHeapDescription& Description)
+{
+	return nullptr;
+}
+
 BearRHI::BearRHIPipeline* DX12Factory::CreatePipeline(const BearPipelineDescription& Description)
 {
 	return bear_new<DX12Pipeline>(Description);

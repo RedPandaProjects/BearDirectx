@@ -27,4 +27,8 @@ extern DX12Factory* Factory;
 #include "DX12Shader.h"
 #include "DX12IndexBuffer.h"
 #include "DX12VertexBuffer.h"
+
+#include "DX12UniformBuffer.h"
+#include "DX12RootSignature.h"
 #include "DX12Pipeline.h"
+#include "DX12DescriptorHeap.h"

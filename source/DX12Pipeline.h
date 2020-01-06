@@ -13,4 +13,7 @@ public:
 #endif
 	ComPtr<ID3D12PipelineState> PipelineState;
 	D3D_PRIMITIVE_TOPOLOGY TopologyType;
+
+	BearFactoryPointer<BearRHI::BearRHIRootSignature> RootSignature;
+	DX12RootSignature* RootSignaturePointer;
 };
