@@ -14,7 +14,7 @@ public:
 	virtual	void LoadAsBinary(void* data, bsize size);
 #ifdef DEVELOPER_VERSION
 	ComPtr<ID3DBlob> Shader;
-#ifdef RTX
+#ifdef RTX_SHADER_COMPILER
 	IDxcBlob* RTXShader;
 #endif
 #endif

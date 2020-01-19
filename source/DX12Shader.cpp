@@ -82,14 +82,15 @@ bool DX12Shader::LoadAsText(const bchar* Text, const BearMap<BearString, BearStr
 		Marcos[id].Name = 0;
 		Marcos[id].Definition = 0;
 	}
-#ifdef UNICODE
+
 	D3DIncluder includer(Includer);
+#ifdef UNICODE
 	if (FAILED(D3DCompile(*BearEncoding::FastToAnsi(Text), BearString::GetSize(Text), "noname", Marcos, &includer, "main", type2text, compileFlags, 0, &Shader, &errorMessage)))
 	{
 		result = false;
 	}
 #else
-	if (FAILED(D3DCompile(*Text, Text, "noname", nullptr, nullptr, "main", type2text, compileFlags, 0, &Shader, &errorMessage)))
+	if (FAILED(D3DCompile(Text, BearString::GetSize(Text), "noname", Marcos, &includer, "main", type2text, compileFlags, 0, &Shader, &errorMessage)))
 	{
 		result = false;
 	}

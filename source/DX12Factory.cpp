@@ -81,7 +81,7 @@ DX12Factory::DX12Factory()
 	RtvDescriptorSize = Device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
 	SamplerDescriptorSize = Device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER);
 	{
-#ifdef RTX
+#ifdef RTX_SHADER_COMPILER
 		R_CHK(DxcCreateInstance(CLSID_DxcCompiler, IID_PPV_ARGS(&DxcCompiler)));
 		R_CHK(DxcCreateInstance(CLSID_DxcLibrary, IID_PPV_ARGS(&DxcLibrary)));
 		R_CHK(DxcLibrary->CreateIncludeHandler(&DxcIncludeHandler));
@@ -117,7 +117,7 @@ DX12Factory::DX12Factory()
 
 DX12Factory::~DX12Factory()
 {
-#ifdef RTX
+#ifdef RTX_SHADER_COMPILER
 	{
 		DxcIncludeHandler->Release();
 	}
@@ -166,12 +166,72 @@ BearRHI::BearRHIRootSignature* DX12Factory::CreateRootSignature(const BearRootSi
 
 BearRHI::BearRHIDescriptorHeap* DX12Factory::CreateDescriptorHeap(const BearDescriptorHeapDescription& Description)
 {
-	return nullptr;
+	return  bear_new<DX12DescriptorHeap>(Description);;
 }
 
 BearRHI::BearRHIPipeline* DX12Factory::CreatePipeline(const BearPipelineDescription& Description)
 {
 	return bear_new<DX12Pipeline>(Description);
+}
+
+BearRHI::BearRHITexture2D* DX12Factory::CreateTexture2D(bsize Width, bsize Height, bsize Mips, bsize Count, BearTexturePixelFormat PixelFormat, void* data)
+{
+	return  bear_new<DX12Texture2D>(Width,Height,Mips,Count,PixelFormat,data);;
+}
+
+BearRHI::BearRHISampler* DX12Factory::CreateSampler()
+{
+	return  bear_new<DX12SamplerState>();
+}
+
+DXGI_FORMAT DX12Factory::Translation(BearTexturePixelFormat format)
+{
+	switch (format)
+	{
+	case TPF_R8:
+		return DXGI_FORMAT_R8_UNORM;
+		break;
+	case TPF_R8G8:
+		return DXGI_FORMAT_R8G8_UNORM;
+		break;
+	case TPF_R8G8B8:
+		BEAR_RASSERT(!"not support R8G8B8");
+		break;
+	case TPF_R8G8B8A8:
+		return DXGI_FORMAT_R8G8B8A8_UNORM;
+		break;
+	case TPF_R32F:
+		return DXGI_FORMAT_R32_FLOAT;
+		break;
+	case TPF_R32G32F:
+		return DXGI_FORMAT_R32G32_FLOAT;
+		break;
+	case TPF_R32G32B32F:
+		return DXGI_FORMAT_R32G32B32_FLOAT;
+		break;
+	case TPF_R32G32B32A32F:
+		return DXGI_FORMAT_R32G32B32A32_FLOAT;
+		break;
+	case TPF_BC1:
+	case TPF_BC1a:
+		return DXGI_FORMAT_BC1_UNORM;
+	case TPF_BC2:
+		return DXGI_FORMAT_BC2_UNORM;
+	case TPF_BC3:
+		return DXGI_FORMAT_BC3_UNORM;
+	case TPF_BC4:
+		return DXGI_FORMAT_BC4_UNORM;
+	case TPF_BC5:
+		return DXGI_FORMAT_BC5_UNORM;
+	case TPF_BC6:
+		return DXGI_FORMAT_BC6H_UF16;
+	case TPF_BC7:
+		return DXGI_FORMAT_BC7_UNORM;
+	default:
+		BEAR_ASSERT(0);;
+	}
+	return DXGI_FORMAT_UNKNOWN;
+
 }
 
 

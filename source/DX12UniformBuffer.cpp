@@ -11,7 +11,7 @@ void DX12UniformBuffer::Create(bsize Size, bool Dynamic)
 	m_dynamic = Dynamic;
 	{
 		CD3DX12_HEAP_PROPERTIES a(Dynamic ? D3D12_HEAP_TYPE_UPLOAD : D3D12_HEAP_TYPE_DEFAULT);
-		auto b = CD3DX12_RESOURCE_DESC::Buffer(static_cast<UINT64>(Size));
+		auto b = CD3DX12_RESOURCE_DESC::Buffer(static_cast<UINT64>((Size + 256 - 1) & ~(256 - 1)));
 		R_CHK(Factory->Device->CreateCommittedResource(
 			&a,
 			D3D12_HEAP_FLAG_NONE,
@@ -22,7 +22,7 @@ void DX12UniformBuffer::Create(bsize Size, bool Dynamic)
 
 	}
 
-	UniformBufferView.SizeInBytes = static_cast<UINT>(Size);
+	UniformBufferView.SizeInBytes = static_cast<UINT>((Size + 256 - 1) & ~(256 - 1));
 	UniformBufferView.BufferLocation = UniformBuffer->GetGPUVirtualAddress();
 }
 

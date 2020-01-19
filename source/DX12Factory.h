@@ -14,6 +14,9 @@ public:
 	virtual BearRHI::BearRHIRootSignature* CreateRootSignature(const BearRootSignatureDescription& Description);
 	virtual BearRHI::BearRHIDescriptorHeap* CreateDescriptorHeap(const BearDescriptorHeapDescription& Description);
 	virtual BearRHI::BearRHIPipeline* CreatePipeline(const BearPipelineDescription& Description);
+	virtual BearRHI::BearRHITexture2D* CreateTexture2D(bsize Width, bsize Height, bsize Mips, bsize Count, BearTexturePixelFormat PixelFormat, void* data = 0);
+	virtual BearRHI::BearRHISampler* CreateSampler();
+	static DXGI_FORMAT Translation(BearTexturePixelFormat format);
 public:
 	UINT SamplerDescriptorSize;
 	UINT CbvSrvUavDescriptorSize;
@@ -36,7 +39,7 @@ public:
 	ComPtr<ID3D12GraphicsCommandList> CommandList;
 #endif
 private:
-#ifdef RTX
+#ifdef RTX_SHADER_COMPILER
 	ComPtr < IDxcCompiler> DxcCompiler;
 	ComPtr < IDxcLibrary> DxcLibrary;
 	IDxcIncludeHandler* DxcIncludeHandler;

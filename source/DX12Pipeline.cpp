@@ -52,16 +52,20 @@ DX12Pipeline::DX12Pipeline(const BearPipelineDescription & desc)
 		Desc.InputLayout.NumElements =static_cast<UINT>( count);
 	};
 	{
-		auto ps = static_cast<const DX12Shader*>(desc.Shaders.Pixel.get());
+		auto ps = const_cast<DX12Shader*>(static_cast<const DX12Shader*>(desc.Shaders.Pixel.get()));
 		if(ps&&ps->IsType(ST_Pixel))
-			Desc.PS = CD3DX12_SHADER_BYTECODE(ps->Shader.Get());
+			Desc.PS = CD3DX12_SHADER_BYTECODE(ps->GetPointer(), ps->GetSize());
 
-		auto vs = static_cast<const DX12Shader*>(desc.Shaders.Vertex.get());
+		auto vs = const_cast<DX12Shader*>(static_cast<const DX12Shader*>(desc.Shaders.Vertex.get()));
 		if (vs&&vs->IsType(ST_Vertex))
-			Desc.VS = CD3DX12_SHADER_BYTECODE(vs->Shader.Get());
+			Desc.VS = CD3DX12_SHADER_BYTECODE(vs->GetPointer(), vs->GetSize());
 	}
 	Desc.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
+
 	Desc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
+	Desc.BlendState.RenderTarget[0].BlendEnable = true;
+	Desc.BlendState.RenderTarget[0].SrcBlend = D3D12_BLEND_SRC_ALPHA;
+	Desc.BlendState.RenderTarget[0].DestBlend = D3D12_BLEND_INV_SRC_ALPHA;
 	Desc.DepthStencilState.DepthEnable = FALSE;
 	Desc.DepthStencilState.StencilEnable = FALSE;
 	Desc.SampleMask = UINT_MAX;

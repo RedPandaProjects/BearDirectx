@@ -3,12 +3,14 @@
 #pragma warning(disable:4324)
 #include <d3d12.h>
 #include <dxgi1_4.h>
+#ifdef DEVELOPER_VERSION
 #include <D3Dcompiler.h>
+#endif
 #include "d3d12_1.h"
 #include "d3dx12.h"
 #include <wrl.h>
 #include <shellapi.h>
-#ifdef RTX
+#ifdef RTX_SHADER_COMPILER
 #include "dxc/dxcapi.h"
 #endif
 #pragma warning(pop)
@@ -32,3 +34,7 @@ extern DX12Factory* Factory;
 #include "DX12RootSignature.h"
 #include "DX12Pipeline.h"
 #include "DX12DescriptorHeap.h"
+
+#include "DX12ShaderResource.h"
+#include "DX12Texture2D.h"
+#include "DX12Sampler.h"

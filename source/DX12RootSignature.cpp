@@ -20,8 +20,12 @@ inline D3D12_SHADER_VISIBILITY TransletionShaderVisible(BearShaderType Type, D3D
 DX12RootSignature::DX12RootSignature(const BearRootSignatureDescription& Description)
 {
 	CountBuffers = 0;
+	CountSamplers = 0;
+	CountSRVs = 0;
 	{
 		for (; CountBuffers < 16 && Description.UniformBuffers[CountBuffers].Shader != ST_Null; CountBuffers++);
+		for (; CountSRVs < 16 && Description.SRVResources[CountSRVs].Shader != ST_Null; CountSRVs++);
+		for (; CountSamplers < 16 && Description.Samplers[CountSamplers].Shader != ST_Null; CountSamplers++);
 	}
 
 	{
@@ -41,7 +45,7 @@ DX12RootSignature::DX12RootSignature(const BearRootSignatureDescription& Descrip
 			D3D12_ROOT_SIGNATURE_FLAG_DENY_DOMAIN_SHADER_ROOT_ACCESS |
 			D3D12_ROOT_SIGNATURE_FLAG_DENY_GEOMETRY_SHADER_ROOT_ACCESS;
 
-		bsize Count = CountBuffers /*+ CountSRV + CountSampler + CountUAV*/;
+		bsize Count = CountBuffers + CountSRVs + CountSamplers/* + CountUAV*/;
 		CD3DX12_DESCRIPTOR_RANGE1 Ranges[64];
 		CD3DX12_ROOT_PARAMETER1 RootParameters[64];
 		bsize offset = 0;
@@ -57,17 +61,17 @@ DX12RootSignature::DX12RootSignature(const BearRootSignatureDescription& Descrip
 			RootParameters[i + offset].InitAsDescriptorTable(1, &Ranges[i + offset], TransletionShaderVisible(Description.UniformBuffers[i].Shader, RootSignatureFlags));
 		}
 		offset += CountBuffers;
-		/*for (bsize i = 0; i < CountSRV; i++)
+		for (bsize i = 0; i < CountSRVs; i++)
 		{
 			Ranges[i + offset].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, static_cast<UINT>(i), static_cast<UINT>(i));
 			RootParameters[i + offset].InitAsDescriptorTable(1, &Ranges[i + offset], TransletionShaderVisible(Description.SRVResources[i].Shader, RootSignatureFlags));
 		}
-		offset += CountSRV;
-		for (bsize i = 0; i < CountSampler; i++)
+		offset += CountSRVs;
+		for (bsize i = 0; i < CountSamplers; i++)
 		{
 			Ranges[i + offset].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER, 1, static_cast<UINT>(i), static_cast<UINT>(i));
 			RootParameters[i + offset].InitAsDescriptorTable(1, &Ranges[i + offset], TransletionShaderVisible(Description.Samplers[i].Shader, RootSignatureFlags));
-		}*/
+		}
 
 
 

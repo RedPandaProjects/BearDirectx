@@ -14,4 +14,6 @@ public:
 	ComPtr<ID3D12RootSignature> RootSignature;
 
 	bsize CountBuffers;
+	bsize CountSRVs;
+	bsize CountSamplers;
 };

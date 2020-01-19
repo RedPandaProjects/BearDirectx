@@ -13,5 +13,8 @@ public:
 	virtual void Set(ID3D12GraphicsCommandList* CommandList);
 #endif
 
+
 	bsize CountBuffers;
+	bsize CountSRVs;
+	bsize CountSamplers;
 };
