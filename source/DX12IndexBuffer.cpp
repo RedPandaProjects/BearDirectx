@@ -1,12 +1,12 @@
 #include "DX12PCH.h"
-
+bsize IndexBufferCounter = 0;
 DX12IndexBuffer::DX12IndexBuffer() :m_dynamic(false)
 {
+	IndexBufferCounter++;
 }
 
 void DX12IndexBuffer::Create(bsize Count, bool Dynamic)
 {
-
 	Clear();
 	m_dynamic = Dynamic;
 	{
@@ -29,6 +29,7 @@ void DX12IndexBuffer::Create(bsize Count, bool Dynamic)
 
 DX12IndexBuffer::~DX12IndexBuffer()
 {
+	IndexBufferCounter--;
 	Clear();
 }
 

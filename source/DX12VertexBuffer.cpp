@@ -1,7 +1,9 @@
 #include "DX12PCH.h"
-
+bsize VertexBufferCounter = 0;
 DX12VertexBuffer::DX12VertexBuffer() :m_dynamic(false)
 {
+	VertexBufferView.SizeInBytes = 0;
+	VertexBufferCounter++;
 }
 
 void DX12VertexBuffer::Create(bsize Stride, bsize Count, bool Dynamic)
@@ -29,6 +31,7 @@ void DX12VertexBuffer::Create(bsize Stride, bsize Count, bool Dynamic)
 
 DX12VertexBuffer::~DX12VertexBuffer()
 {
+	VertexBufferCounter--;
 	Clear();
 }
 
@@ -50,6 +53,13 @@ void DX12VertexBuffer::Unlock()
 
 void DX12VertexBuffer::Clear()
 {
+	VertexBufferView.SizeInBytes = 0;
 	VertexBuffer.Reset();
 	m_dynamic = false;
+}
+
+bsize DX12VertexBuffer::GetCount()
+{
+	if (VertexBufferView.StrideInBytes == 0)return 0;
+	return VertexBufferView.SizeInBytes / VertexBufferView.StrideInBytes;
 }

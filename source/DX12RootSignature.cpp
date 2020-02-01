@@ -1,4 +1,5 @@
 #include "DX12PCH.h"
+bsize RootSignatureCounter = 0;
 inline D3D12_SHADER_VISIBILITY TransletionShaderVisible(BearShaderType Type, D3D12_ROOT_SIGNATURE_FLAGS& flags)
 {
 	switch (Type)
@@ -19,6 +20,7 @@ inline D3D12_SHADER_VISIBILITY TransletionShaderVisible(BearShaderType Type, D3D
 }
 DX12RootSignature::DX12RootSignature(const BearRootSignatureDescription& Description)
 {
+	RootSignatureCounter++;
 	CountBuffers = 0;
 	CountSamplers = 0;
 	CountSRVs = 0;
@@ -89,6 +91,7 @@ DX12RootSignature::DX12RootSignature(const BearRootSignatureDescription& Descrip
 
 DX12RootSignature::~DX12RootSignature()
 {
+	RootSignatureCounter--;
 }
 #ifdef RTX
 void DX12RootSignature::Set(ID3D12GraphicsCommandList4* CommandList)

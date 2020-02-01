@@ -11,6 +11,7 @@ public:
 	virtual void Clear();
 	ComPtr<ID3D12Resource> UniformBuffer;
 	D3D12_CONSTANT_BUFFER_VIEW_DESC UniformBufferView;
+	//ComPtr<ID3D12DescriptorHeap> Heap;
 private:
 	bool m_dynamic;
 

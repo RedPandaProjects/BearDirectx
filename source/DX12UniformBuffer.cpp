@@ -1,7 +1,8 @@
 #include "DX12PCH.h"
-
+bsize UniformBufferCounter = 0;
 DX12UniformBuffer::DX12UniformBuffer() :m_dynamic(false)
 {
+	UniformBufferCounter++;
 }
 
 void DX12UniformBuffer::Create(bsize Size, bool Dynamic)
@@ -24,10 +25,19 @@ void DX12UniformBuffer::Create(bsize Size, bool Dynamic)
 
 	UniformBufferView.SizeInBytes = static_cast<UINT>((Size + 256 - 1) & ~(256 - 1));
 	UniformBufferView.BufferLocation = UniformBuffer->GetGPUVirtualAddress();
+
+/*	D3D12_DESCRIPTOR_HEAP_DESC cbvHeapDesc = {};
+	cbvHeapDesc.NumDescriptors = 1;
+	cbvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
+	cbvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
+	R_CHK(Factory->Device->CreateDescriptorHeap(&cbvHeapDesc, IID_PPV_ARGS(&Heap)));
+	CD3DX12_CPU_DESCRIPTOR_HANDLE Handle(Heap->GetCPUDescriptorHandleForHeapStart());
+	Factory->Device->CreateConstantBufferView(&UniformBufferView, Handle);*/
 }
 
 DX12UniformBuffer::~DX12UniformBuffer()
 {
+	UniformBufferCounter--;
 	Clear();
 }
 
@@ -50,5 +60,6 @@ void DX12UniformBuffer::Unlock()
 void DX12UniformBuffer::Clear()
 {
 	UniformBuffer.Reset();
+	//Heap.Reset();
 	m_dynamic = false;
 }

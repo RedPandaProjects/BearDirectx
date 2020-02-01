@@ -6,6 +6,7 @@ DX12Factory* Factory;
 	if (!Factory->Empty())
 	{
 		GFactory = Factory;
+		GStats = bear_new<DX12Stats>();
 		BEAR_ASSERT(GFactory);
 		return true;
 	}
