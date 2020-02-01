@@ -3,7 +3,7 @@
 DX12Factory::DX12Factory()
 {
 	UINT dxgiFactoryFlags = 0;
-
+	m_Default_FenceEvent = 0;
 #if defined(DEBUG)
 	{
 		ComPtr<ID3D12Debug> debugController;
@@ -123,7 +123,9 @@ DX12Factory::~DX12Factory()
 	}
 #endif
 	{
+		if(CommandList)
 		R_CHK(CommandList->Close());
+
 		if (m_Default_FenceEvent)
 			CloseHandle(m_Default_FenceEvent);
 		m_Default_FenceEvent = 0;
@@ -174,14 +176,34 @@ BearRHI::BearRHIPipeline* DX12Factory::CreatePipeline(const BearPipelineDescript
 	return bear_new<DX12Pipeline>(Description);
 }
 
-BearRHI::BearRHITexture2D* DX12Factory::CreateTexture2D(bsize Width, bsize Height, bsize Mips, bsize Count, BearTexturePixelFormat PixelFormat, void* data)
+BearRHI::BearRHITexture2D* DX12Factory::CreateTexture2D(bsize Width, bsize Height, bsize Mips, bsize Count, BearTexturePixelFormat PixelFormat, BearTextureUsage TypeUsage, void* data)
 {
-	return  bear_new<DX12Texture2D>(Width,Height,Mips,Count,PixelFormat,data);;
+	return  bear_new<DX12Texture2D>(Width,Height,Mips,Count,PixelFormat, TypeUsage,data);;
 }
 
-BearRHI::BearRHISampler* DX12Factory::CreateSampler()
+BearRHI::BearRHITexture2D* DX12Factory::CreateTexture2D(bsize Width, bsize Height, BearRenderTargetFormat Format)
 {
-	return  bear_new<DX12SamplerState>();
+	return bear_new<DX12Texture2D>(Width, Height, Format);
+}
+
+BearRHI::BearRHITexture2D* DX12Factory::CreateTexture2D(bsize Width, bsize Height, BearDepthStencilFormat Format)
+{
+	return bear_new<DX12Texture2D>(Width, Height, Format);
+}
+
+BearRHI::BearRHIRenderPass *DX12Factory::CreateRenderPass(const BearRenderPassDescription& Description)
+{
+	return bear_new<DX12RenderPass>(Description);
+}
+
+BearRHI::BearRHIFrameBuffer* DX12Factory::CreateFrameBuffer(const BearFrameBufferDescription& Description)
+{
+	return bear_new<DX12FrameBuffer>(Description);
+}
+
+BearRHI::BearRHISampler* DX12Factory::CreateSampler(const BearSamplerDescription& Description)
+{
+	return  bear_new<DX12SamplerState>(Description);
 }
 
 DXGI_FORMAT DX12Factory::Translation(BearTexturePixelFormat format)
@@ -232,6 +254,28 @@ DXGI_FORMAT DX12Factory::Translation(BearTexturePixelFormat format)
 	}
 	return DXGI_FORMAT_UNKNOWN;
 
+}
+
+D3D12_TEXTURE_ADDRESS_MODE DX12Factory::Translation(BearSamplerAddressMode format)
+{
+	switch (format)
+	{
+	case SAM_WRAP:
+		return D3D12_TEXTURE_ADDRESS_MODE::D3D12_TEXTURE_ADDRESS_MODE_WRAP;
+		break;
+	case SAM_MIRROR:
+		D3D12_TEXTURE_ADDRESS_MODE::D3D12_TEXTURE_ADDRESS_MODE_MIRROR;
+		break;
+	case SAM_CLAMP:
+		D3D12_TEXTURE_ADDRESS_MODE::D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
+		break;
+	case SAM_BORDER:
+		D3D12_TEXTURE_ADDRESS_MODE::D3D12_TEXTURE_ADDRESS_MODE_BORDER;
+		break;
+	default:
+		BEAR_ASSERT(0);;;
+	}
+	return D3D12_TEXTURE_ADDRESS_MODE::D3D12_TEXTURE_ADDRESS_MODE_WRAP;
 }
 
 
@@ -302,4 +346,241 @@ void DX12Factory::UnlockCommandList(ID3D12CommandQueue *CommandQueue)
 	R_CHK(m_Default_CommandAllocator->Reset());
 	R_CHK(CommandList->Reset(m_Default_CommandAllocator.Get(), 0));
 	m_Default_CommandMutex.Unlock();
+}
+
+
+D3D12_BLEND DX12Factory::Translate(BearBlendFactor format)
+{
+	switch (format)
+	{
+	case BF_ZERO:
+		return D3D12_BLEND::D3D12_BLEND_ZERO;
+		break;
+	case BF_ONE:
+		return D3D12_BLEND::D3D12_BLEND_ONE;
+		break;
+	case BF_SRC_COLOR:
+		return D3D12_BLEND::D3D12_BLEND_SRC_COLOR;
+		break;
+	case BF_INV_SRC_COLOR:
+		return D3D12_BLEND::D3D12_BLEND_INV_SRC_COLOR;
+		break;
+	case BF_SRC_ALPHA:
+		return D3D12_BLEND::D3D12_BLEND_SRC_ALPHA;
+		break;
+	case BF_INV_SRC_ALPHA:
+		return D3D12_BLEND::D3D12_BLEND_INV_SRC_ALPHA;
+		break;
+	case BF_DEST_ALPHA:
+		return D3D12_BLEND::D3D12_BLEND_DEST_ALPHA;
+		break;
+	case BF_INV_DEST_ALPHA:
+		return D3D12_BLEND::D3D12_BLEND_INV_DEST_ALPHA;
+		break;
+	case BF_DEST_COLOR:
+		return D3D12_BLEND::D3D12_BLEND_DEST_COLOR;
+		break;
+	case BF_INV_DEST_COLOR:
+		return D3D12_BLEND::D3D12_BLEND_INV_DEST_COLOR;
+		break;
+	case BF_BLEND_FACTOR:
+		return D3D12_BLEND::D3D12_BLEND_BLEND_FACTOR;
+		break;
+	case BF_INV_BLEND_FACTOR:
+		return D3D12_BLEND::D3D12_BLEND_INV_BLEND_FACTOR;
+		break;
+	default:
+		BEAR_ASSERT(0);;
+	}
+	return D3D12_BLEND_ZERO;
+}
+
+D3D12_BLEND_OP DX12Factory::Translate(BearBlendOp format)
+{
+	switch (format)
+	{
+	case BO_ADD:
+		return D3D12_BLEND_OP::D3D12_BLEND_OP_ADD;
+		break;
+	case BO_SUBTRACT:
+		return D3D12_BLEND_OP::D3D12_BLEND_OP_SUBTRACT;
+		break;
+	case BO_REV_SUBTRACT:
+		return D3D12_BLEND_OP::D3D12_BLEND_OP_REV_SUBTRACT;
+		break;
+	case BO_MIN:
+		return D3D12_BLEND_OP::D3D12_BLEND_OP_MIN;
+		break;
+	case BO_MAX:
+		return D3D12_BLEND_OP::D3D12_BLEND_OP_MAX;
+		break;
+	default:
+		BEAR_ASSERT(0);;
+	}
+	return D3D12_BLEND_OP::D3D12_BLEND_OP_ADD;
+}
+
+D3D12_COMPARISON_FUNC DX12Factory::Translate(BearCompareFunction format)
+{
+	switch (format)
+	{
+	case CF_NEVER:
+		return D3D12_COMPARISON_FUNC::D3D12_COMPARISON_FUNC_ALWAYS;
+		break;
+	case CF_ALWAYS:
+		return D3D12_COMPARISON_FUNC::D3D12_COMPARISON_FUNC_ALWAYS;
+		break;
+	case CF_EQUAL:
+		return D3D12_COMPARISON_FUNC::D3D12_COMPARISON_FUNC_EQUAL;
+		break;
+	case CF_NOTEQUAL:
+		return D3D12_COMPARISON_FUNC::D3D12_COMPARISON_FUNC_NOT_EQUAL;
+		break;
+	case CF_LESS:
+		return D3D12_COMPARISON_FUNC::D3D12_COMPARISON_FUNC_LESS;
+		break;
+	case CF_GREATER:
+		return D3D12_COMPARISON_FUNC::D3D12_COMPARISON_FUNC_GREATER;
+		break;
+	case CF_LESSEQUAL:
+		return D3D12_COMPARISON_FUNC::D3D12_COMPARISON_FUNC_LESS_EQUAL;
+		break;
+	case CF_GREATEREQUAL:
+		return D3D12_COMPARISON_FUNC::D3D12_COMPARISON_FUNC_GREATER_EQUAL;
+		break;
+	default:
+		BEAR_ASSERT(0);;
+	}
+	return  D3D12_COMPARISON_FUNC::D3D12_COMPARISON_FUNC_NEVER;
+}
+
+D3D12_STENCIL_OP DX12Factory::Translate(BearStencilOp format)
+{
+	switch (format)
+	{
+	case SO_KEEP:
+		return D3D12_STENCIL_OP::D3D12_STENCIL_OP_KEEP;
+		break;
+	case SO_ZERO:
+		return D3D12_STENCIL_OP::D3D12_STENCIL_OP_ZERO;
+		break;
+	case SO_REPLACE:
+		return D3D12_STENCIL_OP::D3D12_STENCIL_OP_REPLACE;
+		break;
+	case SO_INCR_SAT:
+		return D3D12_STENCIL_OP::D3D12_STENCIL_OP_INCR_SAT;
+		break;
+	case SO_DECR_SAT:
+		return D3D12_STENCIL_OP::D3D12_STENCIL_OP_DECR_SAT;
+		break;
+	case SO_INVERT:
+		return D3D12_STENCIL_OP::D3D12_STENCIL_OP_INVERT;
+		break;
+	case SO_INCR:
+		return D3D12_STENCIL_OP::D3D12_STENCIL_OP_INCR;
+		break;
+	case SO_DECR:
+		return D3D12_STENCIL_OP::D3D12_STENCIL_OP_DECR;
+		break;
+	default:
+		BEAR_ASSERT(0);;
+	}
+	return  D3D12_STENCIL_OP::D3D12_STENCIL_OP_KEEP;
+}
+
+
+D3D12_CULL_MODE DX12Factory::Translate(BearRasterizerCullMode format)
+{
+	switch (format)
+	{
+	case RCM_FRONT:
+		return D3D12_CULL_MODE::D3D12_CULL_MODE_FRONT;
+		break;
+	case RCM_BACK:
+		return D3D12_CULL_MODE::D3D12_CULL_MODE_BACK;
+		break;
+	case RCM_NONE:
+		return D3D12_CULL_MODE::D3D12_CULL_MODE_NONE;
+		break;
+	default:
+		BEAR_ASSERT(0);;
+	}
+	return D3D12_CULL_MODE::D3D12_CULL_MODE_NONE;
+}
+
+D3D12_FILL_MODE DX12Factory::Translate(BearRasterizerFillMode format)
+{
+	switch (format)
+	{
+	case RFM_WIREFRAME:
+		return D3D12_FILL_MODE::D3D12_FILL_MODE_WIREFRAME;
+		break;
+	case RFM_SOLID:
+		return D3D12_FILL_MODE::D3D12_FILL_MODE_SOLID;
+		break;
+	default:
+		BEAR_ASSERT(0);;
+	}
+	return D3D12_FILL_MODE::D3D12_FILL_MODE_SOLID;
+}
+
+DXGI_FORMAT DX12Factory::Translation(BearRenderTargetFormat format)
+{
+	switch (format)
+	{
+	case RTF_NONE:
+		BEAR_ASSERT(0);
+		break;
+	case RTF_R8:
+		return DXGI_FORMAT_R8_UNORM;
+		break;
+	case RTF_R8G8:
+		return DXGI_FORMAT_R8G8_UNORM;
+		break;
+	case RTF_R8G8B8A8:
+		return DXGI_FORMAT_R8G8B8A8_UNORM;
+		break;
+	case RTF_B8G8R8A8:
+		return DXGI_FORMAT_B8G8R8A8_UNORM;
+		break;
+	case RTF_R32F:
+		return DXGI_FORMAT_R32_FLOAT;
+		break;
+	case RTF_R32G32F:
+		return DXGI_FORMAT_R32G32_FLOAT;
+		break;
+	case RTF_R32G32B32F:
+		return DXGI_FORMAT_R32G32B32_FLOAT;
+		break;
+	case RTF_R32G32B32A32F:
+		return DXGI_FORMAT_R32G32B32A32_FLOAT;
+		break;
+	default:
+		BEAR_ASSERT(0);
+		break;
+	}
+	return DXGI_FORMAT_R32G32B32A32_FLOAT;
+}
+
+DXGI_FORMAT DX12Factory::Translation(BearDepthStencilFormat format)
+{
+	switch (format)
+	{
+	case DSF_DEPTH16:
+		return DXGI_FORMAT_D16_UNORM;
+		break;
+	case DSF_DEPTH32F:
+		return DXGI_FORMAT_D32_FLOAT;
+		break;
+	case DSF_DEPTH24_STENCIL8:
+		return DXGI_FORMAT_D24_UNORM_S8_UINT;
+		break;
+	case DSF_DEPTH32F_STENCIL8:
+		return DXGI_FORMAT_D32_FLOAT_S8X24_UINT;
+		break;
+	default:
+		BEAR_ASSERT(0);
+		break;
+	}
+	return DXGI_FORMAT_D24_UNORM_S8_UINT;
 }

@@ -1,4 +1,5 @@
 #include "DX12PCH.h"
+bsize PipelineCounter = 0;
 inline DXGI_FORMAT TranslateVertexFormat(BearVertexFormat format)
 {
 	switch (format)
@@ -30,6 +31,7 @@ inline DXGI_FORMAT TranslateVertexFormat(BearVertexFormat format)
 
 DX12Pipeline::DX12Pipeline(const BearPipelineDescription & desc)
 {
+	PipelineCounter++;
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC Desc = {};
 	D3D12_INPUT_ELEMENT_DESC  elemets[16];
 	{
@@ -61,13 +63,68 @@ DX12Pipeline::DX12Pipeline(const BearPipelineDescription & desc)
 			Desc.VS = CD3DX12_SHADER_BYTECODE(vs->GetPointer(), vs->GetSize());
 	}
 	Desc.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
-
+	{
+		bear_fill(Desc.RasterizerState);
+		Desc.RasterizerState.AntialiasedLineEnable = false;
+		Desc.RasterizerState.CullMode = DX12Factory::Translate(desc.RasterizerState.CullMode);
+		Desc.RasterizerState.DepthBias = (int32)(desc.RasterizerState.DepthBias * (float)(1 << 24));
+		Desc.RasterizerState.DepthBiasClamp = 0.0f;
+		Desc.RasterizerState.DepthClipEnable = true;
+		Desc.RasterizerState.FillMode = DX12Factory::Translate(desc.RasterizerState.FillMode);;
+		Desc.RasterizerState.FrontCounterClockwise = false;
+		Desc.RasterizerState.MultisampleEnable = false;
+		Desc.RasterizerState.FrontCounterClockwise = desc.RasterizerState.FrontFace == RFF_COUNTER_CLOCKWISE;
+		Desc.RasterizerState.SlopeScaledDepthBias = desc.RasterizerState.SlopeScaleDepthBias;
+	}
 	Desc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
-	Desc.BlendState.RenderTarget[0].BlendEnable = true;
-	Desc.BlendState.RenderTarget[0].SrcBlend = D3D12_BLEND_SRC_ALPHA;
-	Desc.BlendState.RenderTarget[0].DestBlend = D3D12_BLEND_INV_SRC_ALPHA;
-	Desc.DepthStencilState.DepthEnable = FALSE;
-	Desc.DepthStencilState.StencilEnable = FALSE;
+	{
+		Desc.BlendState.IndependentBlendEnable = true;
+		Desc.BlendState.AlphaToCoverageEnable = desc.BlendState.AlphaToCoverageEnable;
+		for (bsize i = 0; i < 8; i++)
+		{
+			Desc.BlendState.RenderTarget[i].BlendEnable = desc.BlendState.RenderTarget[i].Enable;
+			Desc.BlendState.RenderTarget[i].BlendOp = DX12Factory::Translate(desc.BlendState.RenderTarget[i].Color);
+			Desc.BlendState.RenderTarget[i].BlendOpAlpha = DX12Factory::Translate(desc.BlendState.RenderTarget[i].Alpha);
+			Desc.BlendState.RenderTarget[i].SrcBlend = DX12Factory::Translate(desc.BlendState.RenderTarget[i].ColorSrc);
+			Desc.BlendState.RenderTarget[i].DestBlend = DX12Factory::Translate(desc.BlendState.RenderTarget[i].ColorDst);
+			Desc.BlendState.RenderTarget[i].SrcBlendAlpha = DX12Factory::Translate(desc.BlendState.RenderTarget[i].AlphaSrc);
+			Desc.BlendState.RenderTarget[i].DestBlendAlpha = DX12Factory::Translate(desc.BlendState.RenderTarget[i].AlphaDst);
+			if (desc.BlendState.RenderTarget[i].ColorWriteMask & CWM_R)
+				Desc.BlendState.RenderTarget[i].RenderTargetWriteMask |= D3D12_COLOR_WRITE_ENABLE_RED;
+			if (desc.BlendState.RenderTarget[i].ColorWriteMask & CWM_G)
+				Desc.BlendState.RenderTarget[i].RenderTargetWriteMask |= D3D12_COLOR_WRITE_ENABLE_GREEN;
+			if (desc.BlendState.RenderTarget[i].ColorWriteMask & CWM_B)
+				Desc.BlendState.RenderTarget[i].RenderTargetWriteMask |= D3D12_COLOR_WRITE_ENABLE_BLUE;
+			if (desc.BlendState.RenderTarget[i].ColorWriteMask & CWM_A)
+				Desc.BlendState.RenderTarget[i].RenderTargetWriteMask |= D3D12_COLOR_WRITE_ENABLE_ALPHA;
+		}
+
+	}
+	{
+		bear_fill(Desc.DepthStencilState);
+		Desc.DepthStencilState.DepthEnable = desc.DepthStencilState.DepthEnable;
+		Desc.DepthStencilState.DepthFunc = DX12Factory::Translate(desc.DepthStencilState.DepthTest);
+		Desc.DepthStencilState.DepthWriteMask = desc.DepthStencilState.EnableDepthWrite ? D3D12_DEPTH_WRITE_MASK::D3D12_DEPTH_WRITE_MASK_ALL : D3D12_DEPTH_WRITE_MASK::D3D12_DEPTH_WRITE_MASK_ZERO;
+		Desc.DepthStencilState.StencilEnable = desc.DepthStencilState.StencillEnable;
+		Desc.DepthStencilState.StencilReadMask = desc.DepthStencilState.StencilReadMask;
+		Desc.DepthStencilState.StencilWriteMask = desc.DepthStencilState.StencilWriteMask;
+		Desc.DepthStencilState.FrontFace.StencilDepthFailOp = DX12Factory::Translate(desc.DepthStencilState.FrontFace.StencilDepthFailOp);
+		Desc.DepthStencilState.FrontFace.StencilFailOp = DX12Factory::Translate(desc.DepthStencilState.FrontFace.StencilFailOp);
+		Desc.DepthStencilState.FrontFace.StencilPassOp = DX12Factory::Translate(desc.DepthStencilState.FrontFace.StencilPassOp);
+		Desc.DepthStencilState.FrontFace.StencilFunc = DX12Factory::Translate(desc.DepthStencilState.FrontFace.StencilTest);
+		if (desc.DepthStencilState.BackStencillEnable)
+		{
+			Desc.DepthStencilState.BackFace.StencilDepthFailOp = DX12Factory::Translate(desc.DepthStencilState.BackFace.StencilDepthFailOp);
+			Desc.DepthStencilState.BackFace.StencilFailOp = DX12Factory::Translate(desc.DepthStencilState.BackFace.StencilFailOp);
+			Desc.DepthStencilState.BackFace.StencilPassOp = DX12Factory::Translate(desc.DepthStencilState.BackFace.StencilPassOp);
+			Desc.DepthStencilState.BackFace.StencilFunc = DX12Factory::Translate(desc.DepthStencilState.BackFace.StencilTest);
+		}
+		else
+		{
+			Desc.DepthStencilState.BackFace = Desc.DepthStencilState.FrontFace;
+		}
+
+	}
 	Desc.SampleMask = UINT_MAX;
 	switch (desc.TopologyType)
 	{
@@ -87,8 +144,30 @@ DX12Pipeline::DX12Pipeline(const BearPipelineDescription & desc)
 		break;
 	}
 	
-	Desc.NumRenderTargets = 1;
-	Desc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
+
+	if (desc.RenderPass.empty())
+	{
+		Desc.NumRenderTargets = 1;
+		Desc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
+
+	}
+	else
+	{
+		const DX12RenderPass* RenderPass = static_cast<const DX12RenderPass*>(desc.RenderPass.get());
+		Desc.NumRenderTargets =  static_cast<UINT>(RenderPass->CountRenderTarget);
+		for (bsize i = 0; i < Desc.NumRenderTargets; i++)
+		{
+			Desc.RTVFormats[i] = DX12Factory::Translation(RenderPass->Description.RenderTargets[i].Format);
+
+			
+		}
+		if (RenderPass->Description.DepthStencil.Format != DSF_NONE)
+		{
+			Desc.DSVFormat = DX12Factory::Translation(RenderPass->Description.DepthStencil.Format);
+		}
+	}
+
+	
 	Desc.SampleDesc.Count = 1;
 
 
@@ -103,6 +182,7 @@ DX12Pipeline::DX12Pipeline(const BearPipelineDescription & desc)
 
 DX12Pipeline::~DX12Pipeline()
 {
+	PipelineCounter--;
 }
 
 void DX12Pipeline::Set(

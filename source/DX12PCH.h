@@ -38,3 +38,7 @@ extern DX12Factory* Factory;
 #include "DX12ShaderResource.h"
 #include "DX12Texture2D.h"
 #include "DX12Sampler.h"
+#include "DX12Stats.h"
+
+#include "DX12RenderPass.h"
+#include "DX12FrameBuffer.h"

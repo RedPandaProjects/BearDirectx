@@ -14,10 +14,25 @@ public:
 	virtual BearRHI::BearRHIRootSignature* CreateRootSignature(const BearRootSignatureDescription& Description);
 	virtual BearRHI::BearRHIDescriptorHeap* CreateDescriptorHeap(const BearDescriptorHeapDescription& Description);
 	virtual BearRHI::BearRHIPipeline* CreatePipeline(const BearPipelineDescription& Description);
-	virtual BearRHI::BearRHITexture2D* CreateTexture2D(bsize Width, bsize Height, bsize Mips, bsize Count, BearTexturePixelFormat PixelFormat, void* data = 0);
-	virtual BearRHI::BearRHISampler* CreateSampler();
+	virtual BearRHI::BearRHITexture2D* CreateTexture2D(bsize Width, bsize Height, bsize Mips, bsize Count, BearTexturePixelFormat PixelFormat, BearTextureUsage TypeUsage, void* data = 0);
+	virtual BearRHI::BearRHITexture2D* CreateTexture2D(bsize Width, bsize Height, BearRenderTargetFormat Format);
+	virtual BearRHI::BearRHITexture2D* CreateTexture2D(bsize Width, bsize Height, BearDepthStencilFormat Format);
+	virtual BearRHI::BearRHIRenderPass *CreateRenderPass(const BearRenderPassDescription& Description);
+	virtual BearRHI::BearRHIFrameBuffer* CreateFrameBuffer(const BearFrameBufferDescription& Description);
+	virtual BearRHI::BearRHISampler* CreateSampler(const BearSamplerDescription& Description);
+
 	static DXGI_FORMAT Translation(BearTexturePixelFormat format);
+	static D3D12_TEXTURE_ADDRESS_MODE Translation(BearSamplerAddressMode format);
+	static D3D12_BLEND Translate(BearBlendFactor format);
+	static D3D12_BLEND_OP Translate(BearBlendOp format);
+	static D3D12_COMPARISON_FUNC Translate(BearCompareFunction format);
+	static D3D12_STENCIL_OP Translate(BearStencilOp format);
+	static D3D12_CULL_MODE Translate(BearRasterizerCullMode format);
+	static D3D12_FILL_MODE Translate(BearRasterizerFillMode format);
+	static DXGI_FORMAT Translation(BearRenderTargetFormat format);
+	static DXGI_FORMAT Translation(BearDepthStencilFormat format);
 public:
+	
 	UINT SamplerDescriptorSize;
 	UINT CbvSrvUavDescriptorSize;
 	UINT RtvDescriptorSize;
