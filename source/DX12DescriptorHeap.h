@@ -7,14 +7,22 @@ public:
 	virtual ~DX12DescriptorHeap();
 	ComPtr<ID3D12DescriptorHeap> CbvHeap;
 	ComPtr<ID3D12DescriptorHeap> SamplerHeap;
+
 #ifdef RTX
 	virtual void Set(ID3D12GraphicsCommandList4* CommandList);
 #else
 	virtual void Set(ID3D12GraphicsCommandList* CommandList);
 #endif
 
-
+	virtual void SetUniformBuffer(bsize slot, BearFactoryPointer<BearRHI::BearRHIUniformBuffer> UniformBuffer);
+	virtual	void SetShaderResource(bsize slot, BearFactoryPointer<BearRHI::BearRHIShaderResource> ShaderResource);
+	virtual	void SetSampler(bsize slot, BearFactoryPointer<BearRHI::BearRHISampler> Sampler);
+	BearFactoryPointer<BearRHI::BearRHIUniformBuffer> UniformBuffers[16];
 	bsize CountBuffers;
+	BearFactoryPointer<BearRHI::BearRHIShaderResource> ShaderResources[16];
 	bsize CountSRVs;
+	BearFactoryPointer<BearRHI::BearRHISampler> Samplers[16];
 	bsize CountSamplers;
+
+
 };
