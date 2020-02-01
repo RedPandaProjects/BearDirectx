@@ -1,5 +1,5 @@
 #include "DX12PCH.h"
-
+bsize ContextCounter = 0;
 DX12Context::DX12Context()
 {
     m_scissorRect.left = 0;
@@ -14,10 +14,12 @@ DX12Context::DX12Context()
     m_viewportRect.TopLeftY = 0;
     m_Status = 0;
     AllocCommandList();
+    ContextCounter++;
 }
 
 DX12Context::~DX12Context()
 {
+    ContextCounter--;
     PreDestroy();
     if (m_fenceValue)
         if (m_fence->GetCompletedValue() < m_fenceValue - 1)
@@ -43,8 +45,7 @@ void DX12Context::Wait()
     }
     R_CHK(m_commandAllocator->Reset());
     R_CHK(CommandList->Reset(m_commandAllocator.Get(), 0));
-    if (!m_viewport.empty())
-        static_cast<DX12Viewport*>(m_viewport.get())->ToRT(CommandList.Get());
+
     m_Status = 0;
 }
 
@@ -60,7 +61,7 @@ void DX12Context::Flush(bool wait)
         m_commandQueue->ExecuteCommandLists(_countof(ppCommandLists), ppCommandLists);
         R_CHK(m_commandQueue->Signal(m_fence.Get(), m_fenceValue++));
     }
-    else
+    else if(m_viewport.get())
     {
         auto viewport = static_cast<DX12Viewport*>(m_viewport.get());
         viewport->ToPresent(CommandList.Get());
@@ -68,6 +69,16 @@ void DX12Context::Flush(bool wait)
         viewport->CommandQueue->ExecuteCommandLists(_countof(ppCommandLists), ppCommandLists);
         viewport->Swap();
         R_CHK(viewport->CommandQueue->Signal(m_fence.Get(), m_fenceValue++));
+
+    }
+    else
+    {
+        BEAR_ASSERT(!m_framebuffer.empty());
+        auto framebuffer = static_cast<DX12FrameBuffer*>(m_framebuffer.get());
+        framebuffer->ToTexture(CommandList.Get());
+        R_CHK(CommandList->Close());
+        m_commandQueue->ExecuteCommandLists(_countof(ppCommandLists), ppCommandLists);
+        R_CHK(m_commandQueue->Signal(m_fence.Get(), m_fenceValue++));
 
     }
     m_Status = 2;
@@ -81,10 +92,17 @@ void DX12Context::AttachViewportAsFrameBuffer(BearFactoryPointer<BearRHI::BearRH
     m_viewport = Viewport;
 }
 
+void DX12Context::AttachFrameBuffer(BearFactoryPointer<BearRHI::BearRHIFrameBuffer> FrameBuffer)
+{
+    DetachFrameBuffer();
+    m_framebuffer = FrameBuffer;
+}
+
 void DX12Context::DetachFrameBuffer()
 {
     PreDestroy();
     m_viewport.clear();
+    m_framebuffer.clear();
 }
 
 void DX12Context::ClearFrameBuffer()
@@ -93,17 +111,36 @@ void DX12Context::ClearFrameBuffer()
         return;
     if (m_Status == 2)
         Wait();
-    m_Status = 1;
+    if (!m_viewport.empty())
     {
-
+        static_cast<DX12Viewport*>(m_viewport.get())->ToRT(CommandList.Get());
+        auto Handle = static_cast<DX12Viewport*>(m_viewport.get())->GetHandle();
         if (static_cast<DX12Viewport*>(m_viewport.get())->Description.Clear)
         {
-           auto Handle =  static_cast<DX12Viewport*>(m_viewport.get())->GetHandle();
-           CommandList->ClearRenderTargetView(Handle, static_cast<DX12Viewport*>(m_viewport.get())->Description.ClearColor.R32G32B32A32, 0, 0);
-           CommandList->OMSetRenderTargets(1, &Handle, FALSE, nullptr);
+            CommandList->ClearRenderTargetView(Handle, static_cast<DX12Viewport*>(m_viewport.get())->Description.ClearColor.R32G32B32A32, 0, 0);
         }
-        
+        CommandList->OMSetRenderTargets(1, &Handle, FALSE, nullptr);
     }
+    else
+    {
+
+        BEAR_ASSERT(!m_framebuffer.empty());
+        auto framebuffer = static_cast<DX12FrameBuffer*>(m_framebuffer.get());
+        framebuffer->ToRT(CommandList.Get());
+        for(bsize i=0;i< framebuffer->Count;i++)
+        {
+            if(framebuffer->RenderPassRef->Description.RenderTargets[i].Clear)
+            CommandList->ClearRenderTargetView(framebuffer->RenderTargetRefs[i], framebuffer->RenderPassRef->Description.RenderTargets[i].Color.R32G32B32A32, 0, 0);
+        }
+        if (!framebuffer->Description.DepthStencil.empty() && framebuffer->RenderPassRef->Description.DepthStencil.Clear)
+        {
+            CommandList->ClearDepthStencilView(framebuffer->DepthStencilRef, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, framebuffer->RenderPassRef->Description.DepthStencil.Depth, framebuffer->RenderPassRef->Description.DepthStencil.Stencil, 0, nullptr);
+        }
+        CommandList->OMSetRenderTargets(static_cast<UINT>(framebuffer->Count), framebuffer->RenderTargetRefs, FALSE, framebuffer->Description.DepthStencil.empty()? nullptr: &framebuffer->DepthStencilRef);
+
+    }
+       
+    m_Status = 1;
 
    /* CommandList->SetGraphicsRootSignature(Factory->RootSignature.Get());*/
     CommandList->RSSetViewports(1, &m_viewportRect);
@@ -226,7 +263,42 @@ void DX12Context::Copy(BearFactoryPointer<BearRHI::BearRHIIndexBuffer> Dst, Bear
     CommandList->ResourceBarrier(1, &var2);
     m_Status = 1;
 }
-
+void DX12Context::Copy(BearFactoryPointer<BearRHI::BearRHITexture2D> Dst, BearFactoryPointer<BearRHI::BearRHITexture2D> Src)
+{
+    {
+        if (m_Status == 2)return;
+        if (Dst.empty() || Src.empty())return;
+        if (static_cast<DX12Texture2D*>(Dst.get())->TextureBuffer.Get() == nullptr)return;
+        if (static_cast<DX12Texture2D*>(Src.get())->TextureBuffer.Get() == nullptr)return;
+        auto dst = static_cast<DX12Texture2D*>(Dst.get());
+        auto src = static_cast<DX12Texture2D*>(Src.get());
+        if (src->TextureDesc.Width!= dst->TextureDesc.Width)return;
+        if (src->TextureDesc.Height != dst->TextureDesc.Height)return;;
+        if (src->TextureDesc.DepthOrArraySize != dst->TextureDesc.DepthOrArraySize)return;;
+        if (dst->TextureDesc.MipLevels!= 1)
+            if (src->TextureDesc.MipLevels != dst->TextureDesc.MipLevels)return;
+        auto var1 = CD3DX12_RESOURCE_BARRIER::Transition(dst->TextureBuffer.Get(), D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_COPY_DEST);
+        auto var2 = CD3DX12_RESOURCE_BARRIER::Transition(src->TextureBuffer.Get(), D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_COPY_SOURCE);
+        auto var3 = CD3DX12_RESOURCE_BARRIER::Transition(dst->TextureBuffer.Get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+        auto var4 = CD3DX12_RESOURCE_BARRIER::Transition(src->TextureBuffer.Get(), D3D12_RESOURCE_STATE_COPY_SOURCE, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+        CommandList->ResourceBarrier(1, &var1);
+        CommandList->ResourceBarrier(1, &var2);
+        CD3DX12_TEXTURE_COPY_LOCATION DSTBuffer[512];
+        CD3DX12_TEXTURE_COPY_LOCATION SRCBuffer[512];
+        for (bsize x = 0; x < dst->TextureDesc.DepthOrArraySize; x++)
+            for (bsize y = 0; y < dst->TextureDesc.MipLevels; y++)
+            {
+                CD3DX12_TEXTURE_COPY_LOCATION DST(dst->TextureBuffer.Get(), D3D12CalcSubresource(static_cast<UINT>(y), static_cast<UINT>(x), 0, dst->TextureDesc.MipLevels, dst->TextureDesc.DepthOrArraySize));
+                CD3DX12_TEXTURE_COPY_LOCATION SRC(src->TextureBuffer.Get(), D3D12CalcSubresource(static_cast<UINT>(y), static_cast<UINT>(x), 0, src->TextureDesc.MipLevels, src->TextureDesc.DepthOrArraySize));
+                DSTBuffer[x * dst->TextureDesc.MipLevels + y] = DST;
+                SRCBuffer[x * dst->TextureDesc.MipLevels + y] = SRC;
+                CommandList->CopyTextureRegion(&DSTBuffer[x * dst->TextureDesc.MipLevels + y], 0, 0, 0, &SRCBuffer[x * dst->TextureDesc.MipLevels + y], 0);
+            }
+        CommandList->ResourceBarrier(1, &var3);
+        CommandList->ResourceBarrier(1, &var4);
+        m_Status = 1;
+    }
+}
 void DX12Context::PreDestroy()
 {
     if (m_Status == 1)

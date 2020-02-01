@@ -1,12 +1,14 @@
 #include "DX12PCH.h"
-
+bsize ShaderCounter = 0;
 
 DX12Shader::DX12Shader(BearShaderType type):Type(type)
 {
+	ShaderCounter++;
 }
 
 DX12Shader::~DX12Shader()
 {
+	ShaderCounter--;
 }
 
 #ifdef DEVELOPER_VERSION

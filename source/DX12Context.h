@@ -8,13 +8,15 @@ public:
 	virtual void Wait();
 	virtual void Flush(bool wait);
 	virtual void AttachViewportAsFrameBuffer(BearFactoryPointer<BearRHI::BearRHIViewport> Viewport);
-	
+	virtual void AttachFrameBuffer(BearFactoryPointer<BearRHI::BearRHIFrameBuffer> FrameBuffer);
+
 	virtual void DetachFrameBuffer();
 	virtual void ClearFrameBuffer();
 
 	virtual void Copy(BearFactoryPointer<BearRHI::BearRHIIndexBuffer> Dst, BearFactoryPointer<BearRHI::BearRHIIndexBuffer> Src);
 	virtual void Copy(BearFactoryPointer<BearRHI::BearRHIVertexBuffer> Dst, BearFactoryPointer<BearRHI::BearRHIVertexBuffer> Src);
 	virtual void Copy(BearFactoryPointer<BearRHI::BearRHIUniformBuffer> Dst, BearFactoryPointer<BearRHI::BearRHIUniformBuffer> Src);
+	virtual void Copy(BearFactoryPointer<BearRHI::BearRHITexture2D> Dst, BearFactoryPointer<BearRHI::BearRHITexture2D> Src);
 
 	virtual void SetPipeline(BearFactoryPointer<BearRHI::BearRHIPipeline> Pipeline);
 	virtual void SetVertexBuffer(BearFactoryPointer<BearRHI::BearRHIVertexBuffer> buffer);
@@ -27,9 +29,9 @@ public:
 	virtual void SetDescriptorHeap(BearFactoryPointer<BearRHI::BearRHIDescriptorHeap> DescriptorHeap);
 
 private:
-	inline bool Empty() { return m_viewport.empty() ; }
+	inline bool Empty() { return m_viewport.empty() &&m_framebuffer.empty(); }
 	BearFactoryPointer<BearRHI::BearRHIViewport> m_viewport;
-
+	BearFactoryPointer<BearRHI::BearRHIFrameBuffer> m_framebuffer;
 	int8 m_Status;
 	void PreDestroy();
 	CD3DX12_VIEWPORT m_viewportRect;
