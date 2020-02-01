@@ -1,7 +1,8 @@
 #include "DX12PCH.h"
-
+bsize ViewportCounter = 0;
 DX12Viewport::DX12Viewport(void * Handle, bsize Width, bsize Height, bool Fullscreen, bool VSync, const BearViewportDescription&Description_):Description(Description_), m_Fullscreen(Fullscreen),m_VSync(VSync), m_Width(Width),m_Height(Height)
 {
+	ViewportCounter++;
 	{
 		D3D12_COMMAND_QUEUE_DESC queueDesc = {};
 		queueDesc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
@@ -65,6 +66,7 @@ DX12Viewport::DX12Viewport(void * Handle, bsize Width, bsize Height, bool Fullsc
 
 DX12Viewport::~DX12Viewport()
 {	
+	ViewportCounter--;
 
 }
 
@@ -178,6 +180,29 @@ CD3DX12_CPU_DESCRIPTOR_HANDLE DX12Viewport::GetHandle()
 	return rtvHandle;
 }
 
+void DX12Viewport::Copy(BearFactoryPointer<BearRHI::BearRHITexture2D> Dst)
+{
+	if (Dst.empty())return;
+	if (static_cast<DX12Texture2D*>(Dst.get())->TextureBuffer.Get() == nullptr)return;
+	auto dst = static_cast<DX12Texture2D*>(Dst.get());
+
+
+	Factory->LockCommandList();
+	ToRT(Factory->CommandList.Get());
+	auto var1 = CD3DX12_RESOURCE_BARRIER::Transition(m_RenderTargets[m_FrameIndex].Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_COPY_DEST);
+	auto var2 = CD3DX12_RESOURCE_BARRIER::Transition(m_RenderTargets[m_FrameIndex].Get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_PRESENT);
+	auto var3 = CD3DX12_RESOURCE_BARRIER::Transition(dst->TextureBuffer.Get(), D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_COPY_SOURCE);
+	auto var4 = CD3DX12_RESOURCE_BARRIER::Transition(dst->TextureBuffer.Get(), D3D12_RESOURCE_STATE_COPY_SOURCE, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+	Factory->CommandList->ResourceBarrier(1, &var1);
+	Factory->CommandList->ResourceBarrier(1, &var3);
+	Factory->CommandList->CopyResource(m_RenderTargets[m_FrameIndex].Get(), dst->TextureBuffer.Get());
+	Factory->CommandList->ResourceBarrier(1, &var2);
+	Factory->CommandList->ResourceBarrier(1, &var4);
+	Factory->UnlockCommandList(CommandQueue.Get());
+	R_CHK(m_SwapChain->Present(m_VSync, 0));
+	m_is_rt = false;
+}
+
 
 void DX12Viewport::ToPresent(ID3D12GraphicsCommandList * CommandList)
 {
@@ -190,6 +215,11 @@ void DX12Viewport::ToPresent(ID3D12GraphicsCommandList * CommandList)
 void DX12Viewport::Swap()
 {
 	R_CHK(m_SwapChain->Present(m_VSync, 0));
+}
+
+BearRenderTargetFormat DX12Viewport::GetFormat()
+{
+	return RTF_R8G8B8A8;
 }
 
 void DX12Viewport::ToRT(ID3D12GraphicsCommandList * CommandList)
