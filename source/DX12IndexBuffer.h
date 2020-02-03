@@ -4,7 +4,7 @@ class DX12IndexBuffer :public BearRHI::BearRHIIndexBuffer
 	BEAR_CLASS_WITHOUT_COPY(DX12IndexBuffer);
 public:
 	DX12IndexBuffer();
-	virtual void Create(bsize Count, bool Dynamic);
+	virtual void Create(bsize Count, bool Dynamic,void*data);
 	virtual ~DX12IndexBuffer();
 	virtual uint32* Lock();
 	virtual void Unlock();

@@ -4,7 +4,7 @@ class DX12VertexBuffer :public BearRHI::BearRHIVertexBuffer
 	BEAR_CLASS_WITHOUT_COPY(DX12VertexBuffer);
 public:
 	DX12VertexBuffer();
-	virtual void Create(bsize Stride,bsize Count, bool Dynamic);
+	virtual void Create(bsize Stride,bsize Count, bool Dynamic, void* data);
 	virtual ~DX12VertexBuffer();
 	virtual void* Lock();
 	virtual void Unlock();

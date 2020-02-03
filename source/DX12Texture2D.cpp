@@ -103,7 +103,7 @@ DX12Texture2D::DX12Texture2D(bsize Width, bsize Height, BearDepthStencilFormat F
 	Texture2DCounter++;
 	bear_fill(TextureDesc);
 	TextureDesc.MipLevels = 1;
-	TextureDesc.Format = DX12Factory::Translation(RTVFormat);
+	TextureDesc.Format = DX12Factory::Translation(DSVFormat);
 	TextureDesc.Width = static_cast<uint32>(Width);
 	TextureDesc.Height = static_cast<uint32>(Height);
 	TextureDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
@@ -117,7 +117,7 @@ DX12Texture2D::DX12Texture2D(bsize Width, bsize Height, BearDepthStencilFormat F
 		&var1,
 		D3D12_HEAP_FLAG_NONE,
 		&TextureDesc,
-		D3D12_RESOURCE_STATE_DEPTH_WRITE | D3D12_RESOURCE_STATE_DEPTH_READ,
+		D3D12_RESOURCE_STATE_DEPTH_WRITE ,
 		nullptr,
 		IID_PPV_ARGS(&TextureBuffer)));
 	bear_fill(DX12ShaderResource::SRV);

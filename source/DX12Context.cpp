@@ -134,7 +134,17 @@ void DX12Context::ClearFrameBuffer()
         }
         if (!framebuffer->Description.DepthStencil.empty() && framebuffer->RenderPassRef->Description.DepthStencil.Clear)
         {
-            CommandList->ClearDepthStencilView(framebuffer->DepthStencilRef, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, framebuffer->RenderPassRef->Description.DepthStencil.Depth, framebuffer->RenderPassRef->Description.DepthStencil.Stencil, 0, nullptr);
+            D3D12_CLEAR_FLAGS flags = D3D12_CLEAR_FLAG_DEPTH;
+
+            switch (framebuffer->RenderPassRef->Description.DepthStencil.Format)
+            {
+            case DSF_DEPTH24_STENCIL8:
+            case DSF_DEPTH32F_STENCIL8:
+                flags |= D3D12_CLEAR_FLAG_STENCIL;
+            default:
+                break;
+            }
+            CommandList->ClearDepthStencilView(framebuffer->DepthStencilRef, flags, framebuffer->RenderPassRef->Description.DepthStencil.Depth, framebuffer->RenderPassRef->Description.DepthStencil.Stencil, 0, nullptr);
         }
         CommandList->OMSetRenderTargets(static_cast<UINT>(framebuffer->Count), framebuffer->RenderTargetRefs, FALSE, framebuffer->Description.DepthStencil.empty()? nullptr: &framebuffer->DepthStencilRef);
 
@@ -324,7 +334,7 @@ void DX12Context::AllocCommandList()
     R_CHK(CommandList->Reset(m_commandAllocator.Get(), 0));
 
     R_CHK(Factory->Device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&m_fence)));
-    m_fenceValue = 0;
+    m_fenceValue = 1;
 
     m_fenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
     if (m_fenceEvent == nullptr)
