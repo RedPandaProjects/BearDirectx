@@ -244,6 +244,8 @@ void DX12Context::Draw(bsize count, bsize offset)
 {
     if (Empty())return;
     if (m_Status != 1)return;
+    if (m_scissorRect.left - m_scissorRect.right == 0)return;
+    if (m_scissorRect.top - m_scissorRect.bottom == 0)return;
     CommandList->DrawInstanced(static_cast<UINT>(count), 1, static_cast<UINT>(offset), 0);
 
 }
@@ -251,6 +253,8 @@ void DX12Context::DrawIndex(bsize count, bsize offset_index, bsize  offset_verte
 {
     if (Empty())return;
     if (m_Status != 1)return;
+    if (m_scissorRect.left - m_scissorRect.right == 0)return;
+    if (m_scissorRect.top - m_scissorRect.bottom == 0)return;
     CommandList->DrawIndexedInstanced(static_cast<UINT>(count), 1, static_cast<UINT>(offset_index), static_cast<UINT>(offset_vertex), 0);
 
 }
