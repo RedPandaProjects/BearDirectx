@@ -179,7 +179,7 @@ CD3DX12_CPU_DESCRIPTOR_HANDLE DX12Viewport::GetHandle()
 	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(m_RtvHeap->GetCPUDescriptorHandleForHeapStart(), m_FrameIndex, Factory->RtvDescriptorSize);
 	return rtvHandle;
 }
-
+/*
 void DX12Viewport::Copy(BearFactoryPointer<BearRHI::BearRHITexture2D> Dst)
 {
 	if (Dst.empty())return;
@@ -202,7 +202,7 @@ void DX12Viewport::Copy(BearFactoryPointer<BearRHI::BearRHITexture2D> Dst)
 	R_CHK(m_SwapChain->Present(m_VSync, 0));
 	m_is_rt = false;
 }
-
+*/
 
 void DX12Viewport::ToPresent(ID3D12GraphicsCommandList * CommandList)
 {

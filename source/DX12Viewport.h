@@ -9,7 +9,6 @@ public:
 	virtual void SetFullScreen(bool FullScreen);
 	virtual void Resize(bsize Width, bsize Height);
 	CD3DX12_CPU_DESCRIPTOR_HANDLE GetHandle();
-	virtual void Copy(BearFactoryPointer<BearRHI::BearRHITexture2D> Dst);
 	void Swap();
 	virtual BearRenderTargetFormat GetFormat();
 	bool m_is_rt;
