@@ -145,9 +145,17 @@ DX12Pipeline::DX12Pipeline(const BearPipelineDescription & desc)
 		Desc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_LINE;
 		TopologyType = D3D_PRIMITIVE_TOPOLOGY_LINELIST;
 		break;
+	case	  TT_LINE_STRIP:
+		Desc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_LINE;
+		TopologyType = D3D_PRIMITIVE_TOPOLOGY_LINESTRIP;
+		break;
 	case	  TT_TRIANGLE_LIST:
 		Desc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
 		TopologyType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+		break;
+	case	  TT_TRIANGLE_STRIP:
+		Desc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+		TopologyType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP;
 		break;
 	default:
 		break;
