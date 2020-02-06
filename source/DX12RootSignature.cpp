@@ -59,19 +59,19 @@ DX12RootSignature::DX12RootSignature(const BearRootSignatureDescription& Descrip
 		offset += CountUAV;*/
 		for (bsize i = 0; i < CountBuffers; i++)
 		{
-			Ranges[i + offset].Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, static_cast<UINT>(i), static_cast<UINT>(i));
+			Ranges[i + offset].Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, static_cast<UINT>(i));
 			RootParameters[i + offset].InitAsDescriptorTable(1, &Ranges[i + offset], TransletionShaderVisible(Description.UniformBuffers[i].Shader, RootSignatureFlags));
 		}
 		offset += CountBuffers;
 		for (bsize i = 0; i < CountSRVs; i++)
 		{
-			Ranges[i + offset].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, static_cast<UINT>(i), static_cast<UINT>(i));
+			Ranges[i + offset].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, static_cast<UINT>(i));
 			RootParameters[i + offset].InitAsDescriptorTable(1, &Ranges[i + offset], TransletionShaderVisible(Description.SRVResources[i].Shader, RootSignatureFlags));
 		}
 		offset += CountSRVs;
 		for (bsize i = 0; i < CountSamplers; i++)
 		{
-			Ranges[i + offset].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER, 1, static_cast<UINT>(i), static_cast<UINT>(i));
+			Ranges[i + offset].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER, 1, static_cast<UINT>(i));
 			RootParameters[i + offset].InitAsDescriptorTable(1, &Ranges[i + offset], TransletionShaderVisible(Description.Samplers[i].Shader, RootSignatureFlags));
 		}
 
