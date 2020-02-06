@@ -4,7 +4,14 @@ DX12Factory::DX12Factory()
 {
 	UINT dxgiFactoryFlags = 0;
 	m_Default_FenceEvent = 0;
+
+	bool debug_render = BearString::Find(GetCommandLine(), TEXT("-debug_render"));
+#if defined(_DEBUG)
+	debug_render = true;
+#endif
 #if defined(DEBUG)
+	if(debug_render)
+
 	{
 		ComPtr<ID3D12Debug> debugController;
 		if (SUCCEEDED(D3D12GetDebugInterface(IID_PPV_ARGS(&debugController))))
@@ -46,8 +53,10 @@ DX12Factory::DX12Factory()
 		return;
 	}
 #endif
+#if defined(DEBUG)
+	if (debug_render)
 	{
-#if defined(_DEBUG)
+
 		ComPtr<ID3D12InfoQueue> InfoQueue;
 		if (SUCCEEDED(Device.As(&InfoQueue)))
 		{
