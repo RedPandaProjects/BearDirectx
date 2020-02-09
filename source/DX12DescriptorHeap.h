@@ -5,8 +5,8 @@ class DX12DescriptorHeap :public BearRHI::BearRHIDescriptorHeap
 public:
 	DX12DescriptorHeap(const BearDescriptorHeapDescription& desc);
 	virtual ~DX12DescriptorHeap();
-	ComPtr<ID3D12DescriptorHeap> CbvHeap;
-	ComPtr<ID3D12DescriptorHeap> SamplerHeap;
+	DX12AllocatorHeapItem CbvHeap;
+	DX12AllocatorHeapItem SamplerHeap;
 
 #ifdef RTX
 	virtual void Set(ID3D12GraphicsCommandList4* CommandList);

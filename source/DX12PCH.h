@@ -22,6 +22,7 @@ using ATL::CComPtr;
 
 #define R_CHK(a) BEAR_RASSERT(SUCCEEDED(a))
 
+#include "DX12AllocatorHeap.h"
 #include "DX12Factory.h"
 extern DX12Factory* Factory;
 #include "DX12Viewport.h"

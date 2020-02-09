@@ -43,6 +43,9 @@ public:
 	ComPtr<ID3D12Device4> RTXDevice;
 
 #endif
+	DX12AllocatorHeap< D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV> ViewHeapAllocator;
+	DX12AllocatorHeap< D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER> SamplersHeapAllocator;
+
 public:
 	ComPtr<ID3D12GraphicsCommandList> CopyCommandList;
 	void LockCommandList();

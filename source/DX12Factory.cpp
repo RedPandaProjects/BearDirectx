@@ -133,6 +133,10 @@ DX12Factory::~DX12Factory()
 	}
 #endif
 	{
+		ViewHeapAllocator.clear();
+		SamplersHeapAllocator.clear();
+	}
+	{
 		if(CommandList)
 		R_CHK(CommandList->Close());
 
