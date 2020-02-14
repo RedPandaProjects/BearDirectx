@@ -49,7 +49,7 @@ void DX12DescriptorHeap::Set(ID3D12GraphicsCommandList4* CommandList)
 	if (CbvHeap.Size)
 	{
 		CD3DX12_GPU_DESCRIPTOR_HANDLE CbvHandle(CbvHeap.DescriptorHeap->GetGPUDescriptorHandleForHeapStart());
-		CbvHandle.Offset(Factory->CbvSrvUavDescriptorSize, CbvHeap.Id);
+		CbvHandle.Offset(Factory->CbvSrvUavDescriptorSize, static_cast<UINT>( CbvHeap.Id));
 		for (bsize i = 0; i < CountBuffers + CountSRVs; i++)
 		{
 
@@ -60,7 +60,7 @@ void DX12DescriptorHeap::Set(ID3D12GraphicsCommandList4* CommandList)
 	if (SamplerHeap.Size)
 	{
 		CD3DX12_GPU_DESCRIPTOR_HANDLE SamplersHandle(SamplerHeap.DescriptorHeap->GetGPUDescriptorHandleForHeapStart());
-		SamplersHandle.Offset(Factory->SamplerDescriptorSize, SamplerHeap.Id);
+		SamplersHandle.Offset(Factory->SamplerDescriptorSize, static_cast<UINT>( SamplerHeap.Id));
 		for (bsize i = 0; i < CountSamplers; i++)
 		{
 
@@ -88,7 +88,7 @@ void DX12DescriptorHeap::Set(ID3D12GraphicsCommandList* CommandList)
 	if (CbvHeap.Size)
 	{
 		CD3DX12_GPU_DESCRIPTOR_HANDLE CbvHandle(CbvHeap.DescriptorHeap->GetGPUDescriptorHandleForHeapStart());
-		CbvHandle.Offset(Factory->CbvSrvUavDescriptorSize, CbvHeap.Id);
+		CbvHandle.Offset(Factory->CbvSrvUavDescriptorSize,static_cast<UINT>( CbvHeap.Id));
 		for (bsize i = 0; i < CountBuffers+ CountSRVs; i++)
 		{
 		
@@ -99,7 +99,7 @@ void DX12DescriptorHeap::Set(ID3D12GraphicsCommandList* CommandList)
 	if (SamplerHeap.Size)
 	{
 		CD3DX12_GPU_DESCRIPTOR_HANDLE SamplersHandle(SamplerHeap.DescriptorHeap->GetGPUDescriptorHandleForHeapStart());
-		SamplersHandle.Offset(Factory->SamplerDescriptorSize, SamplerHeap.Id);
+		SamplersHandle.Offset(Factory->SamplerDescriptorSize, static_cast<UINT>( SamplerHeap.Id));
 		for (bsize i = 0; i < CountSamplers; i++)
 		{
 		

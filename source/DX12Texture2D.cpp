@@ -50,7 +50,7 @@ DX12Texture2D::DX12Texture2D(bsize Width, bsize Height, bsize Mips, bsize Count,
 		for (bsize x = 0; x < Count; x++)
 			for (bsize y = 0; y < Mips; y++)
 			{
-				bsize  size =BearTextureUtils::GetSizeDepth(BearTextureUtils::GetMip(TextureDesc.Width, y),BearTextureUtils::GetMip(TextureDesc.Height, y), Format);
+				bsize  size =BearTextureUtils::GetSizeDepth(BearTextureUtils::GetMip(static_cast<bsize>(TextureDesc.Width), y),BearTextureUtils::GetMip(static_cast<bsize>(TextureDesc.Height), y), Format);
 				bear_copy(Lock(y, x), ptr, size);
 				Unlock();
 				ptr += size;
@@ -156,10 +156,10 @@ void* DX12Texture2D::Lock(bsize mip, bsize depth)
 		{
 			D3D12_SUBRESOURCE_FOOTPRINT PitchedDesc = {  };
 			PitchedDesc.Format = TextureDesc.Format;
-			PitchedDesc.Width = static_cast<UINT>(BearTextureUtils::GetMip(TextureDesc.Width, m_mip));
+			PitchedDesc.Width = static_cast<UINT>(BearTextureUtils::GetMip(static_cast<bsize>(TextureDesc.Width), m_mip));
 			if (BearTextureUtils::isCompressor(Format))
 				PitchedDesc.Width = BearMath::max(UINT(4), PitchedDesc.Width);
-			PitchedDesc.Height = static_cast<UINT>(BearTextureUtils::GetMip(TextureDesc.Height, m_mip));
+			PitchedDesc.Height = static_cast<UINT>(BearTextureUtils::GetMip(static_cast<bsize>(TextureDesc.Height), m_mip));
 			if (BearTextureUtils::isCompressor(Format))
 				PitchedDesc.Height = BearMath::max(UINT(4), PitchedDesc.Height);
 			PitchedDesc.Depth = 1;
@@ -206,10 +206,10 @@ void DX12Texture2D::Unlock()
 		{
 			D3D12_SUBRESOURCE_FOOTPRINT PitchedDesc = {  };
 			PitchedDesc.Format = TextureDesc.Format;
-			PitchedDesc.Width = static_cast<UINT>(BearTextureUtils::GetMip(TextureDesc.Width, m_mip));
+			PitchedDesc.Width = static_cast<UINT>(BearTextureUtils::GetMip(static_cast<bsize>(TextureDesc.Width), m_mip));
 			if (BearTextureUtils::isCompressor(Format))
 				PitchedDesc.Width = BearMath::max(UINT(4), PitchedDesc.Width);
-			PitchedDesc.Height = static_cast<UINT>(BearTextureUtils::GetMip(TextureDesc.Height, m_mip));
+			PitchedDesc.Height = static_cast<UINT>(BearTextureUtils::GetMip(static_cast<bsize>(TextureDesc.Height), m_mip));
 			if (BearTextureUtils::isCompressor(Format))
 				PitchedDesc.Height = BearMath::max(UINT(4), PitchedDesc.Height);
 			PitchedDesc.Depth = 1;
@@ -270,9 +270,9 @@ void DX12Texture2D::AllocBuffer()
 	bsize SizeWidth = 0;
 	bsize SizeDepth = 0;
 	{
-		SizeWidth = (BearTextureUtils::GetSizeWidth(TextureDesc.Width, Format));
+		SizeWidth = (BearTextureUtils::GetSizeWidth(static_cast<bsize>(TextureDesc.Width), Format));
 		SizeWidth = (SizeWidth + D3D12_TEXTURE_DATA_PITCH_ALIGNMENT - 1) & ~(D3D12_TEXTURE_DATA_PITCH_ALIGNMENT - 1);
-		SizeDepth = SizeWidth * BearTextureUtils::GetCountBlock(TextureDesc.Height, Format);
+		SizeDepth = SizeWidth * BearTextureUtils::GetCountBlock(static_cast<bsize>(TextureDesc.Height), Format);
 		SizeDepth = (SizeDepth + D3D12_TEXTURE_DATA_PLACEMENT_ALIGNMENT - 1) & ~(D3D12_TEXTURE_DATA_PLACEMENT_ALIGNMENT - 1);
 	}
 	CD3DX12_HEAP_PROPERTIES var1(TU_STATING == TextureUsage ? D3D12_HEAP_TYPE_READBACK : D3D12_HEAP_TYPE_UPLOAD);
