@@ -2,7 +2,7 @@
 
 #include <sdkddkver.h>
 
-#ifdef DX12_1
+#ifdef DX12
 #if (WDK_NTDDI_VERSION) > (NTDDI_WIN10_19H1)
 #define DX12UTIMATE
 #endif

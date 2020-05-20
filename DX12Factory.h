@@ -43,7 +43,7 @@ public:
 	UINT CbvSrvUavDescriptorSize;
 	UINT RtvDescriptorSize;
 	ComPtr<ID3D12RootSignature> RootSignature;
-#ifdef DX12_1
+#if defined(DX12)|defined(DX12_1)
 	ComPtr<ID3D12Device4> Device;
 #else
 	ComPtr<ID3D12Device> Device;

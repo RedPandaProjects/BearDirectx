@@ -1,4 +1,6 @@
 #include "DX12PCH.h"
+
+#pragma optimize("", off)
 bsize TextureCubeCounter = 0;
 DX12TextureCube::DX12TextureCube(bsize Width, bsize Height, bsize Mips, bsize Count, BearTexturePixelFormat PixelFormat, BearTextureUsage typeUsage, void* data)
 {

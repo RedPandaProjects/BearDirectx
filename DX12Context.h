@@ -46,7 +46,11 @@ private:
 	ComPtr<ID3D12GraphicsCommandList4> m_commandList;
 #endif
 #else
+#ifdef DX12UTIMATE
+	ComPtr<ID3D12GraphicsCommandList6> m_commandList;
+#else
 	ComPtr<ID3D12GraphicsCommandList> m_commandList;
+#endif
 #endif
 	ComPtr<ID3D12CommandAllocator> m_commandAllocator;
 	ComPtr<ID3D12CommandQueue> m_commandQueue;

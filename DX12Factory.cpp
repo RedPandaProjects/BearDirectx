@@ -1,5 +1,4 @@
 #include "DX12PCH.h"
-#pragma optimize("", off)
 bool GDebugRender;  
 static bool GExperimental;
 static const GUID D3D12ExperimentalShaderModelsID =
