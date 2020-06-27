@@ -48,7 +48,7 @@ DX12TextureCube::DX12TextureCube(bsize Width, bsize Height, bsize Mips, bsize Co
 	if (data)
 	{
 		auto ptr = reinterpret_cast<uint8*>(data);
-		for (bsize x = 0; x < Count*6; x++)
+		for (bsize x = 0; x < Count; x++)
 			for (bsize y = 0; y < Mips; y++)
 			{
 				bsize  size =BearTextureUtils::GetSizeDepth(BearTextureUtils::GetMip(static_cast<bsize>(TextureDesc.Width), y),BearTextureUtils::GetMip(static_cast<bsize>(TextureDesc.Height), y), Format);
