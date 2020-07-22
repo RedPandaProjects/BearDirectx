@@ -201,7 +201,9 @@ struct DXCInluder :public IDxcIncludeHandler
 			bIsUTF8 = utf8_bom[0] == 0xEF;
 			bIsUTF8 = bIsUTF8 && utf8_bom[1] == 0xBB;
 			bIsUTF8 = bIsUTF8 && utf8_bom[2] == 0xBF;
+			steam->Seek(0);
 		}
+	
 		R_CHK(Factory->DxcLibrary->CreateBlobWithEncodingFromPinned(steam->Begin(), static_cast<UINT32>(steam->Size()), bIsUTF8? DXC_CP_UTF8: DXC_CP_ACP, &PointerTextBlob));
 		*ppIncludeSource =static_cast<IDxcBlob*>( PointerTextBlob);
 		Readers.push_back(steam);
