@@ -25,12 +25,12 @@ DX12Factory::DX12Factory():bSupportMeshShader(false)
 	if (!GExperimental)
 		GExperimental = BearString::Find(GetCommandLine(), TEXT("-dexperimental"));
 
-	GExperimental = false;
 
 
 
 #ifdef DX12UTIMATE
-	D3D12EnableExperimentalFeatures(1, &D3D12ExperimentalShaderModelsID, nullptr, nullptr);
+	if(GExperimental)
+		D3D12EnableExperimentalFeatures(1, &D3D12ExperimentalShaderModelsID, nullptr, nullptr);
 #endif 
 
 	if(GDebugRender)

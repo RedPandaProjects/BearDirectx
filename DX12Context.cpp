@@ -35,7 +35,7 @@ DX12Context::~DX12Context()
             R_CHK(m_fence->SetEventOnCompletion(m_fenceValue - 1, m_fenceEvent));
             WaitForSingleObject(m_fenceEvent, INFINITE);
         }
-    R_CHK(m_commandList->Close());
+    //R_CHK(m_commandList->Close());
     CloseHandle(m_fenceEvent);
 }
 
@@ -96,7 +96,7 @@ void DX12Context::Flush(bool wait)
 
 void DX12Context::ClearState()
 {
-   // m_commandList->ClearState();
+    //m_commandList->ClearState();
 }
 
 void DX12Context::SetPipeline(BearFactoryPointer<BearRHI::BearRHIPipeline> Pipeline)
