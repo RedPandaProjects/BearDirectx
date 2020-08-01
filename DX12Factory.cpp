@@ -8,7 +8,7 @@ static const GUID D3D12ExperimentalShaderModelsID =
 	0x40f5,
 	{ 0xb2, 0x97, 0x81, 0xce, 0x9e, 0x18, 0x93, 0x3f }
 };
-DX12Factory::DX12Factory():bSupportMeshShader(false)
+DX12Factory::DX12Factory() :bSupportMeshShader(false), bSupportRayTracing(false)
 {
 	UINT dxgiFactoryFlags = 0;
 	m_Default_FenceEvent = 0;
@@ -369,6 +369,18 @@ void DX12Factory::GetHardwareAdapter(
 
 		if (SUCCEEDED(D3D12CreateDevice(adapter.Get(), Level, IID_PPV_ARGS(&LDevice))))
 		{
+
+#ifndef DX11
+			{
+				D3D12_FEATURE_DATA_D3D12_OPTIONS5 featureSupportData = {};
+				if (SUCCEEDED(LDevice->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS5, &featureSupportData, sizeof(featureSupportData))))
+				{
+					bSupportRayTracing = featureSupportData.RaytracingTier != D3D12_RAYTRACING_TIER_NOT_SUPPORTED;
+				}
+			}
+#endif
+		
+
 #ifndef DX11
 			D3D12_FEATURE_DATA_SHADER_MODEL shaderModel = { D3D_SHADER_MODEL_6_5 };
 			if (FAILED(LDevice->CheckFeatureSupport(D3D12_FEATURE_SHADER_MODEL, &shaderModel, sizeof(shaderModel))) ||
@@ -683,14 +695,22 @@ DXGI_FORMAT DX12Factory::Translation(BearDepthStencilFormat format)
 	return DXGI_FORMAT_D24_UNORM_S8_UINT;
 }
 
-bool DX12Factory::SupportRTX()
+bool DX12Factory::SupportRayTracing()
 {
+#ifdef DX12_1
+	return bSupportRayTracing;
+#elif DX12
+	return bSupportRayTracing;
+#else
 	return false;
+#endif
 }
 
 bool DX12Factory::SupportMeshShader()
 {
 #ifdef DX12_1
+	return bSupportMeshShader;
+#elif DX12
 	return bSupportMeshShader;
 #else
 	return false;

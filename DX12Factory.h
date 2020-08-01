@@ -35,10 +35,11 @@ public:
 	static D3D12_FILL_MODE Translate(BearRasterizerFillMode format);
 	static DXGI_FORMAT Translation(BearRenderTargetFormat format);
 	static DXGI_FORMAT Translation(BearDepthStencilFormat format);
-	virtual bool SupportRTX();
+	virtual bool SupportRayTracing();
 	virtual bool SupportMeshShader();
 public:
 	bool bSupportMeshShader;
+	bool bSupportRayTracing;
 	UINT SamplerDescriptorSize;
 	UINT CbvSrvUavDescriptorSize;
 	UINT RtvDescriptorSize;
