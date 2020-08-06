@@ -24,6 +24,7 @@ DX12Context::DX12Context()
     {
         R_CHK(HRESULT_FROM_WIN32(GetLastError()));
     }
+    m_CurrentPipelineIsCompute = false;
     ContextCounter++;
 }
 DX12Context::~DX12Context()
@@ -104,6 +105,7 @@ void DX12Context::SetPipeline(BearFactoryPointer<BearRHI::BearRHIPipeline> Pipel
     DX12Pipeline* P = reinterpret_cast<DX12Pipeline*>(Pipeline.get()->QueryInterface(DX12Q_Pipeline));
     BEAR_CHECK(P);
     P->Set(m_commandList.Get());
+    m_CurrentPipelineIsCompute = P->IsComputePipeline();
 }
 void DX12Context::SetViewportAsFrameBuffer(BearFactoryPointer<BearRHI::BearRHIViewport> Viewport)
 {
@@ -149,7 +151,14 @@ void DX12Context::SetFrameBuffer(BearFactoryPointer<BearRHI::BearRHIFrameBuffer>
 }
 void DX12Context::SetDescriptorHeap(BearFactoryPointer<BearRHI::BearRHIDescriptorHeap> DescriptorHeap)
 {
-    static_cast<DX12DescriptorHeap*>(DescriptorHeap.get())->Set(m_commandList.Get());// DescriptorHeap
+    if (m_CurrentPipelineIsCompute)
+    {
+        static_cast<DX12DescriptorHeap*>(DescriptorHeap.get())->SetCompute(m_commandList.Get());
+    }
+    else
+    {
+        static_cast<DX12DescriptorHeap*>(DescriptorHeap.get())->SetGraphics(m_commandList.Get());// DescriptorHeap
+    }
 }
 void DX12Context::SetVertexBuffer(BearFactoryPointer<BearRHI::BearRHIVertexBuffer> buffer)
 {
@@ -306,4 +315,16 @@ void DX12Context::Copy(BearFactoryPointer<BearRHI::BearRHIUniformBuffer> Dst, Be
     auto var2 = CD3DX12_RESOURCE_BARRIER::Transition(static_cast<DX12UniformBuffer*>(Dst.get())->UniformBuffer.Get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
     m_commandList->ResourceBarrier(1, &var2);
 
+}
+void DX12Context::Lock(BearFactoryPointer<BearRHI::BearRHIUnorderedAccess> UnorderedAccess)
+{
+    BEAR_CHECK(!UnorderedAccess.empty());
+    DX12UnorderedAccess* UAV = reinterpret_cast<DX12UnorderedAccess*>(UnorderedAccess.get()->QueryInterface(DX12Q_UnorderedAccess));
+    UAV->LockUAV(m_commandList.Get());
+}
+void DX12Context::Unlock(BearFactoryPointer<BearRHI::BearRHIUnorderedAccess> UnorderedAccess)
+{
+    BEAR_CHECK(!UnorderedAccess.empty());
+    DX12UnorderedAccess* UAV = reinterpret_cast<DX12UnorderedAccess*>(UnorderedAccess.get()->QueryInterface(DX12Q_UnorderedAccess));
+    UAV->UnlockUAV(m_commandList.Get());
 }

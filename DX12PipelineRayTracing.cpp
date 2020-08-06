@@ -273,8 +273,10 @@ void* DX12PipelineRayTracing::QueryInterface(int Type)
 
 BearPipelineType DX12PipelineRayTracing::GetType()
 {
-	return PT_Mesh;
+	return PT_RayTracing;
 }
+
+
 
 void DX12PipelineRayTracing::Set(
 #ifdef DX12_1
@@ -289,7 +291,8 @@ void DX12PipelineRayTracing::Set(
 	
 	* CommandList)
 {
-	
+	CommandList->SetComputeRootSignature(RootSignaturePointer->RootSignature.Get());
+	CommandList->SetPipelineState1(PipelineState.Get());
 }
 
 

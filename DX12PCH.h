@@ -41,6 +41,7 @@ enum EDX12Query
 {
 	DX12Q_None=0,
 	DX12Q_ShaderResource,
+	DX12Q_UnorderedAccess,
 	DX12Q_Pipeline,
 };
 
@@ -63,6 +64,7 @@ extern DX12Factory* Factory;
 #include "DX12DescriptorHeap.h"
 
 #include "DX12ShaderResource.h"
+#include "DX12UnorderedAccess.h"
 #include "DX12Texture2D.h"
 #include "DX12Sampler.h"
 #include "DX12Stats.h"

@@ -2,7 +2,7 @@
 class DX12Pipeline:public virtual BearRHI::BearRHIPipeline
 {
 public:
-
+	virtual bool IsComputePipeline() {	return false;	}
 #ifdef DX12_1
 #ifdef DX12UTIMATE
 	virtual void Set(ID3D12GraphicsCommandList6* CommandList) = 0;

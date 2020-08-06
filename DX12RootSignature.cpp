@@ -61,6 +61,7 @@ DX12RootSignature::DX12RootSignature(const BearRootSignatureDescription& Descrip
 	CountBuffers = 0;
 	CountSamplers = 0;
 	CountSRVs = 0;
+	CountUAVs = 0;
 	{
 		for (bsize i = 0; i < 16; i++)
 		{
@@ -70,6 +71,7 @@ DX12RootSignature::DX12RootSignature(const BearRootSignatureDescription& Descrip
 			if (Description.UniformBuffers[i].Shader != ST_Null)CountBuffers++;
 			if (Description.SRVResources[i].Shader != ST_Null) CountSRVs++;
 			if (Description.Samplers[i].Shader != ST_Null) CountSamplers++;
+			if (Description.UAVResources[i].Shader != ST_Null) CountUAVs++;
 		}
 	}
 
@@ -94,7 +96,7 @@ DX12RootSignature::DX12RootSignature(const BearRootSignatureDescription& Descrip
 			D3D12_ROOT_SIGNATURE_FLAG_DENY_DOMAIN_SHADER_ROOT_ACCESS |
 			D3D12_ROOT_SIGNATURE_FLAG_DENY_GEOMETRY_SHADER_ROOT_ACCESS;
 
-		bsize Count = CountBuffers + CountSRVs + CountSamplers/* + CountUAV*/;
+		bsize Count = CountBuffers + CountSRVs + CountSamplers + CountUAVs;
 		CD3DX12_DESCRIPTOR_RANGE1 Ranges[64];
 		CD3DX12_ROOT_PARAMETER1 RootParameters[128];
 		bsize offset = 0;
@@ -138,16 +140,35 @@ DX12RootSignature::DX12RootSignature(const BearRootSignatureDescription& Descrip
 		}
 		for (bsize i = 0; i < 16; i++)
 		{
+			if (Description.UAVResources[i].Shader != ST_Null)
+			{
+				SlotUAVs[i] = offset - (CountBuffers + CountSRVs);
+				switch (Description.UAVResources[i].DescriptorType)
+				{
+				case BearDescriptorType::DT_Buffer:
+					RootParameters[offset].InitAsUnorderedAccessView(static_cast<UINT>(i), 0, D3D12_ROOT_DESCRIPTOR_FLAG_DATA_STATIC, TransletionShaderVisible(Description.UAVResources[i].Shader, RootSignatureFlags));
+					break;
+				case BearDescriptorType::DT_Image:
+					Ranges[offset].Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, static_cast<UINT>(i));
+					RootParameters[offset].InitAsDescriptorTable(1, &Ranges[offset], TransletionShaderVisible(Description.UAVResources[i].Shader, RootSignatureFlags));
+					break;
+				default:
+					break;
+				}
+				offset++;
+			}
+		}
+
+		for (bsize i = 0; i < 16; i++)
+		{
 			if (Description.Samplers[i].Shader != ST_Null)
 			{
-				SlotSamplers[i] = offset - (CountBuffers+ CountSRVs);
+				SlotSamplers[i] = offset - (CountBuffers + CountSRVs+CountUAVs);
 				Ranges[offset].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER, 1, static_cast<UINT>(i));
 				RootParameters[offset].InitAsDescriptorTable(1, &Ranges[offset], TransletionShaderVisible(Description.Samplers[i].Shader, RootSignatureFlags));
 				offset++;
 			}
 		}
-
-
 
 		CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC rootSignatureDesc;
 		if (Description.Local)

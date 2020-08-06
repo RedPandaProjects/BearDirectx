@@ -223,9 +223,9 @@ BearRHI::BearRHIPipelineRayTracing* DX12Factory::CreatePipelineRayTracing(const 
 	return bear_new<DX12PipelineRayTracing>(Description);;
 }
 
-BearRHI::BearRHITexture2D* DX12Factory::CreateTexture2D(bsize Width, bsize Height, bsize Mips, bsize Count, BearTexturePixelFormat PixelFormat, BearTextureUsage TypeUsage, void* data)
+BearRHI::BearRHITexture2D* DX12Factory::CreateTexture2D(bsize Width, bsize Height, bsize Mips, bsize Count, BearTexturePixelFormat PixelFormat, BearTextureUsage TypeUsage, void* data, bool UAV)
 {
-	return  bear_new<DX12Texture2D>(Width,Height,Mips,Count,PixelFormat, TypeUsage,data);;
+	return  bear_new<DX12Texture2D>(Width,Height,Mips,Count,PixelFormat, TypeUsage,data, UAV);;
 }
 
 BearRHI::BearRHITextureCube* DX12Factory::CreateTextureCube(bsize Width, bsize Height, bsize Mips, bsize Count, BearTexturePixelFormat PixelFormat, BearTextureUsage TypeUsage, void* data)
@@ -233,9 +233,9 @@ BearRHI::BearRHITextureCube* DX12Factory::CreateTextureCube(bsize Width, bsize H
 	return  bear_new<DX12TextureCube>(Width, Height, Mips, Count, PixelFormat, TypeUsage, data);;
 }
 
-BearRHI::BearRHIStructuredBuffer* DX12Factory::CreateStructuredBuffer(bsize size, void* data)
+BearRHI::BearRHIStructuredBuffer* DX12Factory::CreateStructuredBuffer(bsize size, void* data,bool UAV)
 {
-	return  bear_new<DX12StructuredBuffer>(size, data);
+	return  bear_new<DX12StructuredBuffer>(size, data, UAV);
 }
 
 BearRHI::BearRHITexture2D* DX12Factory::CreateTexture2D(bsize Width, bsize Height, BearRenderTargetFormat Format)

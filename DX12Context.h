@@ -36,7 +36,8 @@ public:
 	virtual void Unlock(BearFactoryPointer<BearRHI::BearRHIViewport> Viewport);
 	virtual void Lock(BearFactoryPointer<BearRHI::BearRHIFrameBuffer> FrameBuffer);
 	virtual void Unlock(BearFactoryPointer<BearRHI::BearRHIFrameBuffer> FrameBuffer);
-
+	virtual void Lock(BearFactoryPointer<BearRHI::BearRHIUnorderedAccess> UnorderedAccess);
+	virtual void Unlock(BearFactoryPointer<BearRHI::BearRHIUnorderedAccess> UnorderedAccess);
 
 private:
 #ifdef DX12_1
@@ -58,4 +59,5 @@ private:
 	ComPtr<ID3D12Fence> m_fence;
 	uint64 m_fenceValue;
 	D3D12_RECT m_ScissorRect;
+	bool m_CurrentPipelineIsCompute;
 };

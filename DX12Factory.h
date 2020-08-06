@@ -15,9 +15,9 @@ public:
 	virtual BearRHI::BearRHIDescriptorHeap* CreateDescriptorHeap(const BearDescriptorHeapDescription& Description);
 	virtual BearRHI::BearRHIPipelineGraphics* CreatePipelineGraphics(const BearPipelineGraphicsDescription& Description);
 	virtual BearRHI::BearRHIPipelineMesh* CreatePipelineMesh(const BearPipelineMeshDescription& Description);
-	virtual BearRHI::BearRHITexture2D* CreateTexture2D(bsize Width, bsize Height, bsize Mips, bsize Count, BearTexturePixelFormat PixelFormat, BearTextureUsage TypeUsage, void* data = 0);
+	virtual BearRHI::BearRHITexture2D* CreateTexture2D(bsize Width, bsize Height, bsize Mips, bsize Count, BearTexturePixelFormat PixelFormat, BearTextureUsage TypeUsage, void* data = 0, bool UAV = false);
 	virtual BearRHI::BearRHITextureCube* CreateTextureCube(bsize Width, bsize Height, bsize Mips, bsize Count, BearTexturePixelFormat PixelFormat, BearTextureUsage TypeUsage, void* data = 0);
-	virtual BearRHI::BearRHIStructuredBuffer* CreateStructuredBuffer(bsize size, void* data = 0);
+	virtual BearRHI::BearRHIStructuredBuffer* CreateStructuredBuffer(bsize size, void* data = 0, bool UAV=false);
 
 	virtual BearRHI::BearRHITexture2D* CreateTexture2D(bsize Width, bsize Height, BearRenderTargetFormat Format);
 	virtual BearRHI::BearRHITexture2D* CreateTexture2D(bsize Width, bsize Height, BearDepthStencilFormat Format);

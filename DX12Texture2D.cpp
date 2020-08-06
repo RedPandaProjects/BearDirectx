@@ -1,8 +1,9 @@
 #include "DX12PCH.h"
 bsize Texture2DCounter = 0;
-DX12Texture2D::DX12Texture2D(bsize Width, bsize Height, bsize Mips, bsize Count, BearTexturePixelFormat PixelFormat, BearTextureUsage typeUsage, void* data)
+DX12Texture2D::DX12Texture2D(bsize Width, bsize Height, bsize Mips, bsize Count, BearTexturePixelFormat PixelFormat, BearTextureUsage typeUsage, void* data, bool UAV )
 {
 	Texture2DCounter++;
+	bAllowUAV = UAV;
 	TextureType = TT_Default;
 	Format = PixelFormat;
 	TextureUsage = typeUsage;
@@ -12,33 +13,50 @@ DX12Texture2D::DX12Texture2D(bsize Width, bsize Height, bsize Mips, bsize Count,
 	TextureDesc.Format = Factory->Translation(PixelFormat);
 	TextureDesc.Width = static_cast<uint32>(Width);
 	TextureDesc.Height = static_cast<uint32>(Height);
-	TextureDesc.Flags = D3D12_RESOURCE_FLAG_NONE;
+	TextureDesc.Flags =UAV? D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS:D3D12_RESOURCE_FLAG_NONE;
 	TextureDesc.DepthOrArraySize = static_cast<UINT16>(Count);
 	TextureDesc.SampleDesc.Count = 1;
 	TextureDesc.SampleDesc.Quality = 0;
 	TextureDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
 	CD3DX12_HEAP_PROPERTIES var1(D3D12_HEAP_TYPE_DEFAULT);
-
+	CurrentStates = bAllowUAV ? (D3D12_RESOURCE_STATE_UNORDERED_ACCESS) : (CurrentStates);
 	R_CHK(Factory->Device->CreateCommittedResource(
 		&var1,
 		D3D12_HEAP_FLAG_NONE,
 		&TextureDesc,
-		D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE,
+		CurrentStates,
 		nullptr,
 		IID_PPV_ARGS(&TextureBuffer)));
 	ZeroMemory(&(DX12ShaderResource::SRV), sizeof(D3D12_SHADER_RESOURCE_VIEW_DESC));
-	DX12ShaderResource::SRV.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-	DX12ShaderResource::SRV.Format = TextureDesc.Format;
-	if (TextureDesc.DepthOrArraySize > 1)
+
 	{
-		DX12ShaderResource::SRV.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2DARRAY;
-		DX12ShaderResource::SRV.Texture2DArray.MipLevels = static_cast<UINT>(Mips);
-		DX12ShaderResource::SRV.Texture2DArray.ArraySize = static_cast<UINT>(Count);
+		DX12ShaderResource::SRV.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+		DX12ShaderResource::SRV.Format = TextureDesc.Format;
+		if (TextureDesc.DepthOrArraySize > 1)
+		{
+			DX12ShaderResource::SRV.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2DARRAY;
+			DX12ShaderResource::SRV.Texture2DArray.MipLevels = static_cast<UINT>(Mips);
+			DX12ShaderResource::SRV.Texture2DArray.ArraySize = static_cast<UINT>(Count);
+		}
+		else
+		{
+			DX12ShaderResource::SRV.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+			DX12ShaderResource::SRV.Texture2D.MipLevels = static_cast<UINT>(Mips);
+		}
 	}
-	else
+	if(UAV)
 	{
-		DX12ShaderResource::SRV.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
-		DX12ShaderResource::SRV.Texture2D.MipLevels = static_cast<UINT>(Mips);
+		ZeroMemory(&(DX12UnorderedAccess::UAV), sizeof(D3D12_UNORDERED_ACCESS_VIEW_DESC));
+		DX12UnorderedAccess::UAV.Format = TextureDesc.Format;
+		if (TextureDesc.DepthOrArraySize > 1)
+		{
+			DX12UnorderedAccess::UAV.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE2DARRAY;
+			DX12UnorderedAccess::UAV.Texture2DArray.ArraySize = static_cast<UINT>(Count);
+		}
+		else
+		{
+			DX12UnorderedAccess::UAV.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE2D;
+		}
 	}
 	
 
@@ -55,7 +73,6 @@ DX12Texture2D::DX12Texture2D(bsize Width, bsize Height, bsize Mips, bsize Count,
 				Unlock();
 				ptr += size;
 			}
-
 
 	}
 }
@@ -83,7 +100,7 @@ DX12Texture2D::DX12Texture2D(bsize Width, bsize Height, BearRenderTargetFormat P
 		&var1,
 		D3D12_HEAP_FLAG_NONE,
 		&TextureDesc,
-		D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE,
+		CurrentStates,
 		nullptr,
 		IID_PPV_ARGS(&TextureBuffer)));
 	ZeroMemory(&(DX12ShaderResource::SRV), sizeof(D3D12_SHADER_RESOURCE_VIEW_DESC));
@@ -130,12 +147,25 @@ bool DX12Texture2D::SetAsSRV(D3D12_CPU_DESCRIPTOR_HANDLE& HEAP)
 	return true;
 }
 
+bool DX12Texture2D::SetAsUAV(D3D12_CPU_DESCRIPTOR_HANDLE& HEAP, bsize offset)
+{
+	if (!bAllowUAV)return false;
+	BEAR_CHECK(TextureType != TT_DepthStencil);
+	DX12UnorderedAccess::UAV.Texture2D.MipSlice = offset;
+	DX12UnorderedAccess::UAV.Texture2DArray.MipSlice = offset;
+	Factory->Device->CreateUnorderedAccessView(TextureBuffer.Get(),nullptr, &(DX12UnorderedAccess::UAV), HEAP);
+	return true;
+}
+
 void* DX12Texture2D::QueryInterface(int Type)
 {
 	switch (Type)
 	{
 	case DX12Q_ShaderResource:
 		return reinterpret_cast<void*>(static_cast<DX12ShaderResource*>(this));
+	case DX12Q_UnorderedAccess:
+		if (bAllowUAV)return nullptr;
+		return reinterpret_cast<void*>(static_cast<DX12UnorderedAccess*>(this));
 	default:
 		return nullptr;
 	}
@@ -163,7 +193,7 @@ void* DX12Texture2D::Lock(bsize mip, bsize depth)
 		break;
 	case TU_STATING:
 		Factory->LockCommandList();
-		auto var3 = CD3DX12_RESOURCE_BARRIER::Transition(TextureBuffer.Get(), D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_COPY_SOURCE);
+		auto var3 = CD3DX12_RESOURCE_BARRIER::Transition(TextureBuffer.Get(), CurrentStates, D3D12_RESOURCE_STATE_COPY_SOURCE);
 		Factory->CommandList->ResourceBarrier(1, &var3);
 		{
 			D3D12_SUBRESOURCE_FOOTPRINT PitchedDesc = {  };
@@ -187,7 +217,7 @@ void* DX12Texture2D::Lock(bsize mip, bsize depth)
 			CD3DX12_TEXTURE_COPY_LOCATION Dst(Buffer.Get(), PlacedTexture2D);
 			Factory->CommandList->CopyTextureRegion(&Dst, 0, 0, 0, &Src, 0);
 		}
-		auto var4 = CD3DX12_RESOURCE_BARRIER::Transition(TextureBuffer.Get(), D3D12_RESOURCE_STATE_COPY_SOURCE, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+		auto var4 = CD3DX12_RESOURCE_BARRIER::Transition(TextureBuffer.Get(), D3D12_RESOURCE_STATE_COPY_SOURCE, CurrentStates);
 		Factory->CommandList->ResourceBarrier(1, &var4);
 		Factory->UnlockCommandList();
 		break;
@@ -213,7 +243,7 @@ void DX12Texture2D::Unlock()
 	case TU_STATIC:
 	case TU_DYNAMIC:
 		Factory->LockCommandList();
-		auto var3 = CD3DX12_RESOURCE_BARRIER::Transition(TextureBuffer.Get(), D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_COPY_DEST);
+		auto var3 = CD3DX12_RESOURCE_BARRIER::Transition(TextureBuffer.Get(), CurrentStates, D3D12_RESOURCE_STATE_COPY_DEST);
 		Factory->CommandList->ResourceBarrier(1, &var3);
 		{
 			D3D12_SUBRESOURCE_FOOTPRINT PitchedDesc = {  };
@@ -251,7 +281,7 @@ void DX12Texture2D::Unlock()
 			CD3DX12_TEXTURE_COPY_LOCATION Src(Buffer.Get(), PlacedTexture2D);
 			Factory->CommandList->CopyTextureRegion(&Dst, 0, 0, 0, &Src, 0);
 		}
-		auto var4 = CD3DX12_RESOURCE_BARRIER::Transition(TextureBuffer.Get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+		auto var4 = CD3DX12_RESOURCE_BARRIER::Transition(TextureBuffer.Get(), D3D12_RESOURCE_STATE_COPY_DEST, CurrentStates);
 		Factory->CommandList->ResourceBarrier(1, &var4);
 		Factory->UnlockCommandList();
 		break;
@@ -301,4 +331,30 @@ void DX12Texture2D::AllocBuffer()
 void DX12Texture2D::FreeBuffer()
 {
 	Buffer.Reset();
+}
+
+void DX12Texture2D::LockUAV(
+#if defined(DX12) | defined(DX12_1)
+	ComPtr<ID3D12GraphicsCommandList4> CommandList
+#else
+	ComPtr<ID3D12GraphicsCommandList> CommandList
+#endif
+)
+{
+	BEAR_CHECK(bAllowUAV);
+	auto var1 = CD3DX12_RESOURCE_BARRIER::Transition(TextureBuffer.Get(), CurrentStates, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE| D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+	CommandList->ResourceBarrier(1, &var1);
+}
+
+void DX12Texture2D::UnlockUAV(
+#if defined(DX12) | defined(DX12_1)
+	ComPtr<ID3D12GraphicsCommandList4> CommandList
+#else
+	ComPtr<ID3D12GraphicsCommandList> CommandList
+#endif
+)
+{
+	BEAR_CHECK(bAllowUAV);
+	auto var1 = CD3DX12_RESOURCE_BARRIER::Transition(TextureBuffer.Get(), D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, CurrentStates);
+	CommandList->ResourceBarrier(1, &var1);
 }

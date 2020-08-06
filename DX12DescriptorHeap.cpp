@@ -12,11 +12,13 @@ DX12DescriptorHeap::DX12DescriptorHeap(const BearDescriptorHeapDescription& Desc
 		CountBuffers = static_cast<const DX12RootSignature*>(Description.RootSignature.get())->CountBuffers;
 		CountSRVs = static_cast<const DX12RootSignature*>(Description.RootSignature.get())->CountSRVs;
 		CountSamplers = static_cast<const DX12RootSignature*>(Description.RootSignature.get())->CountSamplers;
-
+		CountUAVs = static_cast<const DX12RootSignature*>(Description.RootSignature.get())->CountUAVs;
 
 		memcpy(SlotBuffers, static_cast<const DX12RootSignature*>(Description.RootSignature.get())->SlotBuffers, 16 * sizeof(bsize));
 		memcpy(SlotSRVs, static_cast<const DX12RootSignature*>(Description.RootSignature.get())->SlotSRVs, 16 * sizeof(bsize));
 		memcpy(SlotSamplers, static_cast<const DX12RootSignature*>(Description.RootSignature.get())->SlotSamplers, 16 * sizeof(bsize));
+		memcpy(SlotUAVs, static_cast<const DX12RootSignature*>(Description.RootSignature.get())->SlotSRVs, 16 * sizeof(bsize));
+
 		if (CountSamplers)
 		{
 			SamplerHeap = Factory->SamplersHeapAllocator.allocate(CountSamplers);
@@ -24,7 +26,7 @@ DX12DescriptorHeap::DX12DescriptorHeap(const BearDescriptorHeapDescription& Desc
 		if (CountBuffers + CountSRVs)
 		{
 
-			UniSRVHeap = Factory->ViewHeapAllocator.allocate(CountBuffers + CountSRVs);
+			UniSRVHeap = Factory->ViewHeapAllocator.allocate(CountBuffers + CountSRVs + CountUAVs);
 		}
 	}
 	RootSignature = Description.RootSignature;
@@ -75,8 +77,9 @@ void DX12DescriptorHeap::Set(ID3D12GraphicsCommandList4* CommandList)
 		}
 	}
 }
+
 #else
-void DX12DescriptorHeap::Set(ID3D12GraphicsCommandList* CommandList)
+void DX12DescriptorHeap::SetGraphics(ID3D12GraphicsCommandList* CommandList)
 {
 	ID3D12DescriptorHeap* Heaps[2];
 	UINT Count = 0;
@@ -95,9 +98,13 @@ void DX12DescriptorHeap::Set(ID3D12GraphicsCommandList* CommandList)
 	{
 		CD3DX12_GPU_DESCRIPTOR_HANDLE CbvHandle(UniSRVHeap.DescriptorHeap->GetGPUDescriptorHandleForHeapStart());
 		CbvHandle.Offset(Factory->CbvSrvUavDescriptorSize,static_cast<UINT>( UniSRVHeap.Id));
-		for (bsize i = 0; i < CountBuffers+ CountSRVs; i++)
+		for (bsize i = 0; i < CountBuffers+ CountSRVs+CountUAVs; i++)
 		{
-			if (i>=CountBuffers&&SRVs[i- CountBuffers])
+			if ((i >= CountSRVs+ CountBuffers) && UAVs[i - (CountBuffers + CountSRVs)])
+			{
+				CommandList->SetGraphicsRootUnorderedAccessView(static_cast<UINT>(Offset++), UAVs[i - (CountBuffers + CountSRVs)]);
+			}
+			else if ((i>=CountBuffers&& i < CountBuffers+ CountSRVs)&&SRVs[i- CountBuffers])
 			{
 				CommandList->SetGraphicsRootShaderResourceView(static_cast<UINT>(Offset++), SRVs[i-CountBuffers]);
 			}
@@ -108,12 +115,23 @@ void DX12DescriptorHeap::Set(ID3D12GraphicsCommandList* CommandList)
 			CbvHandle.Offset(Factory->CbvSrvUavDescriptorSize);
 		}
 	}
-	else if(CountSRVs)
+	else
 	{
-		for (bsize i = 0; i < CountSRVs; i++)
+		if (CountSRVs)
 		{
-			BEAR_CHECK(SRVs[i]);
-			CommandList->SetGraphicsRootShaderResourceView(static_cast<UINT>(Offset++), SRVs[CountBuffers]);
+			for (bsize i = 0; i < CountSRVs; i++)
+			{
+				BEAR_CHECK(SRVs[i]);
+				CommandList->SetGraphicsRootShaderResourceView(static_cast<UINT>(Offset++), SRVs[i]);
+			}
+		}
+		if (CountUAVs)
+		{
+			for (bsize i = 0; i < CountUAVs; i++)
+			{
+				BEAR_CHECK(UAVs[i]);
+				CommandList->SetGraphicsRootUnorderedAccessView(static_cast<UINT>(Offset++), UAVs[i]);
+			}
 		}
 	}
 	if (SamplerHeap.Size)
@@ -124,6 +142,73 @@ void DX12DescriptorHeap::Set(ID3D12GraphicsCommandList* CommandList)
 		{
 		
 			CommandList->SetGraphicsRootDescriptorTable(static_cast<UINT>(Offset++), SamplersHandle);
+			SamplersHandle.Offset(Factory->SamplerDescriptorSize);
+		}
+	}
+}
+void DX12DescriptorHeap::SetCompute(ID3D12GraphicsCommandList* CommandList)
+{
+	ID3D12DescriptorHeap* Heaps[2];
+	UINT Count = 0;
+	if (UniSRVHeap.DescriptorHeap.Get())
+	{
+		Heaps[Count++] = UniSRVHeap.DescriptorHeap.Get();
+	}
+
+	if (SamplerHeap.DescriptorHeap.Get())
+	{
+		Heaps[Count++] = SamplerHeap.DescriptorHeap.Get();
+	}
+	CommandList->SetDescriptorHeaps(Count, Heaps);
+	bsize Offset = 0;
+	if (UniSRVHeap.Size)
+	{
+		CD3DX12_GPU_DESCRIPTOR_HANDLE CbvHandle(UniSRVHeap.DescriptorHeap->GetGPUDescriptorHandleForHeapStart());
+		CbvHandle.Offset(Factory->CbvSrvUavDescriptorSize, static_cast<UINT>(UniSRVHeap.Id));
+		for (bsize i = 0; i < CountBuffers + CountSRVs + CountUAVs; i++)
+		{
+			if ((i >= CountSRVs + CountBuffers) && UAVs[i - (CountBuffers + CountSRVs)])
+			{
+				CommandList->SetComputeRootUnorderedAccessView(static_cast<UINT>(Offset++), UAVs[i - (CountBuffers + CountSRVs)]);
+			}
+			else if ((i >= CountBuffers && i < CountBuffers + CountSRVs) && SRVs[i - CountBuffers])
+			{
+				CommandList->SetComputeRootShaderResourceView(static_cast<UINT>(Offset++), SRVs[i - CountBuffers]);
+			}
+			else
+			{
+				CommandList->SetComputeRootDescriptorTable(static_cast<UINT>(Offset++), CbvHandle);
+			}
+			CbvHandle.Offset(Factory->CbvSrvUavDescriptorSize);
+		}
+	}
+	else
+	{
+		if (CountSRVs)
+		{
+			for (bsize i = 0; i < CountSRVs; i++)
+			{
+				BEAR_CHECK(SRVs[i]);
+				CommandList->SetComputeRootShaderResourceView(static_cast<UINT>(Offset++), SRVs[i]);
+			}
+		}
+		if (CountUAVs)
+		{
+			for (bsize i = 0; i < CountUAVs; i++)
+			{
+				BEAR_CHECK(UAVs[i]);
+				CommandList->SetComputeRootUnorderedAccessView(static_cast<UINT>(Offset++), UAVs[i]);
+			}
+		}
+	}
+	if (SamplerHeap.Size)
+	{
+		CD3DX12_GPU_DESCRIPTOR_HANDLE SamplersHandle(SamplerHeap.DescriptorHeap->GetGPUDescriptorHandleForHeapStart());
+		SamplersHandle.Offset(Factory->SamplerDescriptorSize, static_cast<UINT>(SamplerHeap.Id));
+		for (bsize i = 0; i < CountSamplers; i++)
+		{
+
+			CommandList->SetComputeRootDescriptorTable(static_cast<UINT>(Offset++), SamplersHandle);
 			SamplersHandle.Offset(Factory->SamplerDescriptorSize);
 		}
 	}
@@ -201,4 +286,33 @@ void DX12DescriptorHeap::SetSampler(bsize slot, BearFactoryPointer<BearRHI::Bear
 	auto* buffer = static_cast<const DX12SamplerState*>(resource.get());
 	Factory->Device->CreateSampler(&buffer->desc, CbvHandle);
 
+}
+
+void DX12DescriptorHeap::SetUnorderedAccess(bsize slot, BearFactoryPointer<BearRHI::BearRHIUnorderedAccess> resource, bsize offset)
+{
+	if (resource.empty())return;
+	BEAR_CHECK(slot < 16);
+	slot = SlotUAVs[slot];
+	BEAR_ASSERT(slot < CountUAVs);
+	if (UnorderedAccess[slot] == resource)
+	{
+		if (UnorderedAccessOffsets[slot] == offset)
+			return;
+	}
+
+	UnorderedAccess[slot] = resource;
+	UnorderedAccessOffsets[slot] = offset;
+	auto* buffer = reinterpret_cast<DX12UnorderedAccess*>(resource.get()->QueryInterface(DX12Q_UnorderedAccess));
+	BEAR_CHECK(buffer);
+
+	if (!buffer->SetAsUAV(UAVs[slot], offset))
+	{
+		UAVs[slot] = 0;
+		CD3DX12_CPU_DESCRIPTOR_HANDLE CbvHandle(UniSRVHeap.DescriptorHeap->GetCPUDescriptorHandleForHeapStart());
+		CbvHandle.Offset(Factory->CbvSrvUavDescriptorSize, static_cast<UINT>(slot + UniSRVHeap.Id + CountBuffers+CountUAVs));
+		if (!buffer->SetAsUAV(CbvHandle, offset))
+		{
+			BEAR_CHECK(0);
+		}
+	}
 }

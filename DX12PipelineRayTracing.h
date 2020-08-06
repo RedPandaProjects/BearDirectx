@@ -19,7 +19,7 @@ public:
 #endif
 	* CommandList);
 	ComPtr<ID3D12StateObject> PipelineState;
-
+	virtual bool IsComputePipeline() { return true; }
 	BearFactoryPointer<BearRHI::BearRHIRootSignature> RootSignature;
 	BearVector< BearFactoryPointer<BearRHI::BearRHIRootSignature>> LocalRootSignature;
 	DX12RootSignature* RootSignaturePointer;

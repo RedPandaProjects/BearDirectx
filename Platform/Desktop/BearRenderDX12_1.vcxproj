@@ -79,6 +79,7 @@
     <ClInclude Include="..\..\DX12ShaderResource.h" />
     <ClInclude Include="..\..\DX12Stats.h" />
     <ClInclude Include="..\..\DX12StructuredBuffer.h" />
+    <ClInclude Include="..\..\DX12UnorderedAccess.h" />
     <ClInclude Include="..\..\DX12Texture2D.h" />
     <ClInclude Include="..\..\DX12TextureCube.h" />
     <ClInclude Include="..\..\DX12TopLevel.h" />
