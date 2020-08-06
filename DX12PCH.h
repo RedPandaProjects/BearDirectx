@@ -59,6 +59,7 @@ extern DX12Factory* Factory;
 #include "DX12Pipeline.h"
 #include "DX12PipelineGraphics.h"
 #include "DX12PipelineMesh.h"
+#include "DX12PipelineRayTracing.h"
 #include "DX12DescriptorHeap.h"
 
 #include "DX12ShaderResource.h"
@@ -71,3 +72,5 @@ extern DX12Factory* Factory;
 
 #include "DX12TextureCube.h"
 #include "DX12StructuredBuffer.h"
+
+#include "DX12BottomLevel.h"

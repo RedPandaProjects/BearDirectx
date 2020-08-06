@@ -287,15 +287,21 @@ bool DX12Shader::LoadAsText(const bchar* Text, const BearMap<BearStringConteniar
 #endif
 		break;
 	case ST_Mesh:
-#ifdef DX12_1
+#ifdef DX12UTIMATE
 		Arguments.push_back(L"/Tms_6_5");
 #else
 		BEAR_ASSERT(false);
 #endif
 		break;
 	case ST_Amplification:
-#ifdef DX12_1
+#ifdef DX12UTIMATE
 		Arguments.push_back(L"/Tas_6_5");
+#else
+		BEAR_ASSERT(false);
+#endif
+	case ST_RayTracing:
+#ifndef DX11
+		Arguments.push_back(L"/Tlib_6_3");
 #else
 		BEAR_ASSERT(false);
 #endif

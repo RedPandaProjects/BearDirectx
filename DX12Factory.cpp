@@ -218,6 +218,11 @@ BearRHI::BearRHIPipelineMesh* DX12Factory::CreatePipelineMesh(const BearPipeline
 	return bear_new<DX12PipelineMesh>(Description);
 }
 
+BearRHI::BearRHIPipelineRayTracing* DX12Factory::CreatePipelineRayTracing(const BearPipelineRayTracingDescription& Description)
+{
+	return bear_new<DX12PipelineRayTracing>(Description);;
+}
+
 BearRHI::BearRHITexture2D* DX12Factory::CreateTexture2D(bsize Width, bsize Height, bsize Mips, bsize Count, BearTexturePixelFormat PixelFormat, BearTextureUsage TypeUsage, void* data)
 {
 	return  bear_new<DX12Texture2D>(Width,Height,Mips,Count,PixelFormat, TypeUsage,data);;
@@ -256,6 +261,11 @@ BearRHI::BearRHIFrameBuffer* DX12Factory::CreateFrameBuffer(const BearFrameBuffe
 BearRHI::BearRHISampler* DX12Factory::CreateSampler(const BearSamplerDescription& Description)
 {
 	return  bear_new<DX12SamplerState>(Description);
+}
+
+BearRHI::BearRHIBottomLevel* DX12Factory::CreateBottomLevel(const BearBottomLevelDescription& Description)
+{
+	return  bear_new<DX12BottomLevel>(Description);;
 }
 
 DXGI_FORMAT DX12Factory::Translation(BearTexturePixelFormat format)

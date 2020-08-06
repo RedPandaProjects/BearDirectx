@@ -4,6 +4,11 @@ inline D3D12_SHADER_VISIBILITY TransletionShaderVisible(BearShaderType Type, D3D
 {
 	switch (Type)
 	{
+#if defined(DX12)||defined(DX12_1)
+	case ST_RayTracing:
+		BEAR_CHECK(Factory->bSupportRayTracing);
+		return D3D12_SHADER_VISIBILITY::D3D12_SHADER_VISIBILITY_ALL;
+#endif
 #ifdef DX12UTIMATE
 	case ST_Mesh:
 		BEAR_CHECK(Factory->bSupportMeshShader);
@@ -145,7 +150,8 @@ DX12RootSignature::DX12RootSignature(const BearRootSignatureDescription& Descrip
 
 
 		CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC rootSignatureDesc;
-		
+		if (Description.Local)
+			RootSignatureFlags = D3D12_ROOT_SIGNATURE_FLAG_LOCAL_ROOT_SIGNATURE;
 		rootSignatureDesc.Init_1_1(static_cast<UINT>(Count), RootParameters, 0, 0, RootSignatureFlags);
 
 		ComPtr<ID3DBlob> signature;

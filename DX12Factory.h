@@ -24,6 +24,10 @@ public:
 	virtual BearRHI::BearRHIRenderPass *CreateRenderPass(const BearRenderPassDescription& Description);
 	virtual BearRHI::BearRHIFrameBuffer* CreateFrameBuffer(const BearFrameBufferDescription& Description);
 	virtual BearRHI::BearRHISampler* CreateSampler(const BearSamplerDescription& Description);
+	
+	virtual BearRHI::BearRHIPipelineRayTracing* CreatePipelineRayTracing(const BearPipelineRayTracingDescription& Description);
+	virtual BearRHI::BearRHIBottomLevel* CreateBottomLevel(const BearBottomLevelDescription& Description);
+
 
 	static DXGI_FORMAT Translation(BearTexturePixelFormat format);
 	static D3D12_TEXTURE_ADDRESS_MODE Translation(BearSamplerAddressMode format);
@@ -45,7 +49,7 @@ public:
 	UINT RtvDescriptorSize;
 	ComPtr<ID3D12RootSignature> RootSignature;
 #if defined(DX12)|defined(DX12_1)
-	ComPtr<ID3D12Device4> Device;
+	ComPtr<ID3D12Device5> Device;
 #else
 	ComPtr<ID3D12Device> Device;
 #endif
@@ -63,7 +67,7 @@ public:
 	void LockCommandList();
 	void UnlockCommandList(ID3D12CommandQueue*CommandQueue=0);
 public:
-#ifdef RTX
+#if defined(DX12)|defined(DX12_1)
 	ComPtr<ID3D12GraphicsCommandList4> CommandList;
 #else
 	ComPtr<ID3D12GraphicsCommandList> CommandList;

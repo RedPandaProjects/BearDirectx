@@ -27,6 +27,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\DX12BottomLevel.cpp" />
     <ClCompile Include="..\..\DX12Context.cpp" />
     <ClCompile Include="..\..\DX12DescriptorHeap.cpp" />
     <ClCompile Include="..\..\DX12Factory.cpp" />
@@ -42,6 +43,7 @@
     </ClCompile>
     <ClCompile Include="..\..\DX12PipelineGraphics.cpp" />
     <ClCompile Include="..\..\DX12PipelineMesh.cpp" />
+    <ClCompile Include="..\..\DX12PipelineRayTracing.cpp" />
     <ClCompile Include="..\..\DX12Render.cpp" />
     <ClCompile Include="..\..\DX12RenderPass.cpp" />
     <ClCompile Include="..\..\DX12RootSignature.cpp" />
@@ -58,6 +60,7 @@
   <ItemGroup>
     <ClInclude Include="..\..\d3dx12.h" />
     <ClInclude Include="..\..\DX12AllocatorHeap.h" />
+    <ClInclude Include="..\..\DX12BottomLevel.h" />
     <ClInclude Include="..\..\DX12Context.h" />
     <ClInclude Include="..\..\DX12DescriptorHeap.h" />
     <ClInclude Include="..\..\DX12Factory.h" />
