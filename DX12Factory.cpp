@@ -265,7 +265,12 @@ BearRHI::BearRHISampler* DX12Factory::CreateSampler(const BearSamplerDescription
 
 BearRHI::BearRHIBottomLevel* DX12Factory::CreateBottomLevel(const BearBottomLevelDescription& Description)
 {
-	return  bear_new<DX12BottomLevel>(Description);;
+	return  bear_new<DX12BottomLevel>(Description);
+}
+
+BearRHI::BearRHITopLevel* DX12Factory::CreateTopLevel(const BearTopLevelDescription& Description)
+{
+	return  bear_new<DX12TopLevel>(Description);
 }
 
 DXGI_FORMAT DX12Factory::Translation(BearTexturePixelFormat format)

@@ -27,7 +27,7 @@ public:
 	
 	virtual BearRHI::BearRHIPipelineRayTracing* CreatePipelineRayTracing(const BearPipelineRayTracingDescription& Description);
 	virtual BearRHI::BearRHIBottomLevel* CreateBottomLevel(const BearBottomLevelDescription& Description);
-
+	virtual BearRHI::BearRHITopLevel* CreateTopLevel(const BearTopLevelDescription& Description);
 
 	static DXGI_FORMAT Translation(BearTexturePixelFormat format);
 	static D3D12_TEXTURE_ADDRESS_MODE Translation(BearSamplerAddressMode format);

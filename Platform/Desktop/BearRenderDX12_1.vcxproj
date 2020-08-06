@@ -53,6 +53,7 @@
     <ClCompile Include="..\..\DX12StructuredBuffer.cpp" />
     <ClCompile Include="..\..\DX12Texture2D.cpp" />
     <ClCompile Include="..\..\DX12TextureCube.cpp" />
+    <ClCompile Include="..\..\DX12TopLevel.cpp" />
     <ClCompile Include="..\..\DX12UniformBuffer.cpp" />
     <ClCompile Include="..\..\DX12VertexBuffer.cpp" />
     <ClCompile Include="..\..\DX12Viewport.cpp" />
@@ -80,6 +81,7 @@
     <ClInclude Include="..\..\DX12StructuredBuffer.h" />
     <ClInclude Include="..\..\DX12Texture2D.h" />
     <ClInclude Include="..\..\DX12TextureCube.h" />
+    <ClInclude Include="..\..\DX12TopLevel.h" />
     <ClInclude Include="..\..\DX12UniformBuffer.h" />
     <ClInclude Include="..\..\DX12VertexBuffer.h" />
     <ClInclude Include="..\..\DX12Viewport.h" />

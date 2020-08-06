@@ -74,3 +74,4 @@ extern DX12Factory* Factory;
 #include "DX12StructuredBuffer.h"
 
 #include "DX12BottomLevel.h"
+#include "DX12TopLevel.h"

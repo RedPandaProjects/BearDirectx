@@ -81,6 +81,9 @@
     <ClCompile Include="..\..\DX12BottomLevel.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\DX12TopLevel.cpp">
+      <Filter>Исходные файлы</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\DX12DescriptorHeap.h">
@@ -153,6 +156,9 @@
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
     <ClInclude Include="..\..\DX12BottomLevel.h">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\DX12TopLevel.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
   </ItemGroup>
