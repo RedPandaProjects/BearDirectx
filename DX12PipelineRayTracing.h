@@ -8,7 +8,7 @@ public:
 	virtual BearPipelineType GetType();
 
 	virtual void Set(
-#ifdef DX12_1
+#ifndef DX11
 #ifdef DX12UTIMATE
 	ID3D12GraphicsCommandList6
 #else

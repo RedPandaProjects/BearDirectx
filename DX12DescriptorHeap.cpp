@@ -6,6 +6,8 @@ DX12DescriptorHeap::DX12DescriptorHeap(const BearDescriptorHeapDescription& Desc
 	CountBuffers = 0;
 	CountSamplers = 0;
 	CountSRVs = 0;
+	bear_fill(SRVs);
+	bear_fill(UAVs);
 	{	
 		BEAR_ASSERT(!Description.RootSignature.empty());
 

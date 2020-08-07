@@ -40,9 +40,9 @@ DX12TopLevel::DX12TopLevel(const BearTopLevelDescription& desc)
 	for (const BearTopLevelDescription::InstanceDescription& i : desc.InstanceDescriptions)
 	{
 		D3D12_RAYTRACING_INSTANCE_DESC InstanceDesc = {};
-		for (bsize x = 0; x < 4; x++)
+		for (bsize x = 0; x < 3; x++)
 		{
-			for (bsize y = 0; y < 3; y++)
+			for (bsize y = 0; y < 4; y++)
 			{
 				InstanceDesc.Transform[x][y] = i.Transform3x4.Get(x, y);
 			}
@@ -109,5 +109,16 @@ DX12TopLevel::~DX12TopLevel()
 
 void* DX12TopLevel::QueryInterface(int Type)
 {
+	switch (Type)
+	{
+	case DX12Q_ShaderResource:
+		return reinterpret_cast<void*>(static_cast<DX12ShaderResource*>(this));
+	};
 	return nullptr;
+}
+
+bool DX12TopLevel::SetAsSRV(D3D12_GPU_VIRTUAL_ADDRESS& ADDRESS, bsize offset)
+{
+	ADDRESS = TopLevelAccelerationStructure->GetGPUVirtualAddress();
+	return true;
 }

@@ -273,6 +273,11 @@ BearRHI::BearRHITopLevel* DX12Factory::CreateTopLevel(const BearTopLevelDescript
 	return  bear_new<DX12TopLevel>(Description);
 }
 
+BearRHI::BearRHIRayTracingShaderTable* DX12Factory::CreateRayTracingShaderTable(const BearRayTracingShaderTableDescription& Description)
+{
+	return bear_new<DX12RayTracingShaderTable>(Description);;
+}
+
 DXGI_FORMAT DX12Factory::Translation(BearTexturePixelFormat format)
 {
 	switch (format)

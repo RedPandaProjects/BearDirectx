@@ -237,7 +237,7 @@ BearPipelineType DX12PipelineGraphics::GetType()
 }
 
 void DX12PipelineGraphics::Set(
-#ifdef DX12_1
+#ifndef DX11
 #ifdef DX12UTIMATE
 	ID3D12GraphicsCommandList6
 #else

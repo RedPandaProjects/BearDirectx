@@ -7,7 +7,7 @@ public:
 	virtual void* QueryInterface(int Type);
 	virtual BearPipelineType GetType();
 
-#ifdef DX12_1
+#ifndef DX11
 #ifdef DX12UTIMATE
 	virtual void Set(ID3D12GraphicsCommandList6* CommandList);
 #else

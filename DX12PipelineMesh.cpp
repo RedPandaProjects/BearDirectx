@@ -222,7 +222,7 @@ BearPipelineType DX12PipelineMesh::GetType()
 }
 
 void DX12PipelineMesh::Set(
-#ifdef DX12_1
+#ifndef DX11
 #ifdef DX12UTIMATE
 	ID3D12GraphicsCommandList6
 #else

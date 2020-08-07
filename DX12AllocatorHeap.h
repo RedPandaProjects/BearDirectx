@@ -22,10 +22,10 @@ public:
 		for (bsize i = 0; i < HeapsOfAddres.size(); i++)
 		{
 			HeapsOfAddres[i]->DescriptorHeap.Reset();
-			bear_delete(HeapsOfAddres[i]);
 #ifdef DEBUG
 			BEAR_CHECK(HeapsOfAddres[i]->MaxSize == elements_in_heap);
 #endif
+			bear_delete(HeapsOfAddres[i]);
 		}
 
 	}

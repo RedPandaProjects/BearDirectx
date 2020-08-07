@@ -266,6 +266,8 @@ void* DX12PipelineRayTracing::QueryInterface(int Type)
 	{
 	case DX12Q_Pipeline:
 		return reinterpret_cast<void*>(static_cast<DX12Pipeline*>(this));
+	case DX12Q_RayTracingPipeline:
+		return reinterpret_cast<void*>(this);
 	default:
 		return nullptr;
 	}
@@ -279,7 +281,7 @@ BearPipelineType DX12PipelineRayTracing::GetType()
 
 
 void DX12PipelineRayTracing::Set(
-#ifdef DX12_1
+#ifndef DX11
 #ifdef DX12UTIMATE
 	ID3D12GraphicsCommandList6
 #else
@@ -291,8 +293,10 @@ void DX12PipelineRayTracing::Set(
 	
 	* CommandList)
 {
+#ifndef DX11
 	CommandList->SetComputeRootSignature(RootSignaturePointer->RootSignature.Get());
 	CommandList->SetPipelineState1(PipelineState.Get());
+#endif
 }
 
 

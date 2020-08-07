@@ -43,6 +43,7 @@ enum EDX12Query
 	DX12Q_ShaderResource,
 	DX12Q_UnorderedAccess,
 	DX12Q_Pipeline,
+	DX12Q_RayTracingPipeline,
 };
 
 
@@ -77,3 +78,4 @@ extern DX12Factory* Factory;
 
 #include "DX12BottomLevel.h"
 #include "DX12TopLevel.h"
+#include "DX12RayTracingShaderTable.h"

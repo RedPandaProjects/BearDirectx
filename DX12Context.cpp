@@ -219,6 +219,32 @@ void DX12Context::DrawIndex(bsize count, bsize offset_index, bsize  offset_verte
 
 }
 
+void DX12Context::DispatchRays(const BearDispatchRaysDescription& Description)
+{
+#ifndef DX11
+    D3D12_DISPATCH_RAYS_DESC Desc = {};
+
+    auto*RayGenerationTable = static_cast<const DX12RayTracingShaderTable*>(Description.RayGeneration.get());
+    Desc.RayGenerationShaderRecord.StartAddress = RayGenerationTable->Buffer->GetGPUVirtualAddress();
+    Desc.RayGenerationShaderRecord.SizeInBytes = RayGenerationTable->Size;
+
+    auto* MissTable = static_cast<const DX12RayTracingShaderTable*>(Description.Miss.get());
+    Desc.MissShaderTable.StartAddress = MissTable->Buffer->GetGPUVirtualAddress();
+    Desc.MissShaderTable.SizeInBytes = MissTable->Size;
+    Desc.MissShaderTable.StrideInBytes = MissTable->Size;
+
+    auto* HitGroup = static_cast<const DX12RayTracingShaderTable*>(Description.HitGroup.get());
+    Desc.HitGroupTable.StrideInBytes = HitGroup->Size;
+    Desc.HitGroupTable.SizeInBytes = HitGroup->Size;
+    Desc.HitGroupTable.StartAddress = HitGroup->Buffer->GetGPUVirtualAddress();
+
+    Desc.Width = Description.Width;
+    Desc.Height = Description.Height;
+    Desc.Depth = Description.Depth;
+    m_commandList->DispatchRays(&Desc);
+#endif
+}
+
 void DX12Context::DispatchMesh(bsize CountX, bsize CountY, bsize CountZ)
 {
 #ifdef DX12UTIMATE

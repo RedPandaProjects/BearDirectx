@@ -44,6 +44,7 @@
     <ClCompile Include="..\..\DX12PipelineGraphics.cpp" />
     <ClCompile Include="..\..\DX12PipelineMesh.cpp" />
     <ClCompile Include="..\..\DX12PipelineRayTracing.cpp" />
+    <ClCompile Include="..\..\DX12RayTracingShaderTable.cpp" />
     <ClCompile Include="..\..\DX12Render.cpp" />
     <ClCompile Include="..\..\DX12RenderPass.cpp" />
     <ClCompile Include="..\..\DX12RootSignature.cpp" />
@@ -71,6 +72,7 @@
     <ClInclude Include="..\..\DX12Pipeline.h" />
     <ClInclude Include="..\..\DX12PipelineGraphics.h" />
     <ClInclude Include="..\..\DX12PipelineMesh.h" />
+    <ClInclude Include="..\..\DX12RayTracingShaderTable.h" />
     <ClInclude Include="..\..\DX12RenderPass.h" />
     <ClInclude Include="..\..\DX12RootSignature.h" />
     <ClInclude Include="..\..\DX12Sampler.h" />

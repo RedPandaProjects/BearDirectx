@@ -30,6 +30,7 @@ public:
 	virtual void SetStencilRef(uint32 ref);
 	virtual void Draw(bsize count, bsize offset = 0);
 	virtual void DrawIndex(bsize count, bsize  offset_index = 0, bsize  offset_vertex = 0);
+	virtual void DispatchRays(const BearDispatchRaysDescription& Description);
 	virtual void DispatchMesh(bsize CountX, bsize CountY, bsize CountZ);
 
 	virtual void Lock(BearFactoryPointer<BearRHI::BearRHIViewport> Viewport);

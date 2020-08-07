@@ -164,7 +164,7 @@ void* DX12Texture2D::QueryInterface(int Type)
 	case DX12Q_ShaderResource:
 		return reinterpret_cast<void*>(static_cast<DX12ShaderResource*>(this));
 	case DX12Q_UnorderedAccess:
-		if (bAllowUAV)return nullptr;
+		if (!bAllowUAV)return nullptr;
 		return reinterpret_cast<void*>(static_cast<DX12UnorderedAccess*>(this));
 	default:
 		return nullptr;
