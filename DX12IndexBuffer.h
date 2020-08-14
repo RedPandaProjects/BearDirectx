@@ -3,7 +3,7 @@ class DX12IndexBuffer :public BearRHI::BearRHIIndexBuffer
 {
 public:
 	DX12IndexBuffer();
-	virtual void Create(bsize Count, bool Dynamic,void*data);
+	virtual void Create(bsize count, bool dynamic,void*data);
 	virtual ~DX12IndexBuffer();
 	virtual uint32* Lock();
 	virtual void Unlock();
@@ -12,6 +12,6 @@ public:
 	ComPtr<ID3D12Resource> IndexBuffer;
 	D3D12_INDEX_BUFFER_VIEW IndexBufferView;
 private:
-	bool m_dynamic;
+	bool m_Dynamic;
 
 };

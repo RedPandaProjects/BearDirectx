@@ -2,22 +2,12 @@
 class DX12PipelineRayTracing :public BearRHI::BearRHIPipelineRayTracing,public DX12Pipeline
 {
 public:
-	DX12PipelineRayTracing(const BearPipelineRayTracingDescription&desc);
+	DX12PipelineRayTracing(const BearPipelineRayTracingDescription&description);
 	virtual ~DX12PipelineRayTracing();
-	virtual void* QueryInterface(int Type);
+	virtual void* QueryInterface(int åype);
 	virtual BearPipelineType GetType();
 
-	virtual void Set(
-#ifndef DX11
-#ifdef DX12UTIMATE
-	ID3D12GraphicsCommandList6
-#else
-		ID3D12GraphicsCommandList4
-#endif
-#else
-		ID3D12GraphicsCommandList
-#endif
-	* CommandList);
+	virtual void Set(ID3D12GraphicsCommandListX*command_list);
 	ComPtr<ID3D12StateObject> PipelineState;
 	virtual bool IsComputePipeline() { return true; }
 	BearFactoryPointer<BearRHI::BearRHIRootSignature> RootSignature;

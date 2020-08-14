@@ -1,48 +1,48 @@
 #include "DX12PCH.h"
 bsize RootSignatureCounter = 0;
-inline D3D12_SHADER_VISIBILITY TransletionShaderVisible(BearShaderType Type, D3D12_ROOT_SIGNATURE_FLAGS& flags)
+inline D3D12_SHADER_VISIBILITY TransletionShaderVisible(BearShaderType type, D3D12_ROOT_SIGNATURE_FLAGS& flags)
 {
-	switch (Type)
+	switch (type)
 	{
-#if defined(DX12)||defined(DX12_1)
-	case ST_RayTracing:
+#ifdef RTX
+	case BearShaderType::RayTracing:
 		BEAR_CHECK(Factory->bSupportRayTracing);
 		return D3D12_SHADER_VISIBILITY::D3D12_SHADER_VISIBILITY_ALL;
 #endif
-#ifdef DX12UTIMATE
-	case ST_Mesh:
+#ifdef MESH_SHADING
+	case BearShaderType::Mesh:
 		BEAR_CHECK(Factory->bSupportMeshShader);
 		flags = flags & ~D3D12_ROOT_SIGNATURE_FLAGS::D3D12_ROOT_SIGNATURE_FLAG_DENY_MESH_SHADER_ROOT_ACCESS;
 		return D3D12_SHADER_VISIBILITY::D3D12_SHADER_VISIBILITY_MESH;
-	case ST_Amplification:
+	case BearShaderType::Amplification:
 		BEAR_CHECK(Factory->bSupportMeshShader);
 		flags = flags & ~D3D12_ROOT_SIGNATURE_FLAGS::D3D12_ROOT_SIGNATURE_FLAG_DENY_AMPLIFICATION_SHADER_ROOT_ACCESS;
 		return D3D12_SHADER_VISIBILITY::D3D12_SHADER_VISIBILITY_AMPLIFICATION;
 #endif
-	case ST_Vertex:
+	case BearShaderType::Vertex:
 		flags = flags & ~D3D12_ROOT_SIGNATURE_FLAGS::D3D12_ROOT_SIGNATURE_FLAG_DENY_VERTEX_SHADER_ROOT_ACCESS;
 		return D3D12_SHADER_VISIBILITY::D3D12_SHADER_VISIBILITY_VERTEX;
-	case ST_Hull:
+	case BearShaderType::Hull:
 		flags = flags & ~D3D12_ROOT_SIGNATURE_FLAGS::D3D12_ROOT_SIGNATURE_FLAG_DENY_HULL_SHADER_ROOT_ACCESS;
 		return D3D12_SHADER_VISIBILITY::D3D12_SHADER_VISIBILITY_HULL;
-	case ST_Domain:
+	case BearShaderType::Domain:
 		flags = flags & ~D3D12_ROOT_SIGNATURE_FLAGS::D3D12_ROOT_SIGNATURE_FLAG_DENY_DOMAIN_SHADER_ROOT_ACCESS;
 		return D3D12_SHADER_VISIBILITY::D3D12_SHADER_VISIBILITY_DOMAIN;
-	case ST_Geometry:
+	case BearShaderType::Geometry:
 		flags = flags & ~D3D12_ROOT_SIGNATURE_FLAGS::D3D12_ROOT_SIGNATURE_FLAG_DENY_GEOMETRY_SHADER_ROOT_ACCESS;
 		return D3D12_SHADER_VISIBILITY::D3D12_SHADER_VISIBILITY_GEOMETRY;
-	case ST_Pixel:
+	case BearShaderType::Pixel:
 		flags = flags & ~D3D12_ROOT_SIGNATURE_FLAGS::D3D12_ROOT_SIGNATURE_FLAG_DENY_PIXEL_SHADER_ROOT_ACCESS;
 		return D3D12_SHADER_VISIBILITY::D3D12_SHADER_VISIBILITY_PIXEL;
-	case ST_Compute:
+	case BearShaderType::Compute:
 		return D3D12_SHADER_VISIBILITY::D3D12_SHADER_VISIBILITY_ALL;
-	case ST_ALL:
+	case BearShaderType::ALL:
 		flags = flags & ~D3D12_ROOT_SIGNATURE_FLAGS::D3D12_ROOT_SIGNATURE_FLAG_DENY_PIXEL_SHADER_ROOT_ACCESS;
 		flags = flags & ~D3D12_ROOT_SIGNATURE_FLAGS::D3D12_ROOT_SIGNATURE_FLAG_DENY_HULL_SHADER_ROOT_ACCESS;
 		flags = flags & ~D3D12_ROOT_SIGNATURE_FLAGS::D3D12_ROOT_SIGNATURE_FLAG_DENY_DOMAIN_SHADER_ROOT_ACCESS;
 		flags = flags & ~D3D12_ROOT_SIGNATURE_FLAGS::D3D12_ROOT_SIGNATURE_FLAG_DENY_GEOMETRY_SHADER_ROOT_ACCESS;
 		flags = flags & ~D3D12_ROOT_SIGNATURE_FLAGS::D3D12_ROOT_SIGNATURE_FLAG_DENY_VERTEX_SHADER_ROOT_ACCESS;
-#ifdef DX12UTIMATE
+#ifdef MESH_SHADING
 		if (Factory->bSupportMeshShader)
 		{
 			flags = flags & ~D3D12_ROOT_SIGNATURE_FLAGS::D3D12_ROOT_SIGNATURE_FLAG_DENY_AMPLIFICATION_SHADER_ROOT_ACCESS;
@@ -55,7 +55,7 @@ inline D3D12_SHADER_VISIBILITY TransletionShaderVisible(BearShaderType Type, D3D
 	}
 	return D3D12_SHADER_VISIBILITY::D3D12_SHADER_VISIBILITY_ALL;
 }
-DX12RootSignature::DX12RootSignature(const BearRootSignatureDescription& Description)
+DX12RootSignature::DX12RootSignature(const BearRootSignatureDescription& description)
 {
 	RootSignatureCounter++;
 	CountBuffers = 0;
@@ -68,25 +68,25 @@ DX12RootSignature::DX12RootSignature(const BearRootSignatureDescription& Descrip
 			SlotSamplers[i] = 16;
 			SlotBuffers[i] = 16;
 			SlotSRVs[i] = 16;
-			if (Description.UniformBuffers[i].Shader != ST_Null)CountBuffers++;
-			if (Description.SRVResources[i].Shader != ST_Null) CountSRVs++;
-			if (Description.Samplers[i].Shader != ST_Null) CountSamplers++;
-			if (Description.UAVResources[i].Shader != ST_Null) CountUAVs++;
+			if (description.UniformBuffers[i].Shader != BearShaderType::Null)CountBuffers++;
+			if (description.SRVResources[i].Shader != BearShaderType::Null) CountSRVs++;
+			if (description.Samplers[i].Shader != BearShaderType::Null) CountSamplers++;
+			if (description.UAVResources[i].Shader != BearShaderType::Null) CountUAVs++;
 		}
 	}
 
 	{
-		D3D12_FEATURE_DATA_ROOT_SIGNATURE featureData = {};
+		D3D12_FEATURE_DATA_ROOT_SIGNATURE FeatureData = {};
 
-		featureData.HighestVersion = D3D_ROOT_SIGNATURE_VERSION_1_1;
+		FeatureData.HighestVersion = D3D_ROOT_SIGNATURE_VERSION_1_1;
 
-		if (FAILED(Factory->Device->CheckFeatureSupport(D3D12_FEATURE_ROOT_SIGNATURE, &featureData, sizeof(featureData))))
+		if (FAILED(Factory->Device->CheckFeatureSupport(D3D12_FEATURE_ROOT_SIGNATURE, &FeatureData, sizeof(FeatureData))))
 		{
-			featureData.HighestVersion = D3D_ROOT_SIGNATURE_VERSION_1_0;
+			FeatureData.HighestVersion = D3D_ROOT_SIGNATURE_VERSION_1_0;
 		}
 		D3D12_ROOT_SIGNATURE_FLAGS RootSignatureFlags =
 			D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT |
-#ifdef DX12UTIMATE
+#ifdef MESH_SHADING
 			D3D12_ROOT_SIGNATURE_FLAG_DENY_MESH_SHADER_ROOT_ACCESS|
 			D3D12_ROOT_SIGNATURE_FLAG_DENY_AMPLIFICATION_SHADER_ROOT_ACCESS|
 #endif
@@ -101,36 +101,31 @@ DX12RootSignature::DX12RootSignature(const BearRootSignatureDescription& Descrip
 		CD3DX12_ROOT_PARAMETER1 RootParameters[128];
 		bsize offset = 0;
 		bsize root_offset = 0;
-	/*	for (bsize i = 0; i < CountUAV; i++)
-		{
-			Ranges[i].Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, static_cast<UINT>(i), static_cast<UINT>(i));
-			RootParameters[i].InitAsDescriptorTable(1, &Ranges[i], TransletionShaderVisible(Description.UAVResources[i].Shader, RootSignatureFlags));
-		}
-		offset += CountUAV;*/
 		for (bsize i = 0; i < 16; i++)
 		{
-			if (Description.UniformBuffers[i].Shader != ST_Null)
+			if (description.UniformBuffers[i].Shader != BearShaderType::Null)
 			{
 				SlotBuffers[i] = offset;
 				Ranges[offset].Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, static_cast<UINT>(i));
-				RootParameters[offset].InitAsDescriptorTable(1, &Ranges[offset], TransletionShaderVisible(Description.UniformBuffers[i].Shader, RootSignatureFlags));
+				RootParameters[offset].InitAsDescriptorTable(1, &Ranges[offset], TransletionShaderVisible(description.UniformBuffers[i].Shader, RootSignatureFlags));
 				offset++;
 			}
 			
 		}
 		for (bsize i = 0; i < 16; i++)
 		{
-			if (Description.SRVResources[i].Shader != ST_Null)
+			if (description.SRVResources[i].Shader != BearShaderType::Null)
 			{
 				SlotSRVs[i] = offset- CountBuffers;
-				switch (Description.SRVResources[i].DescriptorType)
+				switch (description.SRVResources[i].DescriptorType)
 				{
-				case BearDescriptorType::DT_Buffer:
-					RootParameters[offset].InitAsShaderResourceView(static_cast<UINT>(i),0,D3D12_ROOT_DESCRIPTOR_FLAG_DATA_STATIC, TransletionShaderVisible(Description.SRVResources[i].Shader, RootSignatureFlags));
+				case BearSRVDescriptorType::AccelerationStructure:
+				case BearSRVDescriptorType::Buffer:
+					RootParameters[offset].InitAsShaderResourceView(static_cast<UINT>(i),0,D3D12_ROOT_DESCRIPTOR_FLAG_DATA_STATIC, TransletionShaderVisible(description.SRVResources[i].Shader, RootSignatureFlags));
 					break;
-				case BearDescriptorType::DT_Image:
+				case BearSRVDescriptorType::Image:
 					Ranges[offset].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, static_cast<UINT>(i));
-					RootParameters[offset].InitAsDescriptorTable(1, &Ranges[offset], TransletionShaderVisible(Description.SRVResources[i].Shader, RootSignatureFlags));
+					RootParameters[offset].InitAsDescriptorTable(1, &Ranges[offset], TransletionShaderVisible(description.SRVResources[i].Shader, RootSignatureFlags));
 					break;
 				default:
 					break;
@@ -140,17 +135,17 @@ DX12RootSignature::DX12RootSignature(const BearRootSignatureDescription& Descrip
 		}
 		for (bsize i = 0; i < 16; i++)
 		{
-			if (Description.UAVResources[i].Shader != ST_Null)
+			if (description.UAVResources[i].Shader != BearShaderType::Null)
 			{
 				SlotUAVs[i] = offset - (CountBuffers + CountSRVs);
-				switch (Description.UAVResources[i].DescriptorType)
+				switch (description.UAVResources[i].DescriptorType)
 				{
-				case BearDescriptorType::DT_Buffer:
-					RootParameters[offset].InitAsUnorderedAccessView(static_cast<UINT>(i), 0, D3D12_ROOT_DESCRIPTOR_FLAG_DATA_STATIC, TransletionShaderVisible(Description.UAVResources[i].Shader, RootSignatureFlags));
+				case BearUAVDescriptorType::Buffer:
+					RootParameters[offset].InitAsUnorderedAccessView(static_cast<UINT>(i), 0, D3D12_ROOT_DESCRIPTOR_FLAG_DATA_STATIC, TransletionShaderVisible(description.UAVResources[i].Shader, RootSignatureFlags));
 					break;
-				case BearDescriptorType::DT_Image:
+				case BearUAVDescriptorType::Image:
 					Ranges[offset].Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, static_cast<UINT>(i));
-					RootParameters[offset].InitAsDescriptorTable(1, &Ranges[offset], TransletionShaderVisible(Description.UAVResources[i].Shader, RootSignatureFlags));
+					RootParameters[offset].InitAsDescriptorTable(1, &Ranges[offset], TransletionShaderVisible(description.UAVResources[i].Shader, RootSignatureFlags));
 					break;
 				default:
 					break;
@@ -161,24 +156,22 @@ DX12RootSignature::DX12RootSignature(const BearRootSignatureDescription& Descrip
 
 		for (bsize i = 0; i < 16; i++)
 		{
-			if (Description.Samplers[i].Shader != ST_Null)
+			if (description.Samplers[i].Shader != BearShaderType::Null)
 			{
 				SlotSamplers[i] = offset - (CountBuffers + CountSRVs+CountUAVs);
 				Ranges[offset].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER, 1, static_cast<UINT>(i));
-				RootParameters[offset].InitAsDescriptorTable(1, &Ranges[offset], TransletionShaderVisible(Description.Samplers[i].Shader, RootSignatureFlags));
+				RootParameters[offset].InitAsDescriptorTable(1, &Ranges[offset], TransletionShaderVisible(description.Samplers[i].Shader, RootSignatureFlags));
 				offset++;
 			}
 		}
 
-		CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC rootSignatureDesc;
-		if (Description.Local)
-			RootSignatureFlags = D3D12_ROOT_SIGNATURE_FLAG_LOCAL_ROOT_SIGNATURE;
-		rootSignatureDesc.Init_1_1(static_cast<UINT>(Count), RootParameters, 0, 0, RootSignatureFlags);
+		CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC RootSignatureDesc;
+		RootSignatureDesc.Init_1_1(static_cast<UINT>(Count), RootParameters, 0, 0, RootSignatureFlags);
 
-		ComPtr<ID3DBlob> signature;
-		ComPtr<ID3DBlob> error;
-		R_CHK(D3DX12SerializeVersionedRootSignature(&rootSignatureDesc, featureData.HighestVersion, &signature, &error));
-		R_CHK(Factory->Device->CreateRootSignature(0, signature->GetBufferPointer(), signature->GetBufferSize(), IID_PPV_ARGS(&RootSignature)));
+		ComPtr<ID3DBlob> Signature;
+		ComPtr<ID3DBlob> Error;
+		R_CHK(D3DX12SerializeVersionedRootSignature(&RootSignatureDesc, FeatureData.HighestVersion, &Signature, &Error));
+		R_CHK(Factory->Device->CreateRootSignature(0, Signature->GetBufferPointer(), Signature->GetBufferSize(), IID_PPV_ARGS(&RootSignature)));
 	}
 
 }
@@ -187,14 +180,7 @@ DX12RootSignature::~DX12RootSignature()
 {
 	RootSignatureCounter--;
 }
-#ifdef RTX
-void DX12RootSignature::Set(ID3D12GraphicsCommandList4* CommandList)
+void DX12RootSignature::Set(ID3D12GraphicsCommandListX* command_list)
 {
-	CommandList->SetGraphicsRootSignature(RootSignature.Get());
+	command_list->SetGraphicsRootSignature(RootSignature.Get());
 }
-#else
-void DX12RootSignature::Set(ID3D12GraphicsCommandList* CommandList)
-{
-	CommandList->SetGraphicsRootSignature(RootSignature.Get());
-}
-#endif

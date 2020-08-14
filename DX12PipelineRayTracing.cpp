@@ -1,220 +1,52 @@
 #include "DX12PCH.h"
 bsize PipelineRayTracingCounter = 0;
-DX12PipelineRayTracing::DX12PipelineRayTracing(const BearPipelineRayTracingDescription & desc)
+#ifdef RTX
+DX12PipelineRayTracing::DX12PipelineRayTracing(const BearPipelineRayTracingDescription & description)
 {
 	PipelineRayTracingCounter++;
-#if defined(DX12)||defined(DX12_1)
-	RootSignature = desc.GlobalRootSignature;
+	RootSignature = description.GlobalRootSignature;
 	BEAR_CHECK(RootSignature.empty() == false);
 	RootSignaturePointer = static_cast<DX12RootSignature*>(RootSignature.get());
-	/*/////////////////////////////////////////////////////////////////////////////////////////////
-	//For Shader Config
-	D3D12_RAYTRACING_SHADER_CONFIG ShaderConfig = {};
-	//For Pipeline Config
-	D3D12_RAYTRACING_PIPELINE_CONFIG PipelineConfig = {};
-	//For Shader
-	BearVector<D3D12_EXPORT_DESC> ShaderExportList;
-	BearVector<D3D12_DXIL_LIBRARY_DESC> ShaderLibraryList;
-	//For Hit group
-	BearVector<D3D12_HIT_GROUP_DESC> HitGroupList;
-	//For LocalRootSignature
-
-	BearVector < CComPtr<ID3D12RootSignature>> LocalRootSignatureList;
-	BearVector<const wchar_t*>LocalRootSignatureExportList;
-	BearVector<D3D12_SUBOBJECT_TO_EXPORTS_ASSOCIATION> LocalRootSignatureAssociationList;
-	//For GlobalRootSignature
-	CComPtr<ID3D12RootSignature> GlobalRootSignature;
-
 	/////////////////////////////////////////////////////////////////////////////////////////////
-	BearVector< D3D12_STATE_SUBOBJECT> Objects;
+	BearVector<BearStringConteniarUnicode> LocalRootSignature_Exports;
 	/////////////////////////////////////////////////////////////////////////////////////////////
-	{
-		bsize CountExport = 0;
-		for (const BearPipelineRayTracingDescription::ShaderDescription& i : desc.Shaders)
-		{
-			CountExport += i.Exports.size();
-		}
-		ShaderExportList.resize(CountExport);
-		ShaderLibraryList.resize(desc.Shaders.size());
-	}
-	
-	{
-		bsize OffsetExports = 0;
-		bsize OffsetLibraries = 0;
-		for (const BearPipelineRayTracingDescription::ShaderDescription& i : desc.Shaders)
-		{
-
-			ShaderLibraryList[OffsetLibraries].NumExports = 0;
-			for (const BearPipelineRayTracingDescription::ShaderDescription::ExportDescription& a : i.Exports)
-			{
-				ShaderExportList[OffsetExports].ExportToRename = *a.NameExport;
-				ShaderExportList[OffsetExports].Name = *a.NameFunction;
-				ShaderExportList[OffsetExports].Flags = D3D12_EXPORT_FLAG_NONE;
-				ShaderLibraryList[OffsetLibraries].NumExports++;
-				OffsetExports++;
-			}
-			ShaderLibraryList[OffsetLibraries].pExports = ShaderExportList.data() + (OffsetExports - ShaderLibraryList[OffsetLibraries].NumExports);
-
-			auto ShaderLibrary = const_cast<DX12Shader*>(static_cast<const DX12Shader*>(i.Shader.get()));
-			BEAR_CHECK(ShaderLibrary && ShaderLibrary->IsType(ST_RayTracing));
-			ShaderLibraryList[OffsetLibraries].DXILLibrary.BytecodeLength = ShaderLibrary->GetSize();
-			ShaderLibraryList[OffsetLibraries].DXILLibrary.pShaderBytecode = ShaderLibrary->GetPointer();
-
-			D3D12_STATE_SUBOBJECT Subobject = {};
-			Subobject.Type = D3D12_STATE_SUBOBJECT_TYPE_DXIL_LIBRARY;
-			Subobject.pDesc = &ShaderLibraryList[OffsetLibraries];
-			Objects.push_back(Subobject);
-
-			OffsetLibraries++;
-		}
-	}
-
-	/////////////////////////////////////////////////////////////////////////////////////////////
-	{
-		bsize OffsetHit = 0;
-		HitGroupList.resize(desc.HitGroups.size());
-		for (const BearPipelineRayTracingDescription::HitGroupDescription& i : desc.HitGroups)
-		{
-			switch (i.Type)
-			{
-			case HGT_Triangles:
-				HitGroupList[OffsetHit].Type = D3D12_HIT_GROUP_TYPE_TRIANGLES;
-				break;
-			case HGT_Procedural_Primitive:
-				HitGroupList[OffsetHit].Type = D3D12_HIT_GROUP_TYPE_PROCEDURAL_PRIMITIVE;
-				break;
-			}
-			HitGroupList[OffsetHit].AnyHitShaderImport = i.AnyHitShaderImport.size() == 0 ? nullptr : *i.AnyHitShaderImport;
-			HitGroupList[OffsetHit].ClosestHitShaderImport = i.ClosestHitShaderImport.size() == 0 ? nullptr : *i.ClosestHitShaderImport;
-			HitGroupList[OffsetHit].IntersectionShaderImport = i.IntersectionShaderImport.size() == 0 ? nullptr : *i.IntersectionShaderImport;
-			HitGroupList[OffsetHit].HitGroupExport = *i.NameExport;
-
-			D3D12_STATE_SUBOBJECT Subobject = {};
-			Subobject.Type = D3D12_STATE_SUBOBJECT_TYPE_HIT_GROUP;
-			Subobject.pDesc = &ShaderLibraryList[OffsetHit];
-			Objects.push_back(Subobject);
-
-			OffsetHit++;
-		}
-	}
-	/////////////////////////////////////////////////////////////////////////////////////////////
-	{
-		D3D12_STATE_SUBOBJECT Subobject = {};
-		ShaderConfig.MaxPayloadSizeInBytes = desc.ShaderConfig.MaxPayloadSizeInBytes;
-		ShaderConfig.MaxAttributeSizeInBytes = desc.ShaderConfig.MaxAttributeSizeInBytes;
-		Subobject.Type = D3D12_STATE_SUBOBJECT_TYPE_RAYTRACING_SHADER_CONFIG;
-		Subobject.pDesc = &ShaderConfig;
-		Objects.push_back(Subobject);
-	}
-	/////////////////////////////////////////////////////////////////////////////////////////////
-	{
-		D3D12_STATE_SUBOBJECT Subobject = {};
-		PipelineConfig.MaxTraceRecursionDepth = desc.PipelineConfig.MaxTraceRecursionDepth;
-		Subobject.Type = D3D12_STATE_SUBOBJECT_TYPE_RAYTRACING_PIPELINE_CONFIG;
-		Subobject.pDesc = &PipelineConfig;
-		Objects.push_back(Subobject);
-	}
-	/////////////////////////////////////////////////////////////////////////////////////////////
-	{
-
-		bsize CountExport = 0;
-		for (const BearPipelineRayTracingDescription::LocalRootSignatureDescription& i : desc.LocalRootSignatures)
-		{
-			CountExport += i.Exports.size();
-		}
-		LocalRootSignatureExportList.resize(CountExport);
-		LocalRootSignatureAssociationList.resize(desc.LocalRootSignatures.size());
-		LocalRootSignatureList.resize(desc.LocalRootSignatures.size());
-		bsize OffsetExports = 0;
-		bsize OffsetLibraries = 0;
-		for (const BearPipelineRayTracingDescription::LocalRootSignatureDescription& i : desc.LocalRootSignatures)
-		{
-			LocalRootSignature.push_back(i.RootSignature);
-			D3D12_STATE_SUBOBJECT Subobject = {};
-			Subobject.Type = D3D12_STATE_SUBOBJECT_TYPE_LOCAL_ROOT_SIGNATURE;
-			Subobject.pDesc = &LocalRootSignatureList[OffsetLibraries];
-			auto LocalRootSignaturePointer = static_cast<DX12RootSignature*>(i.RootSignature.Get());
-			LocalRootSignatureList[OffsetLibraries] = LocalRootSignaturePointer->RootSignature.Get();
-			Objects.push_back(Subobject);
-			OffsetLibraries++;
-		}
-		OffsetLibraries = 0;
-		bsize OffsetObject = Objects.size();
-		for (const BearPipelineRayTracingDescription::LocalRootSignatureDescription& i : desc.LocalRootSignatures)
-		{
-			LocalRootSignatureAssociationList[OffsetLibraries].pExports = &LocalRootSignatureExportList[OffsetExports];
-			LocalRootSignatureAssociationList[OffsetLibraries].NumExports = 0;
-			for (const BearStringConteniarUnicode& a : i.Exports)
-			{
-				LocalRootSignatureExportList[OffsetExports] = *a;
-				OffsetExports++;
-				LocalRootSignatureAssociationList[OffsetLibraries].NumExports++;
-			}
-			LocalRootSignatureAssociationList[OffsetLibraries].pSubobjectToAssociate = nullptr;
-			D3D12_STATE_SUBOBJECT Subobject = {};
-			Subobject.Type = D3D12_STATE_SUBOBJECT_TYPE_SUBOBJECT_TO_EXPORTS_ASSOCIATION;
-			Subobject.pDesc = &LocalRootSignatureAssociationList[OffsetLibraries];
-			Objects.push_back(Subobject);
-			OffsetLibraries++;
-		}
-		
-
-		OffsetLibraries = 0;
-		for (const BearPipelineRayTracingDescription::LocalRootSignatureDescription& i : desc.LocalRootSignatures)
-		{
-			LocalRootSignatureAssociationList[OffsetLibraries].pSubobjectToAssociate = &Objects[OffsetObject];
-			OffsetObject++;
-			OffsetLibraries++;
-		}
-	}
-	/////////////////////////////////////////////////////////////////////////////////////////////
-	{
-		D3D12_STATE_SUBOBJECT Subobject = {};
-		Subobject.Type = D3D12_STATE_SUBOBJECT_TYPE_GLOBAL_ROOT_SIGNATURE;
-		Subobject.pDesc = &GlobalRootSignature;
-		GlobalRootSignature = RootSignaturePointer->RootSignature.Get();
-		Objects.push_back(Subobject);
-	}
-
-	/////////////////////////////////////////////////////////////////////////////////////////////
-	D3D12_STATE_OBJECT_DESC PipelineDescription = {};
-	PipelineDescription.Type = D3D12_STATE_OBJECT_TYPE_RAYTRACING_PIPELINE;
-	PipelineDescription.NumSubobjects = static_cast<UINT>(Objects.size());
-	PipelineDescription.pSubobjects = Objects.data();
-	R_CHK(Factory->Device->CreateStateObject(&PipelineDescription, IID_PPV_ARGS(&PipelineState)));*/
 	CD3DX12_STATE_OBJECT_DESC RayTracingPipeline{ D3D12_STATE_OBJECT_TYPE_RAYTRACING_PIPELINE };
-	for (const BearPipelineRayTracingDescription::ShaderDescription& i : desc.Shaders)
+	for (const BearPipelineRayTracingDescription::ShaderDescription& i : description.Shaders)
 	{
 		auto Library = RayTracingPipeline.CreateSubobject<CD3DX12_DXIL_LIBRARY_SUBOBJECT>();
 		for (const BearPipelineRayTracingDescription::ShaderDescription::ExportDescription& a : i.Exports)
 		{
 			if (a.NameFunction.size())
 			{
-				Library->DefineExport(*a.NameFunction,*a.NameExport);
+				Library->DefineExport(*a.NameExport, *a.NameFunction);
 			}
 			else
 			{
-				Library->DefineExport( *a.NameExport);
+				Library->DefineExport(*a.NameExport);
 			}
-		
+			LocalRootSignature_Exports.push_back(*a.NameExport);
 		}
 		auto ShaderLibrary = const_cast<DX12Shader*>(static_cast<const DX12Shader*>(i.Shader.get()));
-		BEAR_CHECK(ShaderLibrary && ShaderLibrary->IsType(ST_RayTracing));
+		BEAR_CHECK(ShaderLibrary && ShaderLibrary->IsType(BearShaderType::RayTracing));
 		D3D12_SHADER_BYTECODE DXI = CD3DX12_SHADER_BYTECODE((void*)ShaderLibrary->GetPointer(), ShaderLibrary->GetSize());
 		Library->SetDXILLibrary(&DXI);
 	}
-	for (const BearPipelineRayTracingDescription::HitGroupDescription& i : desc.HitGroups)
+	for (const BearPipelineRayTracingDescription::HitGroupDescription& i : description.HitGroups)
 	{
 		auto HitGroup = RayTracingPipeline.CreateSubobject< CD3DX12_HIT_GROUP_SUBOBJECT>();
 		HitGroup->SetHitGroupExport(*i.NameExport);
 
 		switch (i.Type)
 		{
-		case HGT_Triangles:
+		case BearHitGroupType::Triangles:
 			HitGroup->SetHitGroupType(D3D12_HIT_GROUP_TYPE_TRIANGLES);
 			break;
-		case HGT_Procedural_Primitive:
+		case BearHitGroupType::ProceduralPrimitive:
 			HitGroup->SetHitGroupType(D3D12_HIT_GROUP_TYPE_PROCEDURAL_PRIMITIVE);
+			break;
+		default:
+			BEAR_CHECK(false);
+			HitGroup->SetHitGroupType(D3D12_HIT_GROUP_TYPE_TRIANGLES);
 			break;
 		}
 
@@ -227,16 +59,14 @@ DX12PipelineRayTracing::DX12PipelineRayTracing(const BearPipelineRayTracingDescr
 	}
 	{
 		auto ShaderConfig = RayTracingPipeline.CreateSubobject<CD3DX12_RAYTRACING_SHADER_CONFIG_SUBOBJECT>();
-		ShaderConfig->Config(desc.ShaderConfig.MaxPayloadSizeInBytes,desc.ShaderConfig.MaxAttributeSizeInBytes);
+		ShaderConfig->Config(description.ShaderConfig.MaxPayloadSizeInBytes,description.ShaderConfig.MaxAttributeSizeInBytes);
 	}
-	for (const BearPipelineRayTracingDescription::LocalRootSignatureDescription& i : desc.LocalRootSignatures)
 	{
 		auto LocalRootSignature = RayTracingPipeline.CreateSubobject< CD3DX12_LOCAL_ROOT_SIGNATURE_SUBOBJECT>();
-		auto LocalRootSignaturePointer = static_cast<const DX12RootSignature*>(i.RootSignature.get());
-		LocalRootSignature->SetRootSignature(LocalRootSignaturePointer->RootSignature.Get());
+		LocalRootSignature->SetRootSignature(Factory->LocalRootSignatureDefault.Get());
 
 		auto RootSignatureAssociation = RayTracingPipeline.CreateSubobject<CD3DX12_SUBOBJECT_TO_EXPORTS_ASSOCIATION_SUBOBJECT>();
-		for (const BearStringConteniarUnicode& a : i.Exports)
+		for (const BearStringConteniarUnicode& a : LocalRootSignature_Exports)
 		{
 			RootSignatureAssociation->AddExport(*a);
 		}
@@ -248,11 +78,9 @@ DX12PipelineRayTracing::DX12PipelineRayTracing(const BearPipelineRayTracingDescr
 	}
 	{
 		auto Config = RayTracingPipeline.CreateSubobject<CD3DX12_RAYTRACING_PIPELINE_CONFIG_SUBOBJECT>();
-		Config->Config(desc.PipelineConfig.MaxTraceRecursionDepth);
+		Config->Config(description.PipelineConfig.MaxTraceRecursionDepth);
 	}
-	auto hr = Factory->Device->CreateStateObject(RayTracingPipeline, IID_PPV_ARGS(&PipelineState));
-	R_CHK(hr);
-#endif
+	R_CHK(Factory->Device->CreateStateObject(RayTracingPipeline, IID_PPV_ARGS(&PipelineState)));
 }
 
 DX12PipelineRayTracing::~DX12PipelineRayTracing()
@@ -260,9 +88,9 @@ DX12PipelineRayTracing::~DX12PipelineRayTracing()
 	PipelineRayTracingCounter--;
 }
 
-void* DX12PipelineRayTracing::QueryInterface(int Type)
+void* DX12PipelineRayTracing::QueryInterface(int åype)
 {
-	switch (Type)
+	switch (åype)
 	{
 	case DX12Q_Pipeline:
 		return reinterpret_cast<void*>(static_cast<DX12Pipeline*>(this));
@@ -275,28 +103,12 @@ void* DX12PipelineRayTracing::QueryInterface(int Type)
 
 BearPipelineType DX12PipelineRayTracing::GetType()
 {
-	return PT_RayTracing;
+	return BearPipelineType::RayTracing;
 }
 
-
-
-void DX12PipelineRayTracing::Set(
-#ifndef DX11
-#ifdef DX12UTIMATE
-	ID3D12GraphicsCommandList6
-#else
-	ID3D12GraphicsCommandList4
-#endif
-#else
-	ID3D12GraphicsCommandList
-#endif
-	
-	* CommandList)
+void DX12PipelineRayTracing::Set(ID3D12GraphicsCommandListX*command_list)
 {
-#ifndef DX11
-	CommandList->SetComputeRootSignature(RootSignaturePointer->RootSignature.Get());
-	CommandList->SetPipelineState1(PipelineState.Get());
-#endif
+	command_list->SetComputeRootSignature(RootSignaturePointer->RootSignature.Get());
+	command_list->SetPipelineState1(PipelineState.Get());
 }
-
-
+#endif

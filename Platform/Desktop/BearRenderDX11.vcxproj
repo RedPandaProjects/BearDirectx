@@ -27,7 +27,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\DX12BottomLevel.cpp" />
+    <ClCompile Include="..\..\DX12RayTracingBottomLevel.cpp" />
     <ClCompile Include="..\..\DX12Context.cpp" />
     <ClCompile Include="..\..\DX12DescriptorHeap.cpp" />
     <ClCompile Include="..\..\DX12Factory.cpp" />
@@ -54,7 +54,7 @@
     <ClCompile Include="..\..\DX12StructuredBuffer.cpp" />
     <ClCompile Include="..\..\DX12Texture2D.cpp" />
     <ClCompile Include="..\..\DX12TextureCube.cpp" />
-    <ClCompile Include="..\..\DX12TopLevel.cpp" />
+    <ClCompile Include="..\..\DX12RayTracingTopLevel.cpp" />
     <ClCompile Include="..\..\DX12UniformBuffer.cpp" />
     <ClCompile Include="..\..\DX12VertexBuffer.cpp" />
     <ClCompile Include="..\..\DX12Viewport.cpp" />
@@ -62,7 +62,7 @@
   <ItemGroup>
     <ClInclude Include="..\..\d3dx12.h" />
     <ClInclude Include="..\..\DX12AllocatorHeap.h" />
-    <ClInclude Include="..\..\DX12BottomLevel.h" />
+    <ClInclude Include="..\..\DX12RayTracingBottomLevel.h" />
     <ClInclude Include="..\..\DX12Context.h" />
     <ClInclude Include="..\..\DX12DescriptorHeap.h" />
     <ClInclude Include="..\..\DX12Factory.h" />
@@ -72,6 +72,7 @@
     <ClInclude Include="..\..\DX12Pipeline.h" />
     <ClInclude Include="..\..\DX12PipelineGraphics.h" />
     <ClInclude Include="..\..\DX12PipelineMesh.h" />
+    <ClInclude Include="..\..\DX12PipelineRayTracing.h" />
     <ClInclude Include="..\..\DX12RayTracingShaderTable.h" />
     <ClInclude Include="..\..\DX12RenderPass.h" />
     <ClInclude Include="..\..\DX12RootSignature.h" />
@@ -82,7 +83,7 @@
     <ClInclude Include="..\..\DX12StructuredBuffer.h" />
     <ClInclude Include="..\..\DX12Texture2D.h" />
     <ClInclude Include="..\..\DX12TextureCube.h" />
-    <ClInclude Include="..\..\DX12TopLevel.h" />
+    <ClInclude Include="..\..\DX12RayTracingTopLevel.h" />
     <ClInclude Include="..\..\DX12UniformBuffer.h" />
     <ClInclude Include="..\..\DX12VertexBuffer.h" />
     <ClInclude Include="..\..\DX12Viewport.h" />

@@ -32,52 +32,52 @@ public:
 	inline DX12AllocatorHeapItem allocate(bsize count_element)
 	{
 		BEAR_CHECK(elements_in_heap >=count_element);
-		DX12AllocatorHeapItem result;
-		Heap* heap = 0;
+		DX12AllocatorHeapItem Result;
+		Heap* HeapPtr = 0;
 		if(HeapsOfMaxSize.size())
 		{
-			auto item = std::lower_bound(HeapsOfMaxSize.begin(), HeapsOfMaxSize.end(), count_element, [](Heap* a1, bsize a2)->bool {return a1->MaxSize < a2; });
-			if (item == HeapsOfMaxSize.end())
+			auto Item = std::lower_bound(HeapsOfMaxSize.begin(), HeapsOfMaxSize.end(), count_element, [](Heap* a1, bsize a2)->bool {return a1->MaxSize < a2; });
+			if (Item == HeapsOfMaxSize.end())
 			{
-				heap = create_block();
+				HeapPtr = create_block();
 			}
 			else
 			{
 
-				heap = *item;
+				HeapPtr = *Item;
 			}
 		
 		}
 		else
 		{
-			heap = create_block();
+			HeapPtr = create_block();
 		}
-		if (heap->MaxSize < count_element)
+		if (HeapPtr->MaxSize < count_element)
 		{
-			heap = create_block();
+			HeapPtr = create_block();
 		}
-		result.DescriptorHeap = heap->DescriptorHeap;
-		bsize id = find_id(count_element, heap);
-		result.Id = id;
-		result.Size = count_element;
-		memset(&heap->BlockInfo[id], 1, count_element);
-		(heap)->MaxSize = get_max_size(heap);
+		Result.DescriptorHeap = HeapPtr->DescriptorHeap;
+		bsize id = find_id(count_element, HeapPtr);
+		Result.Id = id;
+		Result.Size = count_element;
+		bear_fill(&HeapPtr->BlockInfo[id], count_element,1);
+		(HeapPtr)->MaxSize = get_max_size(HeapPtr);
 		bear_sort(HeapsOfMaxSize.begin(), HeapsOfMaxSize.end(), [](Heap* a1, Heap* a2)->bool {return a1->MaxSize < a2->MaxSize; });
 
-		return result;
+		return Result;
 	}
-	inline void free(DX12AllocatorHeapItem& Item)
+	inline void free(DX12AllocatorHeapItem& item)
 	{
-		if (Item.Size == 0)return;
-		auto item = std::lower_bound(HeapsOfAddres.begin(), HeapsOfAddres.end(), Item, [](const Heap* a1,const DX12AllocatorHeapItem& a2)->bool {return a1->DescriptorHeap.Get() < a2.DescriptorHeap.Get(); });
-		BEAR_CHECK(item != HeapsOfAddres.end());
-		BEAR_CHECK((*item)->DescriptorHeap.Get() == Item.DescriptorHeap.Get());
-		memset(&(*item)->BlockInfo[Item.Id],0 , Item.Size);
-		(*item)->MaxSize = get_max_size(*item);
+		if (item.Size == 0)return;
+		auto Item = std::lower_bound(HeapsOfAddres.begin(), HeapsOfAddres.end(), item, [](const Heap* a1,const DX12AllocatorHeapItem& a2)->bool {return a1->DescriptorHeap.Get() < a2.DescriptorHeap.Get(); });
+		BEAR_CHECK(Item != HeapsOfAddres.end());
+		BEAR_CHECK((*Item)->DescriptorHeap.Get() == item.DescriptorHeap.Get());
+		bear_fill(&(*Item)->BlockInfo[item.Id], item.Size,0);
+		(*Item)->MaxSize = get_max_size(*Item);
 		bear_sort(HeapsOfMaxSize.begin(), HeapsOfMaxSize.end(), [](Heap* a1, Heap* a2)->bool {return a1->MaxSize < a2->MaxSize; });
-		Item.DescriptorHeap.Reset();
-		Item.Id = 0;
-		Item.Size = 0;
+		item.DescriptorHeap.Reset();
+		item.Id = 0;
+		item.Size = 0;
 	}
 private:
 	struct Heap
@@ -88,52 +88,52 @@ private:
 	};
 	inline Heap* create_block()
 	{
-		Heap* heap = bear_new<Heap>();
+		Heap* HeapPtr = bear_new<Heap>();
 
 		{
-			D3D12_DESCRIPTOR_HEAP_DESC cbvHeapDesc = {};
-			cbvHeapDesc.NumDescriptors = static_cast<UINT>(elements_in_heap);
-			cbvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
-			cbvHeapDesc.Type = heap_type;
-			R_CHK(Factory->Device->CreateDescriptorHeap(&cbvHeapDesc, IID_PPV_ARGS(&heap->DescriptorHeap)));
+			D3D12_DESCRIPTOR_HEAP_DESC HeapDesc = {};
+			HeapDesc.NumDescriptors = static_cast<UINT>(elements_in_heap);
+			HeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
+			HeapDesc.Type = heap_type;
+			R_CHK(Factory->Device->CreateDescriptorHeap(&HeapDesc, IID_PPV_ARGS(&HeapPtr->DescriptorHeap)));
 		}
-		memset(heap->BlockInfo,0, elements_in_heap);
-		heap->MaxSize = elements_in_heap;
-		auto item1 = std::lower_bound(HeapsOfAddres.begin(), HeapsOfAddres.end(), heap, [](Heap*a1, Heap* a2)->bool {return a1->DescriptorHeap.Get() < a2->DescriptorHeap.Get(); });
-		HeapsOfAddres.insert(item1, heap);
+		bear_fill(HeapPtr->BlockInfo, elements_in_heap,0);
+		HeapPtr->MaxSize = elements_in_heap;
+		auto item1 = std::lower_bound(HeapsOfAddres.begin(), HeapsOfAddres.end(), HeapPtr, [](Heap*a1, Heap* a2)->bool {return a1->DescriptorHeap.Get() < a2->DescriptorHeap.Get(); });
+		HeapsOfAddres.insert(item1, HeapPtr);
 		auto item2 = std::lower_bound(HeapsOfMaxSize.begin(), HeapsOfMaxSize.end(), elements_in_heap, [](Heap* a1, bsize a2)->bool {return a1->MaxSize < a2; });
-		HeapsOfMaxSize.insert(item2, heap);
-		return heap;
+		HeapsOfMaxSize.insert(item2, HeapPtr);
+		return HeapPtr;
 
 	}
 	inline bsize get_size(Heap* heap, bsize id)
 	{
-		bsize count = 0;
+		bsize Count = 0;
 		for (bsize i = id; i < elements_in_heap; i++)
 		{
 			if (heap->BlockInfo[i]==0)
 			{
-				count++;
+				Count++;
 			}
 			else
 			{
-				return count;
+				return Count;
 			}
 		}
-		return count;
+		return Count;
 	}
 	inline bsize find_id(bsize size,Heap* heap)
 	{
 		for (bsize i = 0; i < elements_in_heap;)
 		{
-			bsize fsize = get_size(heap, i);
-			if (fsize)
+			bsize FSize = get_size(heap, i);
+			if (FSize)
 			{
-				if (fsize >= size)
+				if (FSize >= size)
 				{
 					return i;
 				}
-				i += fsize;
+				i += FSize;
 			}
 			else
 			{
@@ -148,11 +148,11 @@ private:
 		bsize MaxSize = 0;
 		for (bsize i = 0; i < elements_in_heap;)
 		{
-			bsize fsize = get_size(heap, i);
-			if (fsize)
+			bsize FSize = get_size(heap, i);
+			if (FSize)
 			{
-				MaxSize = BearMath::max(fsize, MaxSize);
-				i += fsize;
+				MaxSize = BearMath::max(FSize, MaxSize);
+				i += FSize;
 			}
 			else
 			{

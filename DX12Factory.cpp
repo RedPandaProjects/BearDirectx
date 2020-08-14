@@ -1,37 +1,30 @@
 #include "DX12PCH.h"
-bool GDebugRender;  
-static bool GExperimental;
-static const GUID D3D12ExperimentalShaderModelsID =
-{ /* 76f5573e-f13a-40f5-b297-81ce9e18933f */
-	0x76f5573e,
-	0xf13a,
-	0x40f5,
-	{ 0xb2, 0x97, 0x81, 0xce, 0x9e, 0x18, 0x93, 0x3f }
-};
-DX12Factory::DX12Factory() :bSupportMeshShader(false), bSupportRayTracing(false)
-{
-	UINT dxgiFactoryFlags = 0;
-	m_Default_FenceEvent = 0;
-	
 
+#ifdef DEVELOPER_VERSION
+bool GDebugRender;  
+#endif
+
+DX12Factory::DX12Factory()
+{
+	ComPtr<IDXGIAdapter1> HardwareAdapter;
+	D3D_FEATURE_LEVEL Level;
+	UINT DxGIFactoryFlags = 0;
+	m_Default_FenceEvent = 0;
+
+#ifdef RTX
+	bSupportRayTracing = false;
+#endif
+#ifdef MESH_SHADING
+	bSupportMeshShader = false;
+#endif
+
+#ifdef DEVELOPER_VERSION
 	GDebugRender = BearString::Find(GetCommandLine(), TEXT("-debugrender"));
 	if(!GDebugRender)
 		GDebugRender = BearString::Find(GetCommandLine(), TEXT("-drender"));
 #if defined(_DEBUG)
 	GDebugRender = true;
 #endif
-
-	GExperimental = BearString::Find(GetCommandLine(), TEXT("-debugexperimental"));
-	if (!GExperimental)
-		GExperimental = BearString::Find(GetCommandLine(), TEXT("-dexperimental"));
-
-
-
-
-#ifdef DX12UTIMATE
-	if(GExperimental)
-		D3D12EnableExperimentalFeatures(1, &D3D12ExperimentalShaderModelsID, nullptr, nullptr);
-#endif 
 
 	if(GDebugRender)
 
@@ -40,23 +33,21 @@ DX12Factory::DX12Factory() :bSupportMeshShader(false), bSupportRayTracing(false)
 		if (SUCCEEDED(D3D12GetDebugInterface(IID_PPV_ARGS(&debugController))))
 		{
 			debugController->EnableDebugLayer();
-			dxgiFactoryFlags |= DXGI_CREATE_FACTORY_DEBUG;
+			DxGIFactoryFlags |= DXGI_CREATE_FACTORY_DEBUG;
 		}
 	}
+#endif
 
-	if (FAILED(CreateDXGIFactory2(dxgiFactoryFlags, IID_PPV_ARGS(&GIFactory))))
+	if (FAILED(CreateDXGIFactory2(DxGIFactoryFlags, IID_PPV_ARGS(&GIFactory))))
 	{
 		return;
 	}
-	ComPtr<IDXGIAdapter1> hardwareAdapter;
 
-	D3D_FEATURE_LEVEL Level;
-
-	GetHardwareAdapter(GIFactory.Get(), &hardwareAdapter, Level);
-	if (hardwareAdapter.Get() == 0)
+	GetHardwareAdapter(GIFactory.Get(), &HardwareAdapter, Level);
+	if (HardwareAdapter.Get() == 0)
 		return;
 	IDXGIOutput *Output;
-	hardwareAdapter->EnumOutputs(0, &Output);
+	HardwareAdapter->EnumOutputs(0, &Output);
 	{
 		UINT count = 0;
 
@@ -66,17 +57,12 @@ DX12Factory::DX12Factory() :bSupportMeshShader(false), bSupportRayTracing(false)
 	}
 
 	Output->Release();
-	if (FAILED(D3D12CreateDevice(hardwareAdapter.Get(), Level, IID_PPV_ARGS(&Device))))
+	if (FAILED(D3D12CreateDevice(HardwareAdapter.Get(), Level, IID_PPV_ARGS(&Device))))
 	{
 		return;
 	}
 
-#ifdef RTX
-	if (FAILED(Device->QueryInterface(IID_PPV_ARGS(&RTXDevice))))
-	{
-		return;
-	}
-#endif
+#ifdef DEVELOPER_VERSION
 	if (GDebugRender)
 	{
 
@@ -109,16 +95,22 @@ DX12Factory::DX12Factory() :bSupportMeshShader(false), bSupportRayTracing(false)
 		}
 
 	}
-	CbvSrvUavDescriptorSize = Device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-	RtvDescriptorSize = Device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
-	SamplerDescriptorSize = Device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER);
+#endif
+
 	{
+		CbvSrvUavDescriptorSize = Device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+		RtvDescriptorSize = Device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
+		SamplerDescriptorSize = Device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER);
+	}
+
 #ifndef DX11
+	{
 		R_CHK(DxcCreateInstance(CLSID_DxcCompiler, IID_PPV_ARGS(&DxcCompiler)));
 		R_CHK(DxcCreateInstance(CLSID_DxcLibrary, IID_PPV_ARGS(&DxcLibrary)));
 		R_CHK(DxcLibrary->CreateIncludeHandler(&DxcIncludeHandler));
-#endif
 	}
+#endif
+
 	{
 		m_Default_FenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
 		if (m_Default_FenceEvent == nullptr)
@@ -136,15 +128,17 @@ DX12Factory::DX12Factory() :bSupportMeshShader(false), bSupportRayTracing(false)
 		R_CHK(Device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&m_Default_Fence)));
 		m_Default_FenceValue = 1;
 	}
+#ifdef RTX
 	{
 		CD3DX12_ROOT_SIGNATURE_DESC RootSignatureDesc;
-		RootSignatureDesc.Init(0, nullptr, 0, nullptr, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
+		RootSignatureDesc.Init(0, nullptr, 0, nullptr, D3D12_ROOT_SIGNATURE_FLAG_LOCAL_ROOT_SIGNATURE);
 
-		ComPtr<ID3DBlob> signature;
-		ComPtr<ID3DBlob> error;
-		R_CHK(D3D12SerializeRootSignature(&RootSignatureDesc, D3D_ROOT_SIGNATURE_VERSION_1, &signature, &error));
-		R_CHK(Device->CreateRootSignature(0, signature->GetBufferPointer(), signature->GetBufferSize(), IID_PPV_ARGS(&RootSignature)));
+		ComPtr<ID3DBlob> Signature;
+		ComPtr<ID3DBlob> Error;
+		R_CHK(D3D12SerializeRootSignature(&RootSignatureDesc, D3D_ROOT_SIGNATURE_VERSION_1, &Signature, &Error));
+		R_CHK(Device->CreateRootSignature(0, Signature->GetBufferPointer(), Signature->GetBufferSize(), IID_PPV_ARGS(&LocalRootSignatureDefault)));
 	}
+#endif
 }
 
 DX12Factory::~DX12Factory()
@@ -168,9 +162,9 @@ DX12Factory::~DX12Factory()
 		m_Default_FenceEvent = 0;
 	}
 }
-BearRHI::BearRHIViewport *DX12Factory::CreateViewport(void* Handle, bsize Width, bsize Height, bool Fullscreen, bool VSync, const BearViewportDescription&Description)
+BearRHI::BearRHIViewport *DX12Factory::CreateViewport(void* window_handle, bsize width, bsize height, bool Fullscreen, bool VSync, const BearViewportDescription&description)
 {
-	return bear_new<DX12Viewport>(Handle, Width,Height,Fullscreen,VSync,Description);
+	return bear_new<DX12Viewport>(window_handle, width,height,Fullscreen,VSync,description);
 }
 
 BearRHI::BearRHIContext *DX12Factory::CreateContext()
@@ -193,274 +187,190 @@ BearRHI::BearRHIIndexBuffer* DX12Factory::CreateIndexBuffer()
 	return bear_new<DX12IndexBuffer>();
 }
 
-BearRHI::BearRHIUniformBuffer* DX12Factory::CreateUniformBuffer(bsize Stride, bsize Count, bool Dynamic)
+BearRHI::BearRHIUniformBuffer* DX12Factory::CreateUniformBuffer(bsize Stride, bsize count, bool dynamic)
 {
-	return bear_new<DX12UniformBuffer>(Stride, Count, Dynamic);
+	return bear_new<DX12UniformBuffer>(Stride, count, dynamic);
 }
 
-BearRHI::BearRHIRootSignature* DX12Factory::CreateRootSignature(const BearRootSignatureDescription& Description)
+BearRHI::BearRHIRootSignature* DX12Factory::CreateRootSignature(const BearRootSignatureDescription& description)
 {
-	return bear_new< DX12RootSignature>(Description);
+	return bear_new< DX12RootSignature>(description);
 }
 
-BearRHI::BearRHIDescriptorHeap* DX12Factory::CreateDescriptorHeap(const BearDescriptorHeapDescription& Description)
+BearRHI::BearRHIDescriptorHeap* DX12Factory::CreateDescriptorHeap(const BearDescriptorHeapDescription& description)
 {
-	return  bear_new<DX12DescriptorHeap>(Description);;
+	return  bear_new<DX12DescriptorHeap>(description);;
 }
 
-BearRHI::BearRHIPipelineGraphics* DX12Factory::CreatePipelineGraphics(const BearPipelineGraphicsDescription& Description)
+BearRHI::BearRHIPipelineGraphics* DX12Factory::CreatePipelineGraphics(const BearPipelineGraphicsDescription& description)
 {
-	return bear_new<DX12PipelineGraphics>(Description);
+	return bear_new<DX12PipelineGraphics>(description);
 }
 
-BearRHI::BearRHIPipelineMesh* DX12Factory::CreatePipelineMesh(const BearPipelineMeshDescription& Description)
+BearRHI::BearRHIPipelineMesh* DX12Factory::CreatePipelineMesh(const BearPipelineMeshDescription& description)
 {
-	return bear_new<DX12PipelineMesh>(Description);
-}
-
-BearRHI::BearRHIPipelineRayTracing* DX12Factory::CreatePipelineRayTracing(const BearPipelineRayTracingDescription& Description)
-{
-	return bear_new<DX12PipelineRayTracing>(Description);;
-}
-
-BearRHI::BearRHITexture2D* DX12Factory::CreateTexture2D(bsize Width, bsize Height, bsize Mips, bsize Count, BearTexturePixelFormat PixelFormat, BearTextureUsage TypeUsage, void* data, bool UAV)
-{
-	return  bear_new<DX12Texture2D>(Width,Height,Mips,Count,PixelFormat, TypeUsage,data, UAV);;
-}
-
-BearRHI::BearRHITextureCube* DX12Factory::CreateTextureCube(bsize Width, bsize Height, bsize Mips, bsize Count, BearTexturePixelFormat PixelFormat, BearTextureUsage TypeUsage, void* data)
-{
-	return  bear_new<DX12TextureCube>(Width, Height, Mips, Count, PixelFormat, TypeUsage, data);;
-}
-
-BearRHI::BearRHIStructuredBuffer* DX12Factory::CreateStructuredBuffer(bsize size, void* data,bool UAV)
-{
-	return  bear_new<DX12StructuredBuffer>(size, data, UAV);
-}
-
-BearRHI::BearRHITexture2D* DX12Factory::CreateTexture2D(bsize Width, bsize Height, BearRenderTargetFormat Format)
-{
-	return bear_new<DX12Texture2D>(Width, Height, Format);
-}
-
-BearRHI::BearRHITexture2D* DX12Factory::CreateTexture2D(bsize Width, bsize Height, BearDepthStencilFormat Format)
-{
-	return bear_new<DX12Texture2D>(Width, Height, Format);
-}
-
-BearRHI::BearRHIRenderPass *DX12Factory::CreateRenderPass(const BearRenderPassDescription& Description)
-{
-	return bear_new<DX12RenderPass>(Description);
-}
-
-BearRHI::BearRHIFrameBuffer* DX12Factory::CreateFrameBuffer(const BearFrameBufferDescription& Description)
-{
-	return bear_new<DX12FrameBuffer>(Description);
-}
-
-BearRHI::BearRHISampler* DX12Factory::CreateSampler(const BearSamplerDescription& Description)
-{
-	return  bear_new<DX12SamplerState>(Description);
-}
-
-BearRHI::BearRHIBottomLevel* DX12Factory::CreateBottomLevel(const BearBottomLevelDescription& Description)
-{
-	return  bear_new<DX12BottomLevel>(Description);
-}
-
-BearRHI::BearRHITopLevel* DX12Factory::CreateTopLevel(const BearTopLevelDescription& Description)
-{
-	return  bear_new<DX12TopLevel>(Description);
-}
-
-BearRHI::BearRHIRayTracingShaderTable* DX12Factory::CreateRayTracingShaderTable(const BearRayTracingShaderTableDescription& Description)
-{
-	return bear_new<DX12RayTracingShaderTable>(Description);;
-}
-
-DXGI_FORMAT DX12Factory::Translation(BearTexturePixelFormat format)
-{
-	switch (format)
-	{
-	case TPF_R8:
-		return DXGI_FORMAT_R8_UNORM;
-		break;
-	case TPF_R8G8:
-		return DXGI_FORMAT_R8G8_UNORM;
-		break;
-	case TPF_R8G8B8:
-		BEAR_ASSERT(!"not support R8G8B8");
-		break;
-	case TPF_R8G8B8A8:
-		return DXGI_FORMAT_R8G8B8A8_UNORM;
-		break;
-	case TPF_R32F:
-		return DXGI_FORMAT_R32_FLOAT;
-		break;
-	case TPF_R32G32F:
-		return DXGI_FORMAT_R32G32_FLOAT;
-		break;
-	case TPF_R32G32B32F:
-		return DXGI_FORMAT_R32G32B32_FLOAT;
-		break;
-	case TPF_R32G32B32A32F:
-		return DXGI_FORMAT_R32G32B32A32_FLOAT;
-		break;
-	case TPF_BC1:
-	case TPF_BC1a:
-		return DXGI_FORMAT_BC1_UNORM;
-	case TPF_BC2:
-		return DXGI_FORMAT_BC2_UNORM;
-	case TPF_BC3:
-		return DXGI_FORMAT_BC3_UNORM;
-	case TPF_BC4:
-		return DXGI_FORMAT_BC4_UNORM;
-	case TPF_BC5:
-		return DXGI_FORMAT_BC5_UNORM;
-	case TPF_BC6:
-		return DXGI_FORMAT_BC6H_UF16;
-	case TPF_BC7:
-		return DXGI_FORMAT_BC7_UNORM;
-	default:
-		BEAR_CHECK(0);;
-	}
-	return DXGI_FORMAT_UNKNOWN;
-
-}
-
-D3D12_TEXTURE_ADDRESS_MODE DX12Factory::Translation(BearSamplerAddressMode format)
-{
-	switch (format)
-	{
-	case SAM_WRAP:
-		return D3D12_TEXTURE_ADDRESS_MODE::D3D12_TEXTURE_ADDRESS_MODE_WRAP;
-		break;
-	case SAM_MIRROR:
-		D3D12_TEXTURE_ADDRESS_MODE::D3D12_TEXTURE_ADDRESS_MODE_MIRROR;
-		break;
-	case SAM_CLAMP:
-		D3D12_TEXTURE_ADDRESS_MODE::D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
-		break;
-	case SAM_BORDER:
-		D3D12_TEXTURE_ADDRESS_MODE::D3D12_TEXTURE_ADDRESS_MODE_BORDER;
-		break;
-	default:
-		BEAR_CHECK(0);;;
-	}
-	return D3D12_TEXTURE_ADDRESS_MODE::D3D12_TEXTURE_ADDRESS_MODE_WRAP;
-}
-
-
-void DX12Factory::GetHardwareAdapter(
-#ifdef DX12_1
-	IDXGIFactory4* pFactory
+#ifdef MESH_SHADING
+	return bear_new<DX12PipelineMesh>(description);
 #else
-	IDXGIFactory2 *pFactory
+	return nullptr;
 #endif
-	, IDXGIAdapter1 **ppAdapter, D3D_FEATURE_LEVEL &Level)
+}
+
+BearRHI::BearRHIPipelineRayTracing* DX12Factory::CreatePipelineRayTracing(const BearPipelineRayTracingDescription& description)
 {
-	ComPtr<IDXGIAdapter1> adapter;
-	*ppAdapter = nullptr;
+#ifdef RTX
+	return bear_new<DX12PipelineRayTracing>(description);
+#else
+	return nullptr;
+#endif
+}
 
-	for (UINT adapterIndex = 0; DXGI_ERROR_NOT_FOUND != pFactory->EnumAdapters1(adapterIndex, &adapter); ++adapterIndex)
+BearRHI::BearRHITexture2D* DX12Factory::CreateTexture2D(bsize width, bsize height, bsize mips, bsize count, BearTexturePixelFormat pixel_format, BearTextureUsage type_usage, void* data)
+{
+	return  bear_new<DX12Texture2D>(width,height,mips,count,pixel_format, type_usage,data);;
+}
+
+BearRHI::BearRHITextureCube* DX12Factory::CreateTextureCube(bsize width, bsize height, bsize mips, bsize count, BearTexturePixelFormat pixel_format, BearTextureUsage type_usage, void* data)
+{
+	return  bear_new<DX12TextureCube>(width, height, mips, count, pixel_format, type_usage, data);;
+}
+
+BearRHI::BearRHIStructuredBuffer* DX12Factory::CreateStructuredBuffer(bsize size, void* data,bool uav)
+{
+	return  bear_new<DX12StructuredBuffer>(size, data, uav);
+}
+
+BearRHI::BearRHITexture2D* DX12Factory::CreateTexture2D(bsize width, bsize height, BearRenderTargetFormat format)
+{
+	return bear_new<DX12Texture2D>(width, height, format);
+}
+
+BearRHI::BearRHITexture2D* DX12Factory::CreateTexture2D(bsize width, bsize height, BearDepthStencilFormat format)
+{
+	return bear_new<DX12Texture2D>(width, height, format);
+}
+
+BearRHI::BearRHIRenderPass *DX12Factory::CreateRenderPass(const BearRenderPassDescription& description)
+{
+	return bear_new<DX12RenderPass>(description);
+}
+
+BearRHI::BearRHIFrameBuffer* DX12Factory::CreateFrameBuffer(const BearFrameBufferDescription& description)
+{
+	return bear_new<DX12FrameBuffer>(description);
+}
+
+BearRHI::BearRHISampler* DX12Factory::CreateSampler(const BearSamplerDescription& description)
+{
+	return  bear_new<DX12SamplerState>(description);
+}
+
+BearRHI::BearRHIRayTracingBottomLevel* DX12Factory::CreateRayTracingBottomLevel(const BearRayTracingBottomLevelDescription& description)
+{
+#ifdef RTX
+	return  bear_new<DX12RayTracingBottomLevel>(description);
+#else
+	return nullptr;
+#endif
+}
+
+BearRHI::BearRHIRayTracingTopLevel* DX12Factory::CreateRayTracingTopLevel(const BearRayTracingTopLevelDescription& description)
+{
+#ifdef RTX
+	return  bear_new<DX12RayTracingTopLevel>(description);
+#else
+	return nullptr;
+#endif
+}
+
+BearRHI::BearRHIRayTracingShaderTable* DX12Factory::CreateRayTracingShaderTable(const BearRayTracingShaderTableDescription& description)
+{
+#ifdef RTX
+	return bear_new<DX12RayTracingShaderTable>(description);
+#else
+	return nullptr;
+#endif
+}
+
+void DX12Factory::GetHardwareAdapter(IDXGIFactoryX* factory, IDXGIAdapter1** pp_adapter, D3D_FEATURE_LEVEL& level)
+{
+	ComPtr<IDXGIAdapter1> Adapter;
+	*pp_adapter = nullptr;
+
+	for (UINT adapterIndex = 0; DXGI_ERROR_NOT_FOUND != factory->EnumAdapters1(adapterIndex, &Adapter); ++adapterIndex)
 	{
-		DXGI_ADAPTER_DESC1 desc;
-		adapter->GetDesc1(&desc);
+		DXGI_ADAPTER_DESC1 AdapterDesc;
+		Adapter->GetDesc1(&AdapterDesc);
 
-		if (desc.Flags & DXGI_ADAPTER_FLAG_SOFTWARE)
+		if (AdapterDesc.Flags & DXGI_ADAPTER_FLAG_SOFTWARE)
 		{
-			// Don't select the Basic Render Driver adapter.
-			// If you want a software adapter, pass in "/warp" on the command line.
 			continue;
 		}
 
-		// Check to see if the adapter supports Direct3D 12, but don't create the
-		// actual device yet.
-#ifdef DX11
-		Level = D3D_FEATURE_LEVEL_11_0;
-#elif DX12
-		Level = D3D_FEATURE_LEVEL_12_0;
-#elif DX12_1
-		Level = D3D_FEATURE_LEVEL_12_1;
-#else
-#error "Unkwon"
-#endif
+		level = CurrentFeatureLevel;
+
 		ComPtr<ID3D12Device> LDevice;
-
-		if (SUCCEEDED(D3D12CreateDevice(adapter.Get(), Level, IID_PPV_ARGS(&LDevice))))
+		if (SUCCEEDED(D3D12CreateDevice(Adapter.Get(), level, IID_PPV_ARGS(&LDevice))))
 		{
-
-#ifndef DX11
+			{
+				D3D12_FEATURE_DATA_SHADER_MODEL shaderModel = { CurrentShadeModel };
+				if (FAILED(LDevice->CheckFeatureSupport(D3D12_FEATURE_SHADER_MODEL, &shaderModel, sizeof(shaderModel))))
+				{
+					continue;
+				}
+			}
+#ifdef RTX
 			{
 				D3D12_FEATURE_DATA_D3D12_OPTIONS5 featureSupportData = {};
 				if (SUCCEEDED(LDevice->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS5, &featureSupportData, sizeof(featureSupportData))))
 				{
 					bSupportRayTracing = featureSupportData.RaytracingTier != D3D12_RAYTRACING_TIER_NOT_SUPPORTED;
 				}
+				D3D12_FEATURE_DATA_SHADER_MODEL shaderModel = { CurrentRTXShadeModel };
+				if (FAILED(LDevice->CheckFeatureSupport(D3D12_FEATURE_SHADER_MODEL, &shaderModel, sizeof(shaderModel))))
+				{
+					bSupportRayTracing = false;
+				}
 			}
 #endif
-		
 
-#ifndef DX11
-			D3D12_FEATURE_DATA_SHADER_MODEL shaderModel = { D3D_SHADER_MODEL_6_5 };
-			if (FAILED(LDevice->CheckFeatureSupport(D3D12_FEATURE_SHADER_MODEL, &shaderModel, sizeof(shaderModel))) ||
-#ifdef DX12
-			(shaderModel.HighestShaderModel < D3D_SHADER_MODEL_6_0))
-#elif DX12_1
-			(shaderModel.HighestShaderModel < D3D_SHADER_MODEL_6_3))
-#endif
-			{
 
-				continue;
-			}
-#ifdef DX12UTIMATE
-			else
-			{
-				bSupportMeshShader = shaderModel.HighestShaderModel == D3D_SHADER_MODEL_6_5;
-			}
-#endif
-#endif
-
-#ifdef DX12UTIMATE
-			if (GExperimental)
+#ifdef MESH_SHADING
 			{
 				D3D12_FEATURE_DATA_D3D12_OPTIONS7 features = {};
-				if (FAILED(LDevice->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS7, &features, sizeof(features))) || (features.MeshShaderTier == D3D12_MESH_SHADER_TIER_NOT_SUPPORTED))
+				if (SUCCEEDED(LDevice->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS7, &features, sizeof(features))) || (features.MeshShaderTier == D3D12_MESH_SHADER_TIER_NOT_SUPPORTED))
 				{
 					bSupportMeshShader = false;
 				}
+				D3D12_FEATURE_DATA_SHADER_MODEL shaderModel = { CurrentMeshShadingShadeModel };
+				if (FAILED(LDevice->CheckFeatureSupport(D3D12_FEATURE_SHADER_MODEL, &shaderModel, sizeof(shaderModel))))
+				{
+					bSupportRayTracing = false;
+				}
 			}
-			else
-			{
-				bSupportMeshShader = false;
-			}
-#else
-			bSupportMeshShader = false;
 #endif
-
+			*pp_adapter = Adapter.Detach();
 			break;
 		}
 	}
-
-	*ppAdapter = adapter.Detach();
 }
 void DX12Factory::LockCommandList()
 {
 	m_Default_CommandMutex.Lock();
 }
 
-void DX12Factory::UnlockCommandList(ID3D12CommandQueue *CommandQueue)
+void DX12Factory::UnlockCommandList(ID3D12CommandQueue *command_queue)
 {
 	R_CHK(CommandList->Close());
 	ID3D12CommandList *ppCommandLists[] = {CommandList.Get()};
-	if (CommandQueue)
-		CommandQueue->ExecuteCommandLists(_countof(ppCommandLists), ppCommandLists);
+	if (command_queue)
+		command_queue->ExecuteCommandLists(_countof(ppCommandLists), ppCommandLists);
 	else
 		m_Default_CommandQueue->ExecuteCommandLists(_countof(ppCommandLists), ppCommandLists);
 	const uint64 fence = m_Default_FenceValue;
-	if (CommandQueue)
+	if (command_queue)
 	{
-		R_CHK(CommandQueue->Signal(m_Default_Fence.Get(), fence));
+		R_CHK(command_queue->Signal(m_Default_Fence.Get(), fence));
 	}
 	else
 	{
@@ -478,44 +388,136 @@ void DX12Factory::UnlockCommandList(ID3D12CommandQueue *CommandQueue)
 }
 
 
-D3D12_BLEND DX12Factory::Translate(BearBlendFactor format)
+bool DX12Factory::SupportRayTracing()
+{
+#ifdef RTX
+	return bSupportRayTracing;
+#else
+	return false;
+#endif
+}
+
+bool DX12Factory::SupportMeshShader()
+{
+#ifdef MESH_SAHDING
+	return bSupportMeshShader;
+#else
+	return false;
+#endif
+}
+
+DXGI_FORMAT DX12Factory::Translation(BearTexturePixelFormat format)
 {
 	switch (format)
 	{
-	case BF_ZERO:
+	case BearTexturePixelFormat::R8:
+		return DXGI_FORMAT_R8_UNORM;
+		break;
+	case BearTexturePixelFormat::R8G8:
+		return DXGI_FORMAT_R8G8_UNORM;
+		break;
+	case BearTexturePixelFormat::R8G8B8:
+		BEAR_ASSERT(!"not support R8G8B8");
+		break;
+	case BearTexturePixelFormat::R8G8B8A8:
+		return DXGI_FORMAT_R8G8B8A8_UNORM;
+		break;
+	case BearTexturePixelFormat::R32F:
+		return DXGI_FORMAT_R32_FLOAT;
+		break;
+	case BearTexturePixelFormat::R32G32F:
+		return DXGI_FORMAT_R32G32_FLOAT;
+		break;
+	case BearTexturePixelFormat::R32G32B32F:
+		return DXGI_FORMAT_R32G32B32_FLOAT;
+		break;
+	case BearTexturePixelFormat::R32G32B32A32F:
+		return DXGI_FORMAT_R32G32B32A32_FLOAT;
+		break;
+	case BearTexturePixelFormat::BC1:
+	case BearTexturePixelFormat::BC1a:
+		return DXGI_FORMAT_BC1_UNORM;
+	case BearTexturePixelFormat::BC2:
+		return DXGI_FORMAT_BC2_UNORM;
+	case BearTexturePixelFormat::BC3:
+		return DXGI_FORMAT_BC3_UNORM;
+	case BearTexturePixelFormat::BC4:
+		return DXGI_FORMAT_BC4_UNORM;
+	case BearTexturePixelFormat::BC5:
+		return DXGI_FORMAT_BC5_UNORM;
+	case BearTexturePixelFormat::BC6:
+		return DXGI_FORMAT_BC6H_UF16;
+	case BearTexturePixelFormat::BC7:
+		return DXGI_FORMAT_BC7_UNORM;
+	default:
+		BEAR_CHECK(0);;
+	}
+	return DXGI_FORMAT_UNKNOWN;
+
+}
+
+D3D12_TEXTURE_ADDRESS_MODE DX12Factory::Translation(BearSamplerAddressMode format)
+{
+	switch (format)
+	{
+	case BearSamplerAddressMode::Wrap:
+		return D3D12_TEXTURE_ADDRESS_MODE::D3D12_TEXTURE_ADDRESS_MODE_WRAP;
+		break;
+	case BearSamplerAddressMode::Mirror:
+		D3D12_TEXTURE_ADDRESS_MODE::D3D12_TEXTURE_ADDRESS_MODE_MIRROR;
+		break;
+	case BearSamplerAddressMode::Clamp:
+		D3D12_TEXTURE_ADDRESS_MODE::D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
+		break;
+	case BearSamplerAddressMode::Border:
+		D3D12_TEXTURE_ADDRESS_MODE::D3D12_TEXTURE_ADDRESS_MODE_BORDER;
+		break;
+	default:
+		BEAR_CHECK(0);;;
+	}
+	return D3D12_TEXTURE_ADDRESS_MODE::D3D12_TEXTURE_ADDRESS_MODE_WRAP;
+}
+
+
+
+D3D12_BLEND DX12Factory::Translation(BearBlendFactor format)
+{
+	switch (format)
+	{
+	case BearBlendFactor::Zero:
 		return D3D12_BLEND::D3D12_BLEND_ZERO;
 		break;
-	case BF_ONE:
+	case BearBlendFactor::One:
 		return D3D12_BLEND::D3D12_BLEND_ONE;
 		break;
-	case BF_SRC_COLOR:
+	case BearBlendFactor::SrcColor:
 		return D3D12_BLEND::D3D12_BLEND_SRC_COLOR;
 		break;
-	case BF_INV_SRC_COLOR:
+	case BearBlendFactor::InvSrcColor:
 		return D3D12_BLEND::D3D12_BLEND_INV_SRC_COLOR;
 		break;
-	case BF_SRC_ALPHA:
+	case BearBlendFactor::SrcAlpha:
 		return D3D12_BLEND::D3D12_BLEND_SRC_ALPHA;
 		break;
-	case BF_INV_SRC_ALPHA:
+	case BearBlendFactor::InvSrcAlpha:
 		return D3D12_BLEND::D3D12_BLEND_INV_SRC_ALPHA;
 		break;
-	case BF_DEST_ALPHA:
+	case BearBlendFactor::DestAlpha:
 		return D3D12_BLEND::D3D12_BLEND_DEST_ALPHA;
 		break;
-	case BF_INV_DEST_ALPHA:
+	case BearBlendFactor::InvDestAlpha:
 		return D3D12_BLEND::D3D12_BLEND_INV_DEST_ALPHA;
 		break;
-	case BF_DEST_COLOR:
+	case BearBlendFactor::DestColor:
 		return D3D12_BLEND::D3D12_BLEND_DEST_COLOR;
 		break;
-	case BF_INV_DEST_COLOR:
+	case BearBlendFactor::InvDestColor:
 		return D3D12_BLEND::D3D12_BLEND_INV_DEST_COLOR;
 		break;
-	case BF_BLEND_FACTOR:
+	case BearBlendFactor::BlendFactor:
 		return D3D12_BLEND::D3D12_BLEND_BLEND_FACTOR;
 		break;
-	case BF_INV_BLEND_FACTOR:
+	case BearBlendFactor::InvBlendFactor:
 		return D3D12_BLEND::D3D12_BLEND_INV_BLEND_FACTOR;
 		break;
 	default:
@@ -524,23 +526,23 @@ D3D12_BLEND DX12Factory::Translate(BearBlendFactor format)
 	return D3D12_BLEND_ZERO;
 }
 
-D3D12_BLEND_OP DX12Factory::Translate(BearBlendOp format)
+D3D12_BLEND_OP DX12Factory::Translation(BearBlendOp format)
 {
 	switch (format)
 	{
-	case BO_ADD:
+	case BearBlendOp::Add:
 		return D3D12_BLEND_OP::D3D12_BLEND_OP_ADD;
 		break;
-	case BO_SUBTRACT:
+	case BearBlendOp::Subtract:
 		return D3D12_BLEND_OP::D3D12_BLEND_OP_SUBTRACT;
 		break;
-	case BO_REV_SUBTRACT:
+	case BearBlendOp::RevSubtract:
 		return D3D12_BLEND_OP::D3D12_BLEND_OP_REV_SUBTRACT;
 		break;
-	case BO_MIN:
+	case BearBlendOp::Min:
 		return D3D12_BLEND_OP::D3D12_BLEND_OP_MIN;
 		break;
-	case BO_MAX:
+	case BearBlendOp::Max:
 		return D3D12_BLEND_OP::D3D12_BLEND_OP_MAX;
 		break;
 	default:
@@ -549,32 +551,32 @@ D3D12_BLEND_OP DX12Factory::Translate(BearBlendOp format)
 	return D3D12_BLEND_OP::D3D12_BLEND_OP_ADD;
 }
 
-D3D12_COMPARISON_FUNC DX12Factory::Translate(BearCompareFunction format)
+D3D12_COMPARISON_FUNC DX12Factory::Translation(BearCompareFunction format)
 {
 	switch (format)
 	{
-	case CF_NEVER:
+	case BearCompareFunction::Never:
 		return D3D12_COMPARISON_FUNC::D3D12_COMPARISON_FUNC_ALWAYS;
 		break;
-	case CF_ALWAYS:
+	case BearCompareFunction::Always:
 		return D3D12_COMPARISON_FUNC::D3D12_COMPARISON_FUNC_ALWAYS;
 		break;
-	case CF_EQUAL:
+	case BearCompareFunction::Equal:
 		return D3D12_COMPARISON_FUNC::D3D12_COMPARISON_FUNC_EQUAL;
 		break;
-	case CF_NOTEQUAL:
+	case BearCompareFunction::NotEqual:
 		return D3D12_COMPARISON_FUNC::D3D12_COMPARISON_FUNC_NOT_EQUAL;
 		break;
-	case CF_LESS:
+	case BearCompareFunction::Less:
 		return D3D12_COMPARISON_FUNC::D3D12_COMPARISON_FUNC_LESS;
 		break;
-	case CF_GREATER:
+	case BearCompareFunction::Greater:
 		return D3D12_COMPARISON_FUNC::D3D12_COMPARISON_FUNC_GREATER;
 		break;
-	case CF_LESSEQUAL:
+	case BearCompareFunction::LessEqual:
 		return D3D12_COMPARISON_FUNC::D3D12_COMPARISON_FUNC_LESS_EQUAL;
 		break;
-	case CF_GREATEREQUAL:
+	case BearCompareFunction::GreaterEqual:
 		return D3D12_COMPARISON_FUNC::D3D12_COMPARISON_FUNC_GREATER_EQUAL;
 		break;
 	default:
@@ -583,32 +585,32 @@ D3D12_COMPARISON_FUNC DX12Factory::Translate(BearCompareFunction format)
 	return  D3D12_COMPARISON_FUNC::D3D12_COMPARISON_FUNC_NEVER;
 }
 
-D3D12_STENCIL_OP DX12Factory::Translate(BearStencilOp format)
+D3D12_STENCIL_OP DX12Factory::Translation(BearStencilOp format)
 {
 	switch (format)
 	{
-	case SO_KEEP:
+	case BearStencilOp::Keep:
 		return D3D12_STENCIL_OP::D3D12_STENCIL_OP_KEEP;
 		break;
-	case SO_ZERO:
+	case BearStencilOp::Zero:
 		return D3D12_STENCIL_OP::D3D12_STENCIL_OP_ZERO;
 		break;
-	case SO_REPLACE:
+	case BearStencilOp::Replace:
 		return D3D12_STENCIL_OP::D3D12_STENCIL_OP_REPLACE;
 		break;
-	case SO_INCR_SAT:
+	case BearStencilOp::IncrSat:
 		return D3D12_STENCIL_OP::D3D12_STENCIL_OP_INCR_SAT;
 		break;
-	case SO_DECR_SAT:
+	case BearStencilOp::DecrSat:
 		return D3D12_STENCIL_OP::D3D12_STENCIL_OP_DECR_SAT;
 		break;
-	case SO_INVERT:
+	case BearStencilOp::Invert:
 		return D3D12_STENCIL_OP::D3D12_STENCIL_OP_INVERT;
 		break;
-	case SO_INCR:
+	case BearStencilOp::Incr:
 		return D3D12_STENCIL_OP::D3D12_STENCIL_OP_INCR;
 		break;
-	case SO_DECR:
+	case BearStencilOp::Decr:
 		return D3D12_STENCIL_OP::D3D12_STENCIL_OP_DECR;
 		break;
 	default:
@@ -618,17 +620,17 @@ D3D12_STENCIL_OP DX12Factory::Translate(BearStencilOp format)
 }
 
 
-D3D12_CULL_MODE DX12Factory::Translate(BearRasterizerCullMode format)
+D3D12_CULL_MODE DX12Factory::Translation(BearRasterizerCullMode format)
 {
 	switch (format)
 	{
-	case RCM_FRONT:
+	case BearRasterizerCullMode::Front:
 		return D3D12_CULL_MODE::D3D12_CULL_MODE_FRONT;
 		break;
-	case RCM_BACK:
+	case BearRasterizerCullMode::Back:
 		return D3D12_CULL_MODE::D3D12_CULL_MODE_BACK;
 		break;
-	case RCM_NONE:
+	case BearRasterizerCullMode::None:
 		return D3D12_CULL_MODE::D3D12_CULL_MODE_NONE;
 		break;
 	default:
@@ -637,14 +639,14 @@ D3D12_CULL_MODE DX12Factory::Translate(BearRasterizerCullMode format)
 	return D3D12_CULL_MODE::D3D12_CULL_MODE_NONE;
 }
 
-D3D12_FILL_MODE DX12Factory::Translate(BearRasterizerFillMode format)
+D3D12_FILL_MODE DX12Factory::Translation(BearRasterizerFillMode format)
 {
 	switch (format)
 	{
-	case RFM_WIREFRAME:
+	case BearRasterizerFillMode::Wireframe:
 		return D3D12_FILL_MODE::D3D12_FILL_MODE_WIREFRAME;
 		break;
-	case RFM_SOLID:
+	case BearRasterizerFillMode::Solid:
 		return D3D12_FILL_MODE::D3D12_FILL_MODE_SOLID;
 		break;
 	default:
@@ -657,32 +659,32 @@ DXGI_FORMAT DX12Factory::Translation(BearRenderTargetFormat format)
 {
 	switch (format)
 	{
-	case RTF_NONE:
+	case BearRenderTargetFormat::None:
 		BEAR_CHECK(0);
 		break;
-	case RTF_R8:
+	case BearRenderTargetFormat::R8:
 		return DXGI_FORMAT_R8_UNORM;
 		break;
-	case RTF_R8G8:
+	case BearRenderTargetFormat::R8G8:
 		return DXGI_FORMAT_R8G8_UNORM;
 		break;
 
-	case RTF_R8G8B8A8:
+	case BearRenderTargetFormat::R8G8B8A8:
 		return DXGI_FORMAT_R8G8B8A8_UNORM;
 		break;
-	case RTF_B8G8R8A8:
+	case BearRenderTargetFormat::B8G8R8A8:
 		return DXGI_FORMAT_B8G8R8A8_UNORM;
 		break;
-	case RTF_R32F:
+	case BearRenderTargetFormat::R32F:
 		return DXGI_FORMAT_R32_FLOAT;
 		break;
-	case RTF_R32G32F:
+	case BearRenderTargetFormat::R32G32F:
 		return DXGI_FORMAT_R32G32_FLOAT;
 		break;
-	case RTF_R32G32B32F:
+	case BearRenderTargetFormat::R32G32B32F:
 		return DXGI_FORMAT_R32G32B32_FLOAT;
 		break;
-	case RTF_R32G32B32A32F:
+	case BearRenderTargetFormat::R32G32B32A32F:
 		return DXGI_FORMAT_R32G32B32A32_FLOAT;
 		break;
 	default:
@@ -696,16 +698,16 @@ DXGI_FORMAT DX12Factory::Translation(BearDepthStencilFormat format)
 {
 	switch (format)
 	{
-	case DSF_DEPTH16:
+	case BearDepthStencilFormat::Depth16:
 		return DXGI_FORMAT_D16_UNORM;
 		break;
-	case DSF_DEPTH32F:
+	case BearDepthStencilFormat::Depth32F:
 		return DXGI_FORMAT_D32_FLOAT;
 		break;
-	case DSF_DEPTH24_STENCIL8:
+	case BearDepthStencilFormat::Depth24Stencil8:
 		return DXGI_FORMAT_D24_UNORM_S8_UINT;
 		break;
-	case DSF_DEPTH32F_STENCIL8:
+	case BearDepthStencilFormat::Depth32FStencil8:
 		return DXGI_FORMAT_D32_FLOAT_S8X24_UINT;
 		break;
 	default:
@@ -715,24 +717,96 @@ DXGI_FORMAT DX12Factory::Translation(BearDepthStencilFormat format)
 	return DXGI_FORMAT_D24_UNORM_S8_UINT;
 }
 
-bool DX12Factory::SupportRayTracing()
+DXGI_FORMAT DX12Factory::TranslationForRayTracing(BearVertexFormat format)
 {
-#ifdef DX12_1
-	return bSupportRayTracing;
-#elif DX12
-	return bSupportRayTracing;
-#else
-	return false;
-#endif
+	switch (format)
+	{
+	case BearVertexFormat::R16G16_FLOAT:
+		return DXGI_FORMAT_R16G16_FLOAT;
+		break;
+	case BearVertexFormat::R16G16B16A16_FLOAT:
+		return DXGI_FORMAT_R16G16B16A16_FLOAT;
+		break;
+	case BearVertexFormat::R32G32_FLOAT:
+		return DXGI_FORMAT_R32G32_FLOAT;
+		break;
+	case BearVertexFormat::R32G32B32_FLOAT:
+		return DXGI_FORMAT_R32G32B32_FLOAT;
+		break;
+	default:
+		BEAR_CHECK(false);
+		return DXGI_FORMAT_R16G16_FLOAT;
+		break;
+	}
 }
 
-bool DX12Factory::SupportMeshShader()
+DXGI_FORMAT DX12Factory::Translation(BearVertexFormat format)
 {
-#ifdef DX12_1
-	return bSupportMeshShader;
-#elif DX12
-	return bSupportMeshShader;
-#else
-	return false;
-#endif
+
+	switch (format)
+	{
+	case BearVertexFormat::R16G16_SINT:
+		return DXGI_FORMAT_R16G16_SINT;
+	case BearVertexFormat::R16G16B16A16_SINT:
+		return DXGI_FORMAT_R16G16B16A16_SINT;
+	case BearVertexFormat::R16G16_FLOAT:
+		return DXGI_FORMAT_R16G16_FLOAT;
+	case BearVertexFormat::R16G16B16A16_FLOAT:
+		return DXGI_FORMAT_R16G16B16A16_FLOAT;
+	case BearVertexFormat::R32G32B32A32_FLOAT:
+		return DXGI_FORMAT_R32G32B32A32_FLOAT;
+	case BearVertexFormat::R32G32B32_FLOAT:
+		return DXGI_FORMAT_R32G32B32_FLOAT;
+	case BearVertexFormat::R32G32_FLOAT:
+		return DXGI_FORMAT_R32G32_FLOAT;
+
+	case BearVertexFormat::R32_FLOAT:
+		return DXGI_FORMAT_R32_FLOAT;
+
+	case BearVertexFormat::R32_INT:
+		return DXGI_FORMAT_R32_SINT;
+	case BearVertexFormat::R8G8B8A8:
+		return DXGI_FORMAT_R8G8B8A8_UINT;
+	case BearVertexFormat::R8G8:
+		return DXGI_FORMAT_R8G8_UINT;
+	case BearVertexFormat::R8:
+		return DXGI_FORMAT_R8_UINT;
+	default:
+		BEAR_CHECK(0);;
+		return DXGI_FORMAT_UNKNOWN;
+	}
+
 }
+
+void DX12Factory::Translation(BearTopologyType format, D3D_PRIMITIVE_TOPOLOGY& topology, D3D12_PRIMITIVE_TOPOLOGY_TYPE& topology_type)
+{
+	switch (format)
+	{
+	case    BearTopologyType::PointList:
+		topology_type = D3D12_PRIMITIVE_TOPOLOGY_TYPE_POINT;
+		topology = D3D_PRIMITIVE_TOPOLOGY_POINTLIST;
+		break;
+	case	  BearTopologyType::LintList:
+		topology_type = D3D12_PRIMITIVE_TOPOLOGY_TYPE_LINE;
+		topology = D3D_PRIMITIVE_TOPOLOGY_LINELIST;
+		break;
+	case	  BearTopologyType::LineStrip:
+		topology_type = D3D12_PRIMITIVE_TOPOLOGY_TYPE_LINE;
+		topology = D3D_PRIMITIVE_TOPOLOGY_LINESTRIP;
+		break;
+	case	  BearTopologyType::TriangleList:
+		topology_type = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+		topology = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+		break;
+	case	  BearTopologyType::TriangleStrip:
+		topology_type = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+		topology = D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP;
+		break;
+	default:
+		BEAR_CHECK(false);
+		topology_type = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+		topology = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+		break;
+	}
+}
+

@@ -1,18 +1,12 @@
 #include "DX12PCH.h"
-bsize TopLevelCounter = 0;
+bsize RayTracingTopLevelCounter = 0;
 
-
-inline void AllocateUAVBuffer(UINT64 bufferSize, ID3D12Resource** ppResource, D3D12_RESOURCE_STATES initialResourceState = D3D12_RESOURCE_STATE_COMMON)
+#ifdef RTX
+inline void AllocateUAVBuffer(UINT64 buffer_size, ID3D12Resource** pp_resource, D3D12_RESOURCE_STATES initial_resource_state = D3D12_RESOURCE_STATE_COMMON)
 {
-	auto uploadHeapProperties = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
-	auto bufferDesc = CD3DX12_RESOURCE_DESC::Buffer(bufferSize, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
-	R_CHK(Factory->Device->CreateCommittedResource(
-		&uploadHeapProperties,
-		D3D12_HEAP_FLAG_NONE,
-		&bufferDesc,
-		initialResourceState,
-		nullptr,
-		IID_PPV_ARGS(ppResource)));
+	auto UploadHeapProperties = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
+	auto BufferDesc = CD3DX12_RESOURCE_DESC::Buffer(buffer_size, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
+	R_CHK(Factory->Device->CreateCommittedResource(&UploadHeapProperties,D3D12_HEAP_FLAG_NONE,&BufferDesc, initial_resource_state,nullptr,IID_PPV_ARGS(pp_resource)));
 }
 inline void AllocateUploadBuffer( void* pData, UINT64 datasize, ID3D12Resource** ppResource)
 {
@@ -31,13 +25,12 @@ inline void AllocateUploadBuffer( void* pData, UINT64 datasize, ID3D12Resource**
 	(*ppResource)->Unmap(0, nullptr);
 }
 
-DX12TopLevel::DX12TopLevel(const BearTopLevelDescription& desc)
+DX12RayTracingTopLevel::DX12RayTracingTopLevel(const BearRayTracingTopLevelDescription& description)
 {
-	TopLevelCounter++;
-#ifndef DX11
+	RayTracingTopLevelCounter++;
 	BearVector<D3D12_RAYTRACING_INSTANCE_DESC> InstanceDescs;
-	InstanceDescs.reserve(desc.InstanceDescriptions.size());
-	for (const BearTopLevelDescription::InstanceDescription& i : desc.InstanceDescriptions)
+	InstanceDescs.reserve(description.InstanceDescriptions.size());
+	for (const BearRayTracingTopLevelDescription::InstanceDescription& i : description.InstanceDescriptions)
 	{
 		D3D12_RAYTRACING_INSTANCE_DESC InstanceDesc = {};
 		for (bsize x = 0; x < 3; x++)
@@ -51,7 +44,7 @@ DX12TopLevel::DX12TopLevel(const BearTopLevelDescription& desc)
 		InstanceDesc.InstanceMask = i.InstanceMask;
 		InstanceDesc.InstanceContributionToHitGroupIndex = i.InstanceContributionToHitGroupIndex;
 		InstanceDesc.Flags = *i.Flags;
-		auto BottomLevel = static_cast<const DX12BottomLevel*>(i.BottomLevel.get());
+		auto BottomLevel = static_cast<const DX12RayTracingBottomLevel*>(i.BottomLevel.get());
 		InstanceDesc.AccelerationStructure = BottomLevel->BottomLevelAccelerationStructure->GetGPUVirtualAddress();
 		InstanceDescs.push_back(InstanceDesc);
 	}
@@ -62,15 +55,15 @@ DX12TopLevel::DX12TopLevel(const BearTopLevelDescription& desc)
 
 	{
 
-		if (desc.BuildFlags.test((uint32)BearAccelerationStructureBuildFlags::AllowCompaction))
+		if (description.BuildFlags.test((uint32)BearAccelerationStructureBuildFlags::AllowCompaction))
 			AccelerationStructureInputs.Flags |= D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_ALLOW_COMPACTION;
-		if (desc.BuildFlags.test((uint32)BearAccelerationStructureBuildFlags::AllowUpdate))
+		if (description.BuildFlags.test((uint32)BearAccelerationStructureBuildFlags::AllowUpdate))
 			AccelerationStructureInputs.Flags |= D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_ALLOW_UPDATE;
-		if (desc.BuildFlags.test((uint32)BearAccelerationStructureBuildFlags::PreferFastBuild))
+		if (description.BuildFlags.test((uint32)BearAccelerationStructureBuildFlags::PreferFastBuild))
 			AccelerationStructureInputs.Flags |= D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_PREFER_FAST_BUILD;
-		if (desc.BuildFlags.test((uint32)BearAccelerationStructureBuildFlags::PreferFastTrace))
+		if (description.BuildFlags.test((uint32)BearAccelerationStructureBuildFlags::PreferFastTrace))
 			AccelerationStructureInputs.Flags |= D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_PREFER_FAST_TRACE;
-		if (desc.BuildFlags.test((uint32)BearAccelerationStructureBuildFlags::MinimizeMemory))
+		if (description.BuildFlags.test((uint32)BearAccelerationStructureBuildFlags::MinimizeMemory))
 			AccelerationStructureInputs.Flags |= D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_MINIMIZE_MEMORY;
 	}
 
@@ -99,17 +92,16 @@ DX12TopLevel::DX12TopLevel(const BearTopLevelDescription& desc)
 	Factory->CommandList->BuildRaytracingAccelerationStructure(&TopLevelBuildDesc, 0, nullptr);
 
 	Factory->UnlockCommandList();
-#endif
 }
 
-DX12TopLevel::~DX12TopLevel()
+DX12RayTracingTopLevel::~DX12RayTracingTopLevel()
 {
-	TopLevelCounter--;
+	RayTracingTopLevelCounter--;
 }
 
-void* DX12TopLevel::QueryInterface(int Type)
+void* DX12RayTracingTopLevel::QueryInterface(int type)
 {
-	switch (Type)
+	switch (type)
 	{
 	case DX12Q_ShaderResource:
 		return reinterpret_cast<void*>(static_cast<DX12ShaderResource*>(this));
@@ -117,8 +109,9 @@ void* DX12TopLevel::QueryInterface(int Type)
 	return nullptr;
 }
 
-bool DX12TopLevel::SetAsSRV(D3D12_GPU_VIRTUAL_ADDRESS& ADDRESS, bsize offset)
+bool DX12RayTracingTopLevel::SetAsSRV(D3D12_GPU_VIRTUAL_ADDRESS& address, bsize offset)
 {
-	ADDRESS = TopLevelAccelerationStructure->GetGPUVirtualAddress();
+	address = TopLevelAccelerationStructure->GetGPUVirtualAddress();
 	return true;
 }
+#endif

@@ -1,7 +1,6 @@
 #include "DX12PCH.h"
 bsize ShaderCounter = 0;
-#pragma optimize( "", off )
-DX12Shader::DX12Shader(BearShaderType type):Type(type)
+DX12Shader::DX12Shader(BearShaderType type):m_Type(type)
 {
 #ifndef DX11
 	Shader = 0;
@@ -20,7 +19,7 @@ DX12Shader::~DX12Shader()
 class	D3DIncluder : public ID3DInclude
 {
 public:
-	D3DIncluder(BearIncluder* Includer) :m_Includer(Includer)
+	D3DIncluder(BearIncluder* includer) :m_Includer(includer)
 	{
 
 	}
@@ -29,13 +28,13 @@ public:
 	{
 		if (m_Includer == nullptr)return -1;
 #ifdef UNICODE
-		auto steam = m_Includer->OpenAsStream(*BearEncoding::FastToUnicode(pFileName));
+		auto Steam = m_Includer->OpenAsStream(*BearEncoding::FastToUnicode(pFileName));
 #else
-		auto steam = m_Includer->OpenAsStream(pFileName);
+		auto Steam = m_Includer->OpenAsStream(pFileName);
 #endif
-		if (*steam == nullptr)return -1;
-		*pBytes = static_cast<UINT>(steam->Size());
-		m_Data = steam->Read();
+		if (*Steam == nullptr)return -1;
+		*pBytes = static_cast<UINT>(Steam->Size());
+		m_Data = Steam->Read();
 		*ppData = *m_Data;
 
 		return	S_OK;
@@ -48,48 +47,52 @@ private:
 	BearRef<uint8> m_Data;
 	BearIncluder* m_Includer;
 };
+#ifdef DEVELOPER_VERSION
 extern bool GDebugRender;
-bool DX12Shader::LoadAsText(const bchar* Text, const BearMap<BearStringConteniar, BearStringConteniar>& Defines, BearString& OutError, BearIncluder* Includer)
+#endif
+bool DX12Shader::LoadAsText(const bchar* text, const bchar* entry_point, const BearMap<BearStringConteniar, BearStringConteniar>& defines, BearString& out_error, BearIncluder* includer)
 {
-	UINT compileFlags = D3DCOMPILE_OPTIMIZATION_LEVEL3;
+	UINT CompileFlags = D3DCOMPILE_OPTIMIZATION_LEVEL3;
+#ifdef DEVELOPER_VERSION
 	if (GDebugRender)
 	{
-		compileFlags = D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION;
+		CompileFlags = D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION;
 	}
+#endif
 
-	const char* type2text = "";
-	switch (Type)
+	const char* Type2Text = "";
+	switch (m_Type)
 	{
-	case ST_Vertex:
-		type2text = "vs_5_0";
+	case BearShaderType::Vertex:
+		Type2Text = "vs_5_0";
 		break;
-	case ST_Hull:
-		type2text = "hs_5_0";
+	case BearShaderType::Hull:
+		Type2Text = "hs_5_0";
 		break;
-	case ST_Domain:
-		type2text = "ds_5_0";
+	case BearShaderType::Domain:
+		Type2Text = "ds_5_0";
 		break;
-	case ST_Geometry:
-		type2text = "gs_5_0";
+	case BearShaderType::Geometry:
+		Type2Text = "gs_5_0";
 		break;
-	case ST_Pixel:
-		type2text = "ps_5_0";
+	case BearShaderType::Pixel:
+		Type2Text = "ps_5_0";
 		break;
-	case ST_Compute:
-		type2text = "cs_5_0";
+	case BearShaderType::Compute:
+		Type2Text = "cs_5_0";
 		break;
 	default:
-		BEAR_CHECK(0);
+		BEAR_ASSERT(0);
 		break;
 	}
-	ID3D10Blob* errorMessage;
-	bool result = true;
+	ID3D10Blob* ErrorMessage;
+	bool Result = true;
 	D3D_SHADER_MACRO* Marcos = nullptr;
-	if (Defines.size())
+	if (defines.size())
 	{
-		Marcos = bear_alloc< D3D_SHADER_MACRO>(Defines.size() + 1);
+		Marcos = bear_alloc< D3D_SHADER_MACRO>(defines.size() + 1);
 		bsize id = 0;
-		for (auto b = Defines.begin(), e = Defines.end(); b != e; b++)
+		for (auto b = defines.begin(), e = defines.end(); b != e; b++)
 		{
 #ifdef UNICODE
 			Marcos[id].Name = BearString::Duplicate(*BearEncoding::FastToAnsi(*b->first));
@@ -103,16 +106,16 @@ bool DX12Shader::LoadAsText(const bchar* Text, const BearMap<BearStringConteniar
 		Marcos[id].Definition = 0;
 	}
 
-	D3DIncluder includer(Includer);
+	D3DIncluder Includer(includer);
 #ifdef UNICODE
-	if (FAILED(D3DCompile(*BearEncoding::FastToAnsi(Text), BearString::GetSize(Text), "noname", Marcos, &includer, "main", type2text, compileFlags, 0, &Shader, &errorMessage)))
+	if (FAILED(D3DCompile(*BearEncoding::FastToAnsi(text), BearString::GetSize(Text), "noname", Marcos, &Includer, entry_point, Type2Text, CompileFlags, 0, &Shader, &ErrorMessage)))
 	{
-		result = false;
+		Result = false;
 	}
 #else
-	if (FAILED(D3DCompile(Text, BearString::GetSize(Text), "noname", Marcos, &includer, "main", type2text, compileFlags, 0, &Shader, &errorMessage)))
+	if (FAILED(D3DCompile(text, BearString::GetSize(text), "noname", Marcos, &Includer, entry_point, Type2Text, CompileFlags, 0, &Shader, &ErrorMessage)))
 	{
-		result = false;
+		Result = false;
 	}
 #endif
 
@@ -125,19 +128,19 @@ bool DX12Shader::LoadAsText(const bchar* Text, const BearMap<BearStringConteniar
 		}
 		bear_free(Marcos);
 	}
-	if (errorMessage)
+	if (ErrorMessage)
 	{
 #ifdef UNICODE
-		OutError.append(*BearEncoding::FastToUnicode((char*)errorMessage->GetBufferPointer(), (char*)errorMessage->GetBufferPointer() + errorMessage->GetBufferSize()));
+		out_error.append(*BearEncoding::FastToUnicode((char*)ErrorMessage->GetBufferPointer(), (char*)ErrorMessage->GetBufferPointer() + ErrorMessage->GetBufferSize()));
 #else
-		OutError.append((char*)errorMessage->GetBufferPointer(), errorMessage->GetBufferSize());
+		out_error.append((char*)ErrorMessage->GetBufferPointer(), ErrorMessage->GetBufferSize());
 #endif
-		errorMessage->Release();
+		ErrorMessage->Release();
 
 
 		return false;
 	}
-	return result;
+	return Result;
 }
 #else
 
@@ -171,11 +174,11 @@ struct DXCInluder :public IDxcIncludeHandler
 
 		BearStringPath Name;
 
-		if (BearString::ExistPossition(pFilename, 0, L".///"))
+		if (BearString::ExistPossition(pFilename, 0, L".---"))
 		{
 			pFilename += 4;
 		}	
-		if (BearString::ExistPossition(pFilename, 0, L"./"))
+		if (BearString::ExistPossition(pFilename, 0, L".-"))
 		{
 			pFilename += 2;
 		}
@@ -188,120 +191,170 @@ struct DXCInluder :public IDxcIncludeHandler
 #endif
 		);
 
-		auto steam = m_Includer->OpenAsBuffer(Name);
+		auto Steam = m_Includer->OpenAsBuffer(Name);
 		
-		if (!*steam)return E_FAIL;
+		if (!*Steam)return E_FAIL;
 		IDxcBlobEncoding* PointerTextBlob;
 		bool bIsUTF8 = false;
 
-		if (steam->Size() > 2)
+		if (Steam->Size() > 2)
 		{
 			char utf8_bom[3];
-			steam->ReadBuffer(utf8_bom, 3);
+			Steam->ReadBuffer(utf8_bom, 3);
 			bIsUTF8 = utf8_bom[0] == 0xEF;
 			bIsUTF8 = bIsUTF8 && utf8_bom[1] == 0xBB;
 			bIsUTF8 = bIsUTF8 && utf8_bom[2] == 0xBF;
-			steam->Seek(0);
+			Steam->Seek(0);
 		}
 	
-		R_CHK(Factory->DxcLibrary->CreateBlobWithEncodingFromPinned(steam->Begin(), static_cast<UINT32>(steam->Size()), bIsUTF8? DXC_CP_UTF8: DXC_CP_ACP, &PointerTextBlob));
+		R_CHK(Factory->DxcLibrary->CreateBlobWithEncodingFromPinned(Steam->Begin(), static_cast<UINT32>(Steam->Size()), bIsUTF8? DXC_CP_UTF8: DXC_CP_ACP, &PointerTextBlob));
 		*ppIncludeSource =static_cast<IDxcBlob*>( PointerTextBlob);
-		Readers.push_back(steam);
+		Readers.push_back(Steam);
 		BlobEncodings.push_back(PointerTextBlob);
 		return S_OK;
 	}
 
 };
+#ifdef DEVELOPER_VERSION
 extern bool GDebugRender;
-bool DX12Shader::LoadAsText(const bchar* Text, const BearMap<BearStringConteniar, BearStringConteniar>& Defines, BearString& OutError, BearIncluder* Includer)
+#endif
+bool DX12Shader::LoadAsText(const bchar* text, const bchar* entry_point, const BearMap<BearStringConteniar, BearStringConteniar>& defines, BearString& out_error, BearIncluder* includer)
 {
 	if (Shader)Shader->Release();
-	bool bIsUTF8 = false;
-	if (BearString::GetSize(Text) > 2)
-	{
-		bIsUTF8 = Text[0] == 0xEF;
-		bIsUTF8 = bIsUTF8 && Text[1] == 0xBB;
-		bIsUTF8 = bIsUTF8 && Text[2] == 0xBF;
 
+	bool bIsUTF8 = false;
+	if (BearString::GetSize(text) > 2)
+	{
+		bIsUTF8 = text[0] == 0xEF;
+		bIsUTF8 = bIsUTF8 && text[1] == 0xBB;
+		bIsUTF8 = bIsUTF8 && text[2] == 0xBF;
 	}
 
 	CComPtr<IDxcResult> Result;
-	DXCInluder LIncluder(Includer);
+	DXCInluder LIncluder(includer);
 	wchar_t NameFile[1024];
 	swprintf(NameFile, 1024, L"%S", "noname");
 	BearVector<const wchar_t*> Arguments;
 	BearVector<wchar_t*> StringForDelete;
-	Arguments.push_back(L"/nologo");
-	Arguments.push_back(L"/Gec");
+	Arguments.push_back(L"-Gec");
+#ifdef DEVELOPER_VERSION
 	if (GDebugRender)
 	{
-		Arguments.push_back(L"/Zi");
-		Arguments.push_back(L"/Od");
+		Arguments.push_back(L"-Zi");
+		Arguments.push_back(L"-Od");
 	}
-	else
+#endif
+	switch (m_Type)
 	{
-	}
-	switch (Type)
-	{
-	case ST_Pixel:
+	case BearShaderType::Pixel:
 #ifdef DX12
-		Arguments.push_back(L"/Tps_6_0");
+		Arguments.push_back(L"-Tps_6_0");
 #elif DX12_1
-		Arguments.push_back(L"/Tps_6_2");
+		Arguments.push_back(L"-Tps_6_3");
+#endif
+		Arguments.push_back(L"-E");
+#ifdef UNICODE
+		Arguments.push_back(entry_point);
+#else
+		StringForDelete.push_back(BearString::Duplicate(*BearEncoding::FastToUnicode(entry_point)));
+		Arguments.push_back(StringForDelete.back());
 #endif
 		break;
-	case ST_Hull:
+	case BearShaderType::Hull:
 #ifdef DX12
-		Arguments.push_back(L"/Ths_6_0");
+		Arguments.push_back(L"-Ths_6_0");
 #elif DX12_1
-		Arguments.push_back(L"/Ths_6_2");
+		Arguments.push_back(L"-Ths_6_3");
+#endif
+#ifdef UNICODE
+		Arguments.push_back(entry_point);
+#else
+		StringForDelete.push_back(BearString::Duplicate(*BearEncoding::FastToUnicode(entry_point)));
+		Arguments.push_back(StringForDelete.back());
 #endif
 		break;
 
-	case ST_Domain:
+	case BearShaderType::Domain:
 #ifdef DX12
-		Arguments.push_back(L"/Tds_6_0");
+		Arguments.push_back(L"-Tds_6_0");
 #elif DX12_1
-		Arguments.push_back(L"/Tds_6_2");
+		Arguments.push_back(L"-Tds_6_3");
+#endif
+#ifdef UNICODE
+		Arguments.push_back(entry_point);
+#else
+		StringForDelete.push_back(BearString::Duplicate(*BearEncoding::FastToUnicode(entry_point)));
+		Arguments.push_back(StringForDelete.back());
 #endif
 		break;
-	case ST_Geometry:
+	case BearShaderType::Geometry:
 #ifdef DX12
-		Arguments.push_back(L"/Tgs_6_0");
+		Arguments.push_back(L"-Tgs_6_0");
 #elif DX12_1
-		Arguments.push_back(L"/Tgs_6_2");
+		Arguments.push_back(L"-Tgs_6_3");
+#endif
+#ifdef UNICODE
+		Arguments.push_back(entry_point);
+#else
+		StringForDelete.push_back(BearString::Duplicate(*BearEncoding::FastToUnicode(entry_point)));
+		Arguments.push_back(StringForDelete.back());
 #endif
 		break;
-	case ST_Vertex:
+	case BearShaderType::Vertex:
 #ifdef DX12
-		Arguments.push_back(L"/Tvs_6_0");
+		Arguments.push_back(L"-Tvs_6_0");
 #elif DX12_1
-		Arguments.push_back(L"/Tvs_6_2");
+		Arguments.push_back(L"-Tvs_6_3");
+#endif
+#ifdef UNICODE
+		Arguments.push_back(entry_point);
+#else
+		StringForDelete.push_back(BearString::Duplicate(*BearEncoding::FastToUnicode(entry_point)));
+		Arguments.push_back(StringForDelete.back());
 #endif
 		break;
-	case ST_Compute:
+	case BearShaderType::Compute:
 #ifdef DX12
-		Arguments.push_back(L"/Tcs_6_0");
+		Arguments.push_back(L"-Tcs_6_0");
 #elif DX12_1
-		Arguments.push_back(L"/Tcs_6_2");
+		Arguments.push_back(L"-Tcs_6_3");
+#endif
+#ifdef UNICODE
+		Arguments.push_back(entry_point);
+#else
+		StringForDelete.push_back(BearString::Duplicate(*BearEncoding::FastToUnicode(entry_point)));
+		Arguments.push_back(StringForDelete.back());
 #endif
 		break;
-	case ST_Mesh:
-#ifdef DX12UTIMATE
-		Arguments.push_back(L"/Tms_6_5");
+	case BearShaderType::Mesh:
+#ifdef MESH_SHADING
+		Arguments.push_back(L"-Tms_6_5");
 #else
 		BEAR_ASSERT(false);
 #endif
+#ifdef UNICODE
+		Arguments.push_back(entry_point);
+#else
+		StringForDelete.push_back(BearString::Duplicate(*BearEncoding::FastToUnicode(entry_point)));
+		Arguments.push_back(StringForDelete.back());
+#endif
 		break;
-	case ST_Amplification:
-#ifdef DX12UTIMATE
-		Arguments.push_back(L"/Tas_6_5");
+	case BearShaderType::Amplification:
+#ifdef MESH_SHADING
+		Arguments.push_back(L"-Tas_6_5");
 #else
 		BEAR_ASSERT(false);
 #endif
-	case ST_RayTracing:
-#ifndef DX11
-		Arguments.push_back(L"/Tlib_6_3");
+#ifdef UNICODE
+		Arguments.push_back(entry_point);
+#else
+		StringForDelete.push_back(BearString::Duplicate(*BearEncoding::FastToUnicode(entry_point)));
+		Arguments.push_back(StringForDelete.back());
+#endif
+		break;
+	case BearShaderType::RayTracing:
+#ifdef RTX
+		Arguments.push_back(L"-Tlib_6_3");
 #else
 		BEAR_ASSERT(false);
 #endif
@@ -309,12 +362,12 @@ bool DX12Shader::LoadAsText(const bchar* Text, const BearMap<BearStringConteniar
 	default:
 		break;
 	}
-	Arguments.push_back(L"/D");
+	Arguments.push_back(L"-D");
 	Arguments.push_back(L"DX12=1");
 
 	{
 
-		for (auto b = Defines.begin(), e = Defines.end(); b != e; b++)
+		for (auto b = defines.begin(), e = defines.end(); b != e; b++)
 		{
 
 
@@ -329,14 +382,13 @@ bool DX12Shader::LoadAsText(const bchar* Text, const BearMap<BearStringConteniar
 			StringForDelete.push_back( BearString::Duplicate(*BearEncoding::FastToUnicode(*Temp)));
 #endif
 
-			Arguments.push_back(L"/D");
+			Arguments.push_back(L"-D");
 			Arguments.push_back(StringForDelete.back());
 		}
 	}
-	//DXCInluder Includer;
 	DxcBuffer Buffer;
-	Buffer.Ptr = Text;
-	Buffer.Size = BearString::GetSize(Text);
+	Buffer.Ptr = text;
+	Buffer.Size = BearString::GetSize(text);
 	Buffer.Encoding = bIsUTF8 ? DXC_CP_UTF8 : DXC_CP_ACP;
 
 	R_CHK(Factory->DxcCompiler->Compile(&Buffer, (LPCWSTR*)Arguments.data(),static_cast<UINT32>( Arguments.size()), &LIncluder, IID_PPV_ARGS(&Result)));
@@ -352,17 +404,17 @@ bool DX12Shader::LoadAsText(const bchar* Text, const BearMap<BearStringConteniar
 		IDxcBlobEncoding* PError;
 		R_CHK(Result->GetErrorBuffer(&PError));
 
-		BearVector<char> infoLog(PError->GetBufferSize() + 1);
-		memcpy(infoLog.data(), PError->GetBufferPointer(), PError->GetBufferSize());
-		infoLog[PError->GetBufferSize()] = 0;
+		BearVector<char> InfoLog(PError->GetBufferSize() + 1);
+		memcpy(InfoLog.data(), PError->GetBufferPointer(), PError->GetBufferSize());
+		InfoLog[PError->GetBufferSize()] = 0;
 
-		BearStringAnsi errorMsg = "Shader Compiler Error:\n";
-		errorMsg.append(infoLog.data());
+		BearStringAnsi ErrorMsg = "Shader Compiler Error:\n";
+		ErrorMsg.append(InfoLog.data());
 		PError->Release();
 #ifdef UNICODE
-		OutError.assign(*BearEncoding::FastToUnicode( *errorMsg));
+		out_error.assign(*BearEncoding::FastToUnicode( *errorMsg));
 #else
-		OutError.assign(*errorMsg);
+		out_error.assign(*ErrorMsg);
 #endif
 		return false;
 	}

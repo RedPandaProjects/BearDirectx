@@ -2,22 +2,22 @@
 class DX12UniformBuffer :public BearRHI::BearRHIUniformBuffer
 {
 public:
-	DX12UniformBuffer(bsize Stride, bsize Count, bool Dynamic);
+	DX12UniformBuffer(bsize stride, bsize count, bool dynamic);
 	virtual ~DX12UniformBuffer();
 	virtual void* Lock();
 	virtual void Unlock();
 	virtual bsize GetCount()
 	{
-		return m_count;
+		return m_Count;
 	}
 	virtual bsize GetStride()
 	{
-		return m_stride;
+		return m_Stride;
 	}
 	ComPtr<ID3D12Resource> UniformBuffer;
 	//ComPtr<ID3D12DescriptorHeap> Heap;
 private:
-	bool m_dynamic;
-	bsize m_count;
-	bsize m_stride;
+	bool m_Dynamic;
+	bsize m_Count;
+	bsize m_Stride;
 };

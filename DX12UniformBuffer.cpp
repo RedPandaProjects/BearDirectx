@@ -1,21 +1,15 @@
 #include "DX12PCH.h"
 bsize UniformBufferCounter = 0;
-DX12UniformBuffer::DX12UniformBuffer(bsize Stride, bsize Count, bool Dynamic) :m_dynamic(false)
+DX12UniformBuffer::DX12UniformBuffer(bsize stride, bsize count, bool dynamic) :m_Dynamic(false)
 {
-	UniformBufferCounter++; m_count = 0; m_stride = 0;
-	m_count = Count;
-	m_stride = (static_cast<uint64>((Stride + 256 - 1) & ~(256 - 1)));
-	m_dynamic = Dynamic;
+	UniformBufferCounter++; m_Count = 0; m_Stride = 0;
+	m_Count = count;
+	m_Stride = (static_cast<uint64>((stride + 256 - 1) & ~(256 - 1)));
+	m_Dynamic = dynamic;
 	{
-		CD3DX12_HEAP_PROPERTIES a(Dynamic ? D3D12_HEAP_TYPE_UPLOAD : D3D12_HEAP_TYPE_DEFAULT);
-		auto b = CD3DX12_RESOURCE_DESC::Buffer(m_stride * m_count);
-		R_CHK(Factory->Device->CreateCommittedResource(
-			&a,
-			D3D12_HEAP_FLAG_NONE,
-			&b,
-			Dynamic ? D3D12_RESOURCE_STATE_GENERIC_READ : D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER,
-			nullptr,
-			IID_PPV_ARGS(&UniformBuffer)));
+		auto Properties = CD3DX12_HEAP_PROPERTIES (dynamic ? D3D12_HEAP_TYPE_UPLOAD : D3D12_HEAP_TYPE_DEFAULT);
+		auto ResourceDesc = CD3DX12_RESOURCE_DESC::Buffer(m_Stride * m_Count);
+		R_CHK(Factory->Device->CreateCommittedResource(	&Properties,D3D12_HEAP_FLAG_NONE,&ResourceDesc,dynamic ? D3D12_RESOURCE_STATE_GENERIC_READ : D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER,nullptr,IID_PPV_ARGS(&UniformBuffer)));
 
 	}
 }
@@ -24,20 +18,19 @@ DX12UniformBuffer::DX12UniformBuffer(bsize Stride, bsize Count, bool Dynamic) :m
 DX12UniformBuffer::~DX12UniformBuffer()
 {
 	UniformBufferCounter--;
-	m_count = 0; m_stride = 0;
+	m_Count = 0; m_Stride = 0;
 	UniformBuffer.Reset();
-	//Heap.Reset();
-	m_dynamic = false;
+	m_Dynamic = false;
 }
 
 void* DX12UniformBuffer::Lock()
 {
-	BEAR_CHECK(m_dynamic);
+	BEAR_CHECK(m_Dynamic);
 	if (UniformBuffer.Get() == 0)return 0;
-	void* pVertexDataBegin;
-	CD3DX12_RANGE readRange(0, 0);
-	R_CHK(UniformBuffer->Map(0, &readRange, reinterpret_cast<void**>(&pVertexDataBegin)));
-	return pVertexDataBegin;
+	void* Pointer;
+	CD3DX12_RANGE ReadRange(0, 0);
+	R_CHK(UniformBuffer->Map(0, &ReadRange, reinterpret_cast<void**>(&Pointer)));
+	return Pointer;
 
 }
 

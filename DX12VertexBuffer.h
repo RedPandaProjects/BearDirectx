@@ -3,7 +3,7 @@ class DX12VertexBuffer :public BearRHI::BearRHIVertexBuffer
 {
 public:
 	DX12VertexBuffer();
-	virtual void Create(bsize Stride,bsize Count, bool Dynamic, void* data);
+	virtual void Create(bsize stride,bsize count, bool dynamic, void* data);
 	virtual ~DX12VertexBuffer();
 	virtual void* Lock();
 	virtual void Unlock();
@@ -12,6 +12,6 @@ public:
 	ComPtr<ID3D12Resource> VertexBuffer;
 	D3D12_VERTEX_BUFFER_VIEW VertexBufferView;
 private:
-	bool m_dynamic;
+	bool m_Dynamic;
 
 };

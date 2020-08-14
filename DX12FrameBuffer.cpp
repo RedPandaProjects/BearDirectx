@@ -13,7 +13,7 @@ DX12FrameBuffer::DX12FrameBuffer(const BearFrameBufferDescription& description) 
 		{
 			break;
 		}
-		BEAR_CHECK(Description.RenderTargets[Count]->GetType() == TT_RenderTarget);
+		BEAR_CHECK(Description.RenderTargets[Count]->GetType() == BearTextureType::RenderTarget);
 		auto texture = static_cast<DX12Texture2D*>(Description.RenderTargets[Count].get());
 		Width =BearMath::min(Width,bsize(texture->TextureDesc.Width));
 		Height = BearMath::min(Height, bsize(texture->TextureDesc.Height));
@@ -32,7 +32,7 @@ DX12FrameBuffer::DX12FrameBuffer(const BearFrameBufferDescription& description) 
 			R_CHK(Factory->Device->CreateDescriptorHeap(&rtvHeapDesc, IID_PPV_ARGS(&RtvHeap)));
 
 		}
-		CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(RtvHeap->GetCPUDescriptorHandleForHeapStart());
+		CD3DX12_CPU_DESCRIPTOR_HANDLE RTVHandle(RtvHeap->GetCPUDescriptorHandleForHeapStart());
 		for (bsize i = 0; Count > i; i++)
 		{
 			D3D12_RENDER_TARGET_VIEW_DESC DESC = {};
@@ -41,19 +41,19 @@ DX12FrameBuffer::DX12FrameBuffer(const BearFrameBufferDescription& description) 
 			auto texture = static_cast<DX12Texture2D*>(Description.RenderTargets[i].get());
 			DESC.Format = texture->TextureDesc.Format;
 			DESC.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D;
-			Factory->Device->CreateRenderTargetView(texture->TextureBuffer.Get(), &DESC, rtvHandle);
+			Factory->Device->CreateRenderTargetView(texture->TextureBuffer.Get(), &DESC, RTVHandle);
 
-			rtvHandle.Offset(1, Factory->RtvDescriptorSize);
+			RTVHandle.Offset(1, Factory->RtvDescriptorSize);
 		}
 	}
 
 	if (Description.DepthStencil.empty())
 	{
-		BEAR_CHECK(RenderPassRef->Description.DepthStencil.Format == DSF_NONE);
+		BEAR_CHECK(RenderPassRef->Description.DepthStencil.Format == BearDepthStencilFormat::None);
 	}
 	else
 	{
-		BEAR_CHECK(Description.DepthStencil.get()->GetType() == TT_DepthStencil);
+		BEAR_CHECK(Description.DepthStencil.get()->GetType() == BearTextureType::DepthStencil);
 		BEAR_CHECK(RenderPassRef->Description.DepthStencil.Format == static_cast<DX12Texture2D*>(Description.DepthStencil.get())->DSVFormat);
 		{
 			D3D12_DESCRIPTOR_HEAP_DESC rtvHeapDesc = {};
@@ -64,9 +64,6 @@ DX12FrameBuffer::DX12FrameBuffer(const BearFrameBufferDescription& description) 
 			R_CHK(Factory->Device->CreateDescriptorHeap(&rtvHeapDesc, IID_PPV_ARGS(&DsvHeap)));
 
 		}
-
-		{
-		}
 		CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(DsvHeap->GetCPUDescriptorHandleForHeapStart());
 		D3D12_DEPTH_STENCIL_VIEW_DESC DESC = {};
 		DESC.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
@@ -75,11 +72,11 @@ DX12FrameBuffer::DX12FrameBuffer(const BearFrameBufferDescription& description) 
 		DepthStencilRef = rtvHandle;
 	}
 
-	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(RtvHeap->GetCPUDescriptorHandleForHeapStart());
+	CD3DX12_CPU_DESCRIPTOR_HANDLE RTVHandle(RtvHeap->GetCPUDescriptorHandleForHeapStart());
 	for (bsize i = 0; Count > i; i++)
 	{
-		RenderTargetRefs[i] = rtvHandle;
-		rtvHandle.Offset(1, Factory->RtvDescriptorSize);
+		RenderTargetRefs[i] = RTVHandle;
+		RTVHandle.Offset(1, Factory->RtvDescriptorSize);
 	}
 
 
@@ -91,23 +88,22 @@ DX12FrameBuffer::~DX12FrameBuffer()
 
 }
 
-void DX12FrameBuffer::Unlock(ID3D12GraphicsCommandList* Cmd)
+void DX12FrameBuffer::Unlock(ID3D12GraphicsCommandListX* command_list)
 {
 	for (bsize i = 0; Count > i; i++)
 	{
-		auto texture = static_cast<DX12Texture2D*>(Description.RenderTargets[i].get());
-
-		auto transition = CD3DX12_RESOURCE_BARRIER::Transition(texture->TextureBuffer.Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE| D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-		Cmd->ResourceBarrier(1, &transition);
+		auto Texture = static_cast<DX12Texture2D*>(Description.RenderTargets[i].get());
+		auto ResourceBarrier = CD3DX12_RESOURCE_BARRIER::Transition(Texture->TextureBuffer.Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE| D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+		command_list->ResourceBarrier(1, &ResourceBarrier);
 	}
 }
 
-void DX12FrameBuffer::Lock(ID3D12GraphicsCommandList* Cmd)
+void DX12FrameBuffer::Lock(ID3D12GraphicsCommandListX* command_list)
 {
 	for (bsize i = 0; Count > i; i++)
 	{
-		auto texture = static_cast<DX12Texture2D*>(Description.RenderTargets[i].get());
-		auto transition = CD3DX12_RESOURCE_BARRIER::Transition(texture->TextureBuffer.Get(), D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_RENDER_TARGET);
-		Cmd->ResourceBarrier(1, &transition);
+		auto Texture = static_cast<DX12Texture2D*>(Description.RenderTargets[i].get());
+		auto ResourceBarrier = CD3DX12_RESOURCE_BARRIER::Transition(Texture->TextureBuffer.Get(), D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_RENDER_TARGET);
+		command_list->ResourceBarrier(1, &ResourceBarrier);
 	}
 }

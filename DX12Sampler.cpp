@@ -1,85 +1,76 @@
 #include "DX12PCH.h"
 bsize SamplerCounter = 0;
 
-DX12SamplerState::DX12SamplerState(const BearSamplerDescription& Description)
+DX12SamplerState::DX12SamplerState(const BearSamplerDescription& description)
 {
 	SamplerCounter++;
-	ZeroMemory(&desc, sizeof(D3D12_SAMPLER_DESC));
-	desc.AddressU = DX12Factory::Translation(Description.AddressU);
-	desc.AddressV = DX12Factory::Translation(Description.AddressV);
-	desc.AddressW = DX12Factory::Translation(Description.AddressW);
-	desc.MaxLOD = D3D12_FLOAT32_MAX;
-	memcpy(desc.BorderColor, Description.BorderColor.R32G32B32A32, 4*sizeof(float));
-	desc.MaxAnisotropy = static_cast<UINT>(Description.MaxAnisotropy < 0 ? 1 : Description.MaxAnisotropy);
+	ZeroMemory(&SamplerDesc, sizeof(D3D12_SAMPLER_DESC));
+	SamplerDesc.AddressU = DX12Factory::Translation(description.AddressU);
+	SamplerDesc.AddressV = DX12Factory::Translation(description.AddressV);
+	SamplerDesc.AddressW = DX12Factory::Translation(description.AddressW);
+	SamplerDesc.MaxLOD = D3D12_FLOAT32_MAX;
+	memcpy(SamplerDesc.BorderColor, description.BorderColor.R32G32B32A32, 4*sizeof(float));
+	SamplerDesc.MaxAnisotropy = static_cast<UINT>(description.MaxAnisotropy < 0 ? 1 : description.MaxAnisotropy);
 
 
-	desc.MipLODBias = static_cast<float>(Description.MipBias);
-	switch (Description.Filter)
+	SamplerDesc.MipLODBias = static_cast<float>(description.MipBias);
+	switch (description.Filter)
 	{
-	case	SF_MIN_MAG_MIP_POINT:
-		desc.Filter = D3D12_FILTER_MIN_MAG_MIP_POINT;
+	case	BearSamplerFilter::MinMagMipPoint:
+		SamplerDesc.Filter = D3D12_FILTER_MIN_MAG_MIP_POINT;
 		break;
-	case	SF_MIN_MAG_LINEAR_MIP_POINT:
-		desc.Filter = D3D12_FILTER_MIN_MAG_LINEAR_MIP_POINT;
+	case	BearSamplerFilter::MinMagLinearMipPoint:
+		SamplerDesc.Filter = D3D12_FILTER_MIN_MAG_LINEAR_MIP_POINT;
 		break;
-	case	SF_MIN_MAG_MIP_LINEAR:
-		desc.Filter = D3D12_FILTER_MIN_MAG_MIP_LINEAR;
+	case	BearSamplerFilter::MinMagMipLinear:
+		SamplerDesc.Filter = D3D12_FILTER_MIN_MAG_MIP_LINEAR;
 		break;
-	case	SF_ANISOTROPIC:
-		desc.Filter = D3D12_FILTER_ANISOTROPIC;
+	case	BearSamplerFilter::Anisotropic:
+		SamplerDesc.Filter = D3D12_FILTER_ANISOTROPIC;
 		break;
-	case	SF_COMPARISON_MIN_MAG_MIP_POINT:
-		desc.Filter = D3D12_FILTER_COMPARISON_MIN_MAG_MIP_POINT;
+	case	BearSamplerFilter::ComparisonMinMagMipPoint:
+		SamplerDesc.Filter = D3D12_FILTER_COMPARISON_MIN_MAG_MIP_POINT;
 		break;
-	case	SF_COMPARISON_MIN_MAG_LINEAR_MIP_POINT:
-		desc.Filter = D3D12_FILTER_COMPARISON_MIN_MAG_LINEAR_MIP_POINT;
+	case	BearSamplerFilter::ComparisonMinMagLinearMipPoint:
+		SamplerDesc.Filter = D3D12_FILTER_COMPARISON_MIN_MAG_LINEAR_MIP_POINT;
 		break;
-	case	SF_COMPARISON_MIN_MAG_MIP_LINEAR:
-		desc.Filter = D3D12_FILTER_COMPARISON_MIN_MAG_MIP_LINEAR;
+	case	BearSamplerFilter::ComparisonMinMagMipLinear:
+		SamplerDesc.Filter = D3D12_FILTER_COMPARISON_MIN_MAG_MIP_LINEAR;
 		break;
-	case	SF_COMPARISON_ANISOTROPIC:
-		desc.Filter = D3D12_FILTER_COMPARISON_ANISOTROPIC;
+	case	BearSamplerFilter::ComparisonAnisotropic:
+		SamplerDesc.Filter = D3D12_FILTER_COMPARISON_ANISOTROPIC;
 		break;
 	default:
 		BEAR_CHECK(0);
 	}
-	switch (Description.Filter)
+	switch (description.Filter)
 	{
-	case	SF_MIN_MAG_MIP_POINT:
-	case	SF_MIN_MAG_LINEAR_MIP_POINT:
-	case	SF_MIN_MAG_MIP_LINEAR:
-		desc.ComparisonFunc = D3D12_COMPARISON_FUNC_NEVER;
+	case	BearSamplerFilter::MinMagMipPoint:
+	case	BearSamplerFilter::MinMagLinearMipPoint:
+	case	BearSamplerFilter::MinMagMipLinear:
+		SamplerDesc.ComparisonFunc = D3D12_COMPARISON_FUNC_NEVER;
 		break;
-	case	SF_ANISOTROPIC:
-		if (desc.MaxAnisotropy == 1)
+	case	BearSamplerFilter::Anisotropic:
+		if (SamplerDesc.MaxAnisotropy == 1)
 		{
-			desc.Filter = D3D12_FILTER_MIN_MAG_MIP_LINEAR;
+			SamplerDesc.Filter = D3D12_FILTER_MIN_MAG_MIP_LINEAR;
 		}
-		desc.ComparisonFunc = D3D12_COMPARISON_FUNC_NEVER;
+		SamplerDesc.ComparisonFunc = D3D12_COMPARISON_FUNC_NEVER;
 		break;
-	case	SF_COMPARISON_MIN_MAG_MIP_POINT:
-	case	SF_COMPARISON_MIN_MAG_LINEAR_MIP_POINT:
-	case	SF_COMPARISON_MIN_MAG_MIP_LINEAR:
-		desc.ComparisonFunc = D3D12_COMPARISON_FUNC_LESS;
+	case	BearSamplerFilter::ComparisonMinMagMipPoint:
+	case	BearSamplerFilter::ComparisonMinMagLinearMipPoint:
+	case	BearSamplerFilter::ComparisonMinMagMipLinear:
+		SamplerDesc.ComparisonFunc = D3D12_COMPARISON_FUNC_LESS;
 		break;
-	case	SF_COMPARISON_ANISOTROPIC:
-		if (desc.MaxAnisotropy == 1)
+	case	BearSamplerFilter::ComparisonAnisotropic:
+		if (SamplerDesc.MaxAnisotropy == 1)
 		{
-			desc.Filter = D3D12_FILTER_COMPARISON_MIN_MAG_MIP_LINEAR;
+			SamplerDesc.Filter = D3D12_FILTER_COMPARISON_MIN_MAG_MIP_LINEAR;
 		}
-		desc.ComparisonFunc = D3D12_COMPARISON_FUNC_LESS;
+		SamplerDesc.ComparisonFunc = D3D12_COMPARISON_FUNC_LESS;
 	default:
 		BEAR_CHECK(0);
 	}
-
-	/*D3D12_DESCRIPTOR_HEAP_DESC cbvHeapDesc = {};
-	cbvHeapDesc.NumDescriptors = 1;
-	cbvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
-	cbvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER;
-	R_CHK(Factory->Device->CreateDescriptorHeap(&cbvHeapDesc, IID_PPV_ARGS(&SamplerHeap)));
-	CD3DX12_CPU_DESCRIPTOR_HANDLE Handle(SamplerHeap->GetCPUDescriptorHandleForHeapStart());
-	Factory->Device->CreateSampler(&desc, CbHandle);*/
-
 }
 
 DX12SamplerState::~DX12SamplerState()

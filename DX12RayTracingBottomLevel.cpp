@@ -1,28 +1,21 @@
 #include "DX12PCH.h"
-bsize BottomLevelCounter = 0;
+bsize RayTracingBottomLevelCounter = 0;
 
-
-inline void AllocateUAVBuffer(UINT64 bufferSize, ID3D12Resource** ppResource, D3D12_RESOURCE_STATES initialResourceState = D3D12_RESOURCE_STATE_COMMON)
+#ifdef RTX
+inline void AllocateUAVBuffer(UINT64 buffer_size, ID3D12Resource** pp_resource, D3D12_RESOURCE_STATES initial_resource_state = D3D12_RESOURCE_STATE_COMMON)
 {
-	auto uploadHeapProperties = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
-	auto bufferDesc = CD3DX12_RESOURCE_DESC::Buffer(bufferSize, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
-	R_CHK(Factory->Device->CreateCommittedResource(
-		&uploadHeapProperties,
-		D3D12_HEAP_FLAG_NONE,
-		&bufferDesc,
-		initialResourceState,
-		nullptr,
-		IID_PPV_ARGS(ppResource)));
+	auto UploadHeapProperties = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
+	auto BufferDesc = CD3DX12_RESOURCE_DESC::Buffer(buffer_size, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
+	R_CHK(Factory->Device->CreateCommittedResource(&UploadHeapProperties,D3D12_HEAP_FLAG_NONE,&BufferDesc,initial_resource_state,nullptr,IID_PPV_ARGS(pp_resource)));
 }
 
-
-DX12BottomLevel::DX12BottomLevel(const BearBottomLevelDescription& desc)
+DX12RayTracingBottomLevel::DX12RayTracingBottomLevel(const BearRayTracingBottomLevelDescription& description)
 {
-	BottomLevelCounter++;
-#ifndef DX11
+	RayTracingBottomLevelCounter++;
+
 	BearVector<D3D12_RAYTRACING_GEOMETRY_DESC> GeometryDescs;
-	GeometryDescs.reserve(desc.GeometryDescriptions.size());
-	for (const BearBottomLevelDescription::GeometryDescription& i : desc.GeometryDescriptions)
+	GeometryDescs.reserve(description.GeometryDescriptions.size());
+	for (const BearRayTracingBottomLevelDescription::GeometryDescription& i : description.GeometryDescriptions)
 	{
 		D3D12_RAYTRACING_GEOMETRY_DESC GeometryDesc = {};
 		switch (i.Type)
@@ -60,24 +53,7 @@ DX12BottomLevel::DX12BottomLevel(const BearBottomLevelDescription& desc)
 				GeometryDesc.Triangles.VertexBuffer.StrideInBytes = VertexBuffer->VertexBufferView.StrideInBytes;
 				BEAR_CHECK(i.Triangles.VertexCount >= VertexBuffer->VertexBufferView.SizeInBytes / VertexBuffer->VertexBufferView.StrideInBytes);
 				GeometryDesc.Triangles.VertexCount = i.Triangles.VertexCount;
-				switch (i.Triangles.VertexFormat)
-				{
-				case VF_R16G16_FLOAT:
-					GeometryDesc.Triangles.VertexFormat = DXGI_FORMAT_R16G16_FLOAT;
-					break;
-				case VF_R16G16B16A16_FLOAT:
-					GeometryDesc.Triangles.VertexFormat = DXGI_FORMAT_R16G16B16A16_FLOAT;
-					break;
-				case VF_R32G32_FLOAT:
-					GeometryDesc.Triangles.VertexFormat = DXGI_FORMAT_R32G32_FLOAT;
-					break;
-				case VF_R32G32B32_FLOAT:
-					GeometryDesc.Triangles.VertexFormat = DXGI_FORMAT_R32G32B32_FLOAT;
-					break;
-				default:
-					BEAR_CHECK(false);
-					break;
-				}
+				GeometryDesc.Triangles.VertexFormat = DX12Factory::TranslationForRayTracing(i.Triangles.VertexFormat);
 			}
 			if (i.Triangles.IndexBuffer.empty())
 			{
@@ -109,15 +85,15 @@ DX12BottomLevel::DX12BottomLevel(const BearBottomLevelDescription& desc)
 
 	{
 
-		if (desc.BuildFlags.test((uint32)BearAccelerationStructureBuildFlags::AllowCompaction))
+		if (description.BuildFlags.test((uint32)BearAccelerationStructureBuildFlags::AllowCompaction))
 			AccelerationStructureInputs.Flags |= D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_ALLOW_COMPACTION;
-		if (desc.BuildFlags.test((uint32)BearAccelerationStructureBuildFlags::AllowUpdate))
+		if (description.BuildFlags.test((uint32)BearAccelerationStructureBuildFlags::AllowUpdate))
 			AccelerationStructureInputs.Flags |= D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_ALLOW_UPDATE;
-		if (desc.BuildFlags.test((uint32)BearAccelerationStructureBuildFlags::PreferFastBuild))
+		if (description.BuildFlags.test((uint32)BearAccelerationStructureBuildFlags::PreferFastBuild))
 			AccelerationStructureInputs.Flags |= D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_PREFER_FAST_BUILD;
-		if (desc.BuildFlags.test((uint32)BearAccelerationStructureBuildFlags::PreferFastTrace))
+		if (description.BuildFlags.test((uint32)BearAccelerationStructureBuildFlags::PreferFastTrace))
 			AccelerationStructureInputs.Flags |= D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_PREFER_FAST_TRACE;
-		if (desc.BuildFlags.test((uint32)BearAccelerationStructureBuildFlags::MinimizeMemory))
+		if (description.BuildFlags.test((uint32)BearAccelerationStructureBuildFlags::MinimizeMemory))
 			AccelerationStructureInputs.Flags |= D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_MINIMIZE_MEMORY;
 	}
 
@@ -144,15 +120,11 @@ DX12BottomLevel::DX12BottomLevel(const BearBottomLevelDescription& desc)
 	Factory->CommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::UAV(BottomLevelAccelerationStructure.Get()));
 
 	Factory->UnlockCommandList();
+}
+
+DX12RayTracingBottomLevel::~DX12RayTracingBottomLevel()
+{
+	RayTracingBottomLevelCounter--;
+}
+
 #endif
-}
-
-DX12BottomLevel::~DX12BottomLevel()
-{
-	BottomLevelCounter--;
-}
-
-void* DX12BottomLevel::QueryInterface(int Type)
-{
-	return nullptr;
-}

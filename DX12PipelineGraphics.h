@@ -2,22 +2,13 @@
 class DX12PipelineGraphics :public BearRHI::BearRHIPipelineGraphics,public DX12Pipeline
 {
 public:
-	DX12PipelineGraphics(const BearPipelineGraphicsDescription&desc);
+	DX12PipelineGraphics(const BearPipelineGraphicsDescription&description);
 	virtual ~DX12PipelineGraphics();
-	virtual void* QueryInterface(int Type);
+	virtual void* QueryInterface(int type);
 	virtual BearPipelineType GetType();
-#ifndef DX11
-#ifdef DX12UTIMATE
-	virtual void Set(ID3D12GraphicsCommandList6* CommandList);
-#else
-	virtual void Set(ID3D12GraphicsCommandList4* CommandList);
-#endif
-#else
-	virtual void Set(ID3D12GraphicsCommandList* CommandList);
-#endif
+	virtual void Set(ID3D12GraphicsCommandListX* command_list);
 	ComPtr<ID3D12PipelineState> PipelineState;
 	D3D_PRIMITIVE_TOPOLOGY TopologyType;
-
 	BearFactoryPointer<BearRHI::BearRHIRootSignature> RootSignature;
 	DX12RootSignature* RootSignaturePointer;
 };

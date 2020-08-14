@@ -1,6 +1,6 @@
 #include "DX12PCH.h"
 bsize ViewportCounter = 0;
-DX12Viewport::DX12Viewport(void * Handle, bsize Width, bsize Height, bool Fullscreen, bool VSync, const BearViewportDescription&Description_):Description(Description_), m_Fullscreen(Fullscreen),m_VSync(VSync), Width(Width),Height(Height)
+DX12Viewport::DX12Viewport(void * window_handle, bsize width, bsize height, bool fullscreen, bool vsync, const BearViewportDescription&description):Description(description), m_Fullscreen(fullscreen),m_VSync(vsync), Width(width),Height(height)
 {
 	ViewportCounter++;
 	{
@@ -12,48 +12,40 @@ DX12Viewport::DX12Viewport(void * Handle, bsize Width, bsize Height, bool Fullsc
 
 	}
 	{
-		m_swapChainDesc.BufferCount = FrameCount;
-		m_swapChainDesc.Width = static_cast<UINT>(Width);
-		m_swapChainDesc.Height = static_cast<UINT>(Height);
-		m_swapChainDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-		m_swapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-		m_swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
-		m_swapChainDesc.SampleDesc.Count = 1;
+		m_SwapChainDesc.BufferCount = FrameCount;
+		m_SwapChainDesc.Width = static_cast<UINT>(width);
+		m_SwapChainDesc.Height = static_cast<UINT>(height);
+		m_SwapChainDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+		m_SwapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
+		m_SwapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
+		m_SwapChainDesc.SampleDesc.Count = 1;
 
 
-		ComPtr<IDXGISwapChain1> swapChain;
-		R_CHK(Factory->GIFactory->CreateSwapChainForHwnd(
-			CommandQueue.Get(),
-			reinterpret_cast<HWND>(Handle),
-			&m_swapChainDesc,
-			nullptr,
-			nullptr,
-			&swapChain
-		));
-
-		R_CHK(swapChain.As(&m_SwapChain));
+		ComPtr<IDXGISwapChain1> SwapChain;
+		R_CHK(Factory->GIFactory->CreateSwapChainForHwnd(CommandQueue.Get(),reinterpret_cast<HWND>(window_handle),&m_SwapChainDesc,nullptr,nullptr,&SwapChain));
+		R_CHK(SwapChain.As(&m_SwapChain));
 		m_FrameIndex = m_SwapChain->GetCurrentBackBufferIndex();
 	}
 	// Create descriptor heaps.
 	{
 		// Describe and create a render target view (RTV) descriptor heap.
-		D3D12_DESCRIPTOR_HEAP_DESC rtvHeapDesc = {};
-		rtvHeapDesc.NumDescriptors = FrameCount;
-		rtvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
-		rtvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
+		D3D12_DESCRIPTOR_HEAP_DESC RTVHeapDesc = {};
+		RTVHeapDesc.NumDescriptors = FrameCount;
+		RTVHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
+		RTVHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
 
-		R_CHK(Factory->Device->CreateDescriptorHeap(&rtvHeapDesc, IID_PPV_ARGS(&m_RtvHeap)));
+		R_CHK(Factory->Device->CreateDescriptorHeap(&RTVHeapDesc, IID_PPV_ARGS(&m_RtvHeap)));
 
 		
 	}
 
 	{
-		CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(m_RtvHeap->GetCPUDescriptorHandleForHeapStart());
+		CD3DX12_CPU_DESCRIPTOR_HANDLE Handle(m_RtvHeap->GetCPUDescriptorHandleForHeapStart());
 		for (UINT n = 0; n < FrameCount; n++)
 		{
 			R_CHK(m_SwapChain->GetBuffer(n, IID_PPV_ARGS(&m_RenderTargets[n])));
-			Factory->Device->CreateRenderTargetView(m_RenderTargets[n].Get(), nullptr, rtvHandle);
-			rtvHandle.Offset(1,Factory-> RtvDescriptorSize);
+			Factory->Device->CreateRenderTargetView(m_RenderTargets[n].Get(), nullptr, Handle);
+			Handle.Offset(1,Factory-> RtvDescriptorSize);
 		}
 	}
 }
@@ -64,7 +56,7 @@ DX12Viewport::~DX12Viewport()
 
 }
 
-void DX12Viewport::ReInit(bsize Width, bsize Height)
+void DX12Viewport::ReInit(bsize width, bsize height)
 {
 	
 
@@ -72,55 +64,49 @@ void DX12Viewport::ReInit(bsize Width, bsize Height)
 	{
 		m_RenderTargets[n].Reset();
 	}
-	m_swapChainDesc.Width = static_cast<UINT>(Width);
-	m_swapChainDesc.Height = static_cast<UINT>(Height);
-	R_CHK(m_SwapChain->ResizeBuffers(
-		m_swapChainDesc.BufferCount,
-		m_swapChainDesc.Width,
-		m_swapChainDesc.Height,
-		m_swapChainDesc.Format,
-		DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH));
+	m_SwapChainDesc.Width = static_cast<UINT>(width);
+	m_SwapChainDesc.Height = static_cast<UINT>(height);
+	R_CHK(m_SwapChain->ResizeBuffers(m_SwapChainDesc.BufferCount,m_SwapChainDesc.Width,m_SwapChainDesc.Height,m_SwapChainDesc.Format,DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH));
 
 	m_FrameIndex = m_SwapChain->GetCurrentBackBufferIndex();
 
 	// Create descriptor heaps.
 	{
 		// Describe and create a render target view (RTV) descriptor heap.
-		D3D12_DESCRIPTOR_HEAP_DESC rtvHeapDesc = {};
-		rtvHeapDesc.NumDescriptors = FrameCount;
-		rtvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
-		rtvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
+		D3D12_DESCRIPTOR_HEAP_DESC RTVHeapDesc = {};
+		RTVHeapDesc.NumDescriptors = FrameCount;
+		RTVHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
+		RTVHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
 
-		R_CHK(Factory->Device->CreateDescriptorHeap(&rtvHeapDesc, IID_PPV_ARGS(&m_RtvHeap)));
+		R_CHK(Factory->Device->CreateDescriptorHeap(&RTVHeapDesc, IID_PPV_ARGS(&m_RtvHeap)));
 
 
 	}
 
 	{
-		CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(m_RtvHeap->GetCPUDescriptorHandleForHeapStart());
+		CD3DX12_CPU_DESCRIPTOR_HANDLE Handle(m_RtvHeap->GetCPUDescriptorHandleForHeapStart());
 		for (UINT n = 0; n < FrameCount; n++)
 		{
 			R_CHK(m_SwapChain->GetBuffer(n, IID_PPV_ARGS(&m_RenderTargets[n])));
-			Factory->Device->CreateRenderTargetView(m_RenderTargets[n].Get(), nullptr, rtvHandle);
-			rtvHandle.Offset(1, Factory->RtvDescriptorSize);
+			Factory->Device->CreateRenderTargetView(m_RenderTargets[n].Get(), nullptr, Handle);
+			Handle.Offset(1, Factory->RtvDescriptorSize);
 		}
 	}
 
 
-
-	Width = Width;
-	Height = Height;
+	Width = width;
+	Height = height;
 }
 
-void DX12Viewport::SetVSync(bool Sync)
+void DX12Viewport::SetVSync(bool vsync)
 {
-	m_VSync = Sync;
+	m_VSync = vsync;
 }
 
-void DX12Viewport::SetFullScreen(bool FullScreen)
+void DX12Viewport::SetFullScreen(bool fullscreen)
 {
-	if (m_Fullscreen == FullScreen)return;
-	if (FullScreen)
+	if (m_Fullscreen == fullscreen)return;
+	if (fullscreen)
 	{
 		/*HMONITOR hMonitor = MonitorFromWindow((HWND)m_WindowHandle, MONITOR_DEFAULTTOPRIMARY);
 		MONITORINFOEX MonitorInfo;
@@ -153,27 +139,33 @@ void DX12Viewport::SetFullScreen(bool FullScreen)
 	{
 		ChangeDisplaySettings(NULL, 0);
 	}
-	m_Fullscreen = FullScreen;
+	m_Fullscreen = fullscreen;
 	ReInit(Width, Height);
 }
 
-void DX12Viewport::Resize(bsize m_Width, bsize m_Height)
+void DX12Viewport::Resize(bsize width, bsize height)
 {
-	if (m_Height == Height && m_Width == Width)return;
-	ReInit(Width, Height);
+	if (height == Height && width == Width)return;
+	ReInit(width, height);
 
 }
 
 CD3DX12_CPU_DESCRIPTOR_HANDLE DX12Viewport::GetHandle()
 {
-	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(m_RtvHeap->GetCPUDescriptorHandleForHeapStart(), m_FrameIndex, Factory->RtvDescriptorSize);
-	return rtvHandle;
+	CD3DX12_CPU_DESCRIPTOR_HANDLE Handle(m_RtvHeap->GetCPUDescriptorHandleForHeapStart(), m_FrameIndex, Factory->RtvDescriptorSize);
+	return Handle;
 }
 
-void DX12Viewport::Unlock(ID3D12GraphicsCommandList * CommandList)
+void DX12Viewport::Lock(ID3D12GraphicsCommandListX* CommandList)
 {
-	auto transition = CD3DX12_RESOURCE_BARRIER::Transition(m_RenderTargets[m_FrameIndex].Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
-	CommandList->ResourceBarrier(1, &transition);
+	auto Transition = CD3DX12_RESOURCE_BARRIER::Transition(m_RenderTargets[m_FrameIndex].Get(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
+	CommandList->ResourceBarrier(1, &Transition);
+}
+
+void DX12Viewport::Unlock(ID3D12GraphicsCommandListX * CommandList)
+{
+	auto Transition = CD3DX12_RESOURCE_BARRIER::Transition(m_RenderTargets[m_FrameIndex].Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
+	CommandList->ResourceBarrier(1, &Transition);
 }
 
 void DX12Viewport::Swap()
@@ -184,11 +176,6 @@ void DX12Viewport::Swap()
 
 BearRenderTargetFormat DX12Viewport::GetFormat()
 {
-	return RTF_R8G8B8A8;
+	return BearRenderTargetFormat::R8G8B8A8;
 }
 
-void DX12Viewport::Lock(ID3D12GraphicsCommandList * CommandList)
-{
-	auto transition = CD3DX12_RESOURCE_BARRIER::Transition(m_RenderTargets[m_FrameIndex].Get(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
-	CommandList->ResourceBarrier(1, &transition);
-}

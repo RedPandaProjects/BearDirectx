@@ -1,64 +1,52 @@
 #include "DX12PCH.h"
 bsize VertexBufferCounter = 0;
-DX12VertexBuffer::DX12VertexBuffer() :m_dynamic(false)
+DX12VertexBuffer::DX12VertexBuffer() :m_Dynamic(false)
 {
 	VertexBufferView.SizeInBytes = 0;
 	VertexBufferCounter++;
 }
 
-void DX12VertexBuffer::Create(bsize Stride, bsize Count, bool Dynamic, void* data)
+void DX12VertexBuffer::Create(bsize stride, bsize count, bool dynamic, void* data)
 {
 
 	Clear();
-	m_dynamic = Dynamic;
+	m_Dynamic = dynamic;
 	{
-		CD3DX12_HEAP_PROPERTIES a(Dynamic ? D3D12_HEAP_TYPE_UPLOAD : D3D12_HEAP_TYPE_DEFAULT);
-		auto b = CD3DX12_RESOURCE_DESC::Buffer(static_cast<uint64>(Stride * Count));
-		R_CHK(Factory->Device->CreateCommittedResource(
-			&a,
-			D3D12_HEAP_FLAG_NONE,
-			&b,
-			Dynamic ? D3D12_RESOURCE_STATE_GENERIC_READ : D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER,
-			nullptr,
-			IID_PPV_ARGS(&VertexBuffer)));
-
+		auto Properties = CD3DX12_HEAP_PROPERTIES (dynamic ? D3D12_HEAP_TYPE_UPLOAD : D3D12_HEAP_TYPE_DEFAULT);
+		auto ResourceDesc = CD3DX12_RESOURCE_DESC::Buffer(static_cast<uint64>(stride * count));
+		R_CHK(Factory->Device->CreateCommittedResource(&Properties,D3D12_HEAP_FLAG_NONE,&ResourceDesc,dynamic ? D3D12_RESOURCE_STATE_GENERIC_READ : D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER,nullptr,IID_PPV_ARGS(&VertexBuffer)));
 	}
 
-	VertexBufferView.SizeInBytes = static_cast<UINT>(Stride * Count);
-	VertexBufferView.StrideInBytes = static_cast<UINT>(Stride);
+	VertexBufferView.SizeInBytes = static_cast<UINT>(stride * count);
+	VertexBufferView.StrideInBytes = static_cast<UINT>(stride);
 	VertexBufferView.BufferLocation = VertexBuffer->GetGPUVirtualAddress();
 
-	if (data && !Dynamic)
+	if (data && !m_Dynamic)
 	{
-
-
-		ComPtr<ID3D12Resource> temp;
-		CD3DX12_HEAP_PROPERTIES a1(D3D12_HEAP_TYPE_UPLOAD);
-		auto b1 = CD3DX12_RESOURCE_DESC::Buffer(static_cast<uint64>(Stride * Count));
-		R_CHK(Factory->Device->CreateCommittedResource(
-			&a1,
-			D3D12_HEAP_FLAG_NONE,
-			&b1,
-			D3D12_RESOURCE_STATE_GENERIC_READ,
-			nullptr,
-			IID_PPV_ARGS(&temp)));
-		void* pVertexDataBegin;
-		CD3DX12_RANGE readRange(0, 0);
-		R_CHK(temp->Map(0, &readRange, reinterpret_cast<void**>(&pVertexDataBegin)));
-		memcpy(pVertexDataBegin, data, Count * Stride);
-		temp->Unmap(0, nullptr);
+		ComPtr<ID3D12Resource> TempBuffer;
+		auto Properties =  CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD);
+		auto ResourceDesc = CD3DX12_RESOURCE_DESC::Buffer(static_cast<uint64>(stride * count));
+		R_CHK(Factory->Device->CreateCommittedResource(&Properties,D3D12_HEAP_FLAG_NONE,&ResourceDesc,D3D12_RESOURCE_STATE_GENERIC_READ,nullptr,IID_PPV_ARGS(&TempBuffer)));
+		
+		{
+			void* Pointer;
+			CD3DX12_RANGE ReadRange(0, 0);
+			R_CHK(TempBuffer->Map(0, &ReadRange, reinterpret_cast<void**>(&Pointer)));
+			bear_copy(Pointer, data, count * stride);
+			TempBuffer->Unmap(0, nullptr);
+		}
 
 		Factory->LockCommandList();
-		auto var1 = CD3DX12_RESOURCE_BARRIER::Transition(VertexBuffer.Get(), D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER, D3D12_RESOURCE_STATE_COPY_DEST);
-		Factory->CommandList->ResourceBarrier(1, &var1);
-		Factory->CommandList->CopyBufferRegion(VertexBuffer.Get(), 0, temp.Get(), 0, Count * Stride);
-		auto var2 = CD3DX12_RESOURCE_BARRIER::Transition(VertexBuffer.Get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
-		Factory->CommandList->ResourceBarrier(1, &var2);
+		auto ResourceBarrier1 = CD3DX12_RESOURCE_BARRIER::Transition(VertexBuffer.Get(), D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER, D3D12_RESOURCE_STATE_COPY_DEST);
+		Factory->CommandList->ResourceBarrier(1, &ResourceBarrier1);
+		Factory->CommandList->CopyBufferRegion(VertexBuffer.Get(), 0, TempBuffer.Get(), 0, count * stride);
+		auto ResourceBarrier2 = CD3DX12_RESOURCE_BARRIER::Transition(VertexBuffer.Get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
+		Factory->CommandList->ResourceBarrier(1, &ResourceBarrier2);
 		Factory->UnlockCommandList();
 	}
 	else if (data)
 	{
-		memcpy(Lock(), data, Count * Stride);
+		bear_copy(Lock(), data, count * stride);
 		Unlock();
 	}
 }
@@ -71,12 +59,12 @@ DX12VertexBuffer::~DX12VertexBuffer()
 
 void* DX12VertexBuffer::Lock()
 {
-	BEAR_CHECK(m_dynamic);
+	BEAR_CHECK(m_Dynamic);
 	if (VertexBuffer.Get() == 0)return 0;
-	void* pVertexDataBegin;
-	CD3DX12_RANGE readRange(0, 0);
-	R_CHK(VertexBuffer->Map(0, &readRange, reinterpret_cast<void**>(&pVertexDataBegin)));
-	return pVertexDataBegin;
+	void* Pointer;
+	CD3DX12_RANGE ReadRange(0, 0);
+	R_CHK(VertexBuffer->Map(0, &ReadRange, reinterpret_cast<void**>(&Pointer)));
+	return Pointer;
 
 }
 
@@ -89,7 +77,7 @@ void DX12VertexBuffer::Clear()
 {
 	VertexBufferView.SizeInBytes = 0;
 	VertexBuffer.Reset();
-	m_dynamic = false;
+	m_Dynamic = false;
 }
 
 bsize DX12VertexBuffer::GetCount()

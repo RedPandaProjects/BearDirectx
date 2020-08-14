@@ -4,7 +4,7 @@ class DX12Shader :public BearRHI::BearRHIShader
 public:
 	DX12Shader(BearShaderType type);
 	virtual ~DX12Shader();
-	virtual bool LoadAsText(const bchar* Text, const BearMap<BearStringConteniar, BearStringConteniar>& Defines, BearString& OutError, BearIncluder* Includer);
+	virtual bool LoadAsText(const bchar* text, const bchar* entry_point, const BearMap<BearStringConteniar, BearStringConteniar>& defines, BearString& out_error, BearIncluder* includer);
 
 	virtual void* GetPointer();
 	virtual	bsize GetSize();
@@ -15,7 +15,7 @@ public:
 	IDxcBlob* Shader;
 #endif
 	BearMemoryStream ShaderOnMemory;
-	inline bool IsType(BearShaderType type)const { return Type == type; }
+	inline bool IsType(BearShaderType type)const { return m_Type == type; }
 private:
-	BearShaderType Type;
+	BearShaderType m_Type;
 };

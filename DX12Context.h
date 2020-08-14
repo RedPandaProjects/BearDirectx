@@ -10,55 +10,43 @@ public:
 
 	virtual void Reset();
 	virtual void Wait();
-	virtual void Flush(BearFactoryPointer<BearRHI::BearRHIViewport> Viewport,bool wait);
+	virtual void Flush(BearFactoryPointer<BearRHI::BearRHIViewport> viewport,bool wait);
 	virtual void Flush(bool wait);
-	virtual void ClearState();
+	virtual void ClearFrameBuffer();
 
-	virtual void Copy(BearFactoryPointer<BearRHI::BearRHIIndexBuffer> Dst, BearFactoryPointer<BearRHI::BearRHIIndexBuffer> Src);
-	virtual void Copy(BearFactoryPointer<BearRHI::BearRHIVertexBuffer> Dst, BearFactoryPointer<BearRHI::BearRHIVertexBuffer> Src);
-	virtual void Copy(BearFactoryPointer<BearRHI::BearRHIUniformBuffer> Dst, BearFactoryPointer<BearRHI::BearRHIUniformBuffer> Src);
-	virtual void Copy(BearFactoryPointer<BearRHI::BearRHITexture2D> Dst, BearFactoryPointer<BearRHI::BearRHITexture2D> Src);
+	virtual void Copy(BearFactoryPointer<BearRHI::BearRHIIndexBuffer> dest, BearFactoryPointer<BearRHI::BearRHIIndexBuffer> source);
+	virtual void Copy(BearFactoryPointer<BearRHI::BearRHIVertexBuffer> dest, BearFactoryPointer<BearRHI::BearRHIVertexBuffer> source);
+	virtual void Copy(BearFactoryPointer<BearRHI::BearRHIUniformBuffer> dest, BearFactoryPointer<BearRHI::BearRHIUniformBuffer> source);
+	virtual void Copy(BearFactoryPointer<BearRHI::BearRHITexture2D> dest, BearFactoryPointer<BearRHI::BearRHITexture2D> source);
 
-	virtual void SetViewportAsFrameBuffer(BearFactoryPointer<BearRHI::BearRHIViewport> Viewport);
-	virtual void SetFrameBuffer(BearFactoryPointer<BearRHI::BearRHIFrameBuffer> FrameBuffer);
-	virtual void SetPipeline(BearFactoryPointer<BearRHI::BearRHIPipeline> Pipeline);
-	virtual void SetDescriptorHeap(BearFactoryPointer<BearRHI::BearRHIDescriptorHeap> DescriptorHeap);
+	virtual void SetViewportAsFrameBuffer(BearFactoryPointer<BearRHI::BearRHIViewport> viewport);
+	virtual void SetFrameBuffer(BearFactoryPointer<BearRHI::BearRHIFrameBuffer> frame_buffer);
+	virtual void SetPipeline(BearFactoryPointer<BearRHI::BearRHIPipeline> pipeline);
+	virtual void SetDescriptorHeap(BearFactoryPointer<BearRHI::BearRHIDescriptorHeap> descriptor_heap);
 	virtual void SetVertexBuffer(BearFactoryPointer<BearRHI::BearRHIVertexBuffer> buffer);
 	virtual void SetIndexBuffer(BearFactoryPointer<BearRHI::BearRHIIndexBuffer> buffer);
-	virtual void SetViewport(float x, float y, float width, float height, float minDepth = 0.f, float maxDepth = 1.f);
-	virtual void SetScissor(bool Enable, float x, float y, float x1, float y1);
+	virtual void SetViewport(float x, float y, float width, float height, float min_depth = 0.f, float max_depth = 1.f);
+	virtual void SetScissor(bool enable, float x, float y, float x1, float y1);
 	virtual void SetStencilRef(uint32 ref);
 	virtual void Draw(bsize count, bsize offset = 0);
 	virtual void DrawIndex(bsize count, bsize  offset_index = 0, bsize  offset_vertex = 0);
-	virtual void DispatchRays(const BearDispatchRaysDescription& Description);
-	virtual void DispatchMesh(bsize CountX, bsize CountY, bsize CountZ);
+	virtual void DispatchRays( bsize count_x, bsize count_y, bsize count_z, BearFactoryPointer<BearRHI::BearRHIRayTracingShaderTable> shader_table);
+	virtual void DispatchMesh(bsize count_x, bsize count_y, bsize count_z);
 
-	virtual void Lock(BearFactoryPointer<BearRHI::BearRHIViewport> Viewport);
-	virtual void Unlock(BearFactoryPointer<BearRHI::BearRHIViewport> Viewport);
-	virtual void Lock(BearFactoryPointer<BearRHI::BearRHIFrameBuffer> FrameBuffer);
-	virtual void Unlock(BearFactoryPointer<BearRHI::BearRHIFrameBuffer> FrameBuffer);
-	virtual void Lock(BearFactoryPointer<BearRHI::BearRHIUnorderedAccess> UnorderedAccess);
-	virtual void Unlock(BearFactoryPointer<BearRHI::BearRHIUnorderedAccess> UnorderedAccess);
+	virtual void Lock(BearFactoryPointer<BearRHI::BearRHIViewport> viewport);
+	virtual void Unlock(BearFactoryPointer<BearRHI::BearRHIViewport> viewport);
+	virtual void Lock(BearFactoryPointer<BearRHI::BearRHIFrameBuffer> frame_buffer);
+	virtual void Unlock(BearFactoryPointer<BearRHI::BearRHIFrameBuffer> drame_buffer);
+	virtual void Lock(BearFactoryPointer<BearRHI::BearRHIUnorderedAccess> unordered_access);
+	virtual void Unlock(BearFactoryPointer<BearRHI::BearRHIUnorderedAccess> unordered_access);
 
 private:
-#ifdef DX12_1
-#ifdef DX12UTIMATE
-	ComPtr<ID3D12GraphicsCommandList6> m_commandList;
-#else
-	ComPtr<ID3D12GraphicsCommandList4> m_commandList;
-#endif
-#else
-#ifdef DX12UTIMATE
-	ComPtr<ID3D12GraphicsCommandList6> m_commandList;
-#else
-	ComPtr<ID3D12GraphicsCommandList> m_commandList;
-#endif
-#endif
-	ComPtr<ID3D12CommandAllocator> m_commandAllocator;
-	ComPtr<ID3D12CommandQueue> m_commandQueue;
-	HANDLE m_fenceEvent;
-	ComPtr<ID3D12Fence> m_fence;
-	uint64 m_fenceValue;
+	ComPtr<ID3D12GraphicsCommandListX> m_CommandList;
+	ComPtr<ID3D12CommandAllocator> m_CommandAllocator;
+	ComPtr<ID3D12CommandQueue> m_CommandQueue;
+	HANDLE m_FenceEvent;
+	ComPtr<ID3D12Fence> m_Fence;
+	uint64 m_FenceValue;
 	D3D12_RECT m_ScissorRect;
 	bool m_CurrentPipelineIsCompute;
 };

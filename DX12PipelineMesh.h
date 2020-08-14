@@ -2,20 +2,11 @@
 class DX12PipelineMesh :public BearRHI::BearRHIPipelineMesh,public DX12Pipeline
 {
 public:
-	DX12PipelineMesh(const BearPipelineMeshDescription&desc);
+	DX12PipelineMesh(const BearPipelineMeshDescription&description);
 	virtual ~DX12PipelineMesh();
-	virtual void* QueryInterface(int Type);
+	virtual void* QueryInterface(int type);
 	virtual BearPipelineType GetType();
-
-#ifndef DX11
-#ifdef DX12UTIMATE
-	virtual void Set(ID3D12GraphicsCommandList6* CommandList);
-#else
-	virtual void Set(ID3D12GraphicsCommandList4* CommandList);
-#endif
-#else
-	virtual void Set(ID3D12GraphicsCommandList* CommandList);
-#endif
+	virtual void Set(ID3D12GraphicsCommandListX* command_list);
 	ComPtr<ID3D12PipelineState> PipelineState;
 	D3D_PRIMITIVE_TOPOLOGY TopologyType;
 

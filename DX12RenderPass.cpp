@@ -3,7 +3,7 @@ bsize RenderPassCounter = 0;
 DX12RenderPass::DX12RenderPass(const BearRenderPassDescription& description)
 {
 	Description = description;
-	for (CountRenderTarget=0; Description.RenderTargets[CountRenderTarget].Format != RTF_NONE&& CountRenderTarget<8; CountRenderTarget++) {}
+	for (CountRenderTarget=0; Description.RenderTargets[CountRenderTarget].Format != BearRenderTargetFormat::None&& CountRenderTarget<8; CountRenderTarget++) {}
 	RenderPassCounter++;
 
 }
