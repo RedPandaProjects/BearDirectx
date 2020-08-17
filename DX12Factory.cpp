@@ -119,6 +119,7 @@ DX12Factory::DX12Factory()
 		}
 		R_CHK(Device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&m_Default_CommandAllocator)));
 		R_CHK(Device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, m_Default_CommandAllocator.Get(), 0, IID_PPV_ARGS(&CommandList)));
+		CommandList->Close();
 		{
 			D3D12_COMMAND_QUEUE_DESC queueDesc = {};
 			queueDesc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
@@ -357,33 +358,35 @@ void DX12Factory::GetHardwareAdapter(IDXGIFactoryX* factory, IDXGIAdapter1** pp_
 void DX12Factory::LockCommandList()
 {
 	m_Default_CommandMutex.Lock();
+	R_CHK(m_Default_CommandAllocator->Reset());
+	R_CHK(CommandList->Reset(m_Default_CommandAllocator.Get(), 0));
 }
 
 void DX12Factory::UnlockCommandList(ID3D12CommandQueue *command_queue)
 {
 	R_CHK(CommandList->Close());
-	ID3D12CommandList *ppCommandLists[] = {CommandList.Get()};
-	if (command_queue)
-		command_queue->ExecuteCommandLists(_countof(ppCommandLists), ppCommandLists);
-	else
-		m_Default_CommandQueue->ExecuteCommandLists(_countof(ppCommandLists), ppCommandLists);
-	const uint64 fence = m_Default_FenceValue;
+	{
+		ID3D12CommandList* CommandLists[] = { CommandList.Get() };
+		if (command_queue)
+			command_queue->ExecuteCommandLists(_countof(CommandLists), CommandLists);
+		else
+			m_Default_CommandQueue->ExecuteCommandLists(_countof(CommandLists), CommandLists);
+	}
+	const uint64 Fence = m_Default_FenceValue;
 	if (command_queue)
 	{
-		R_CHK(command_queue->Signal(m_Default_Fence.Get(), fence));
+		R_CHK(command_queue->Signal(m_Default_Fence.Get(), Fence));
 	}
 	else
 	{
-		R_CHK(m_Default_CommandQueue->Signal(m_Default_Fence.Get(), fence));
+		R_CHK(m_Default_CommandQueue->Signal(m_Default_Fence.Get(), Fence));
 	}
 	m_Default_FenceValue++;
-	if (m_Default_Fence->GetCompletedValue() < fence)
+	if (m_Default_Fence->GetCompletedValue() < Fence)
 	{
-		R_CHK(m_Default_Fence->SetEventOnCompletion(fence, m_Default_FenceEvent));
+		R_CHK(m_Default_Fence->SetEventOnCompletion(Fence, m_Default_FenceEvent));
 		WaitForSingleObject(m_Default_FenceEvent, INFINITE);
 	}
-	R_CHK(m_Default_CommandAllocator->Reset());
-	R_CHK(CommandList->Reset(m_Default_CommandAllocator.Get(), 0));
 	m_Default_CommandMutex.Unlock();
 }
 
