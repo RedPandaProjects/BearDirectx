@@ -9,6 +9,9 @@ DX12Factory::DX12Factory()
 	ComPtr<IDXGIAdapter1> HardwareAdapter;
 	D3D_FEATURE_LEVEL Level;
 	UINT DxGIFactoryFlags = 0;
+#ifndef DX11
+	DxcIncludeHandler = 0;
+#endif
 	m_Default_FenceEvent = 0;
 
 #ifdef RTX
@@ -47,16 +50,18 @@ DX12Factory::DX12Factory()
 	if (HardwareAdapter.Get() == 0)
 		return;
 	IDXGIOutput *Output;
-	HardwareAdapter->EnumOutputs(0, &Output);
+	if (FAILED(HardwareAdapter->EnumOutputs(0, &Output)))
+		return;
 	{
 		UINT count = 0;
 
 		Output->GetDisplayModeList(DXGI_FORMAT_R8G8B8A8_UNORM, 0, &count, 0);
 		m_GIVideoMode.resize(count);
 		Output->GetDisplayModeList(DXGI_FORMAT_R8G8B8A8_UNORM, 0, &count, &m_GIVideoMode[0]);
+
+		Output->Release();
 	}
 
-	Output->Release();
 	if (FAILED(D3D12CreateDevice(HardwareAdapter.Get(), Level, IID_PPV_ARGS(&Device))))
 	{
 		return;
@@ -130,6 +135,7 @@ DX12Factory::DX12Factory()
 		m_Default_FenceValue = 1;
 	}
 #ifdef RTX
+	if(bSupportRayTracing)
 	{
 		CD3DX12_ROOT_SIGNATURE_DESC RootSignatureDesc;
 		RootSignatureDesc.Init(0, nullptr, 0, nullptr, D3D12_ROOT_SIGNATURE_FLAG_LOCAL_ROOT_SIGNATURE);
@@ -151,8 +157,9 @@ DX12Factory::~DX12Factory()
 	}
 #endif
 	{
-		ViewHeapAllocator.clear();
+		ShaderResourceHeapAllocator.clear();
 		SamplersHeapAllocator.clear();
+		ReserveResourceHeapAllocator.clear();
 	}
 	{
 		if(CommandList)

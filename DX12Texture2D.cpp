@@ -22,6 +22,8 @@ DX12Texture2D::DX12Texture2D(bsize width, bsize height, bsize mips, bsize count,
 
 	auto Properties = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
 
+	m_ShaderResource = Factory->ReserveResourceHeapAllocator.allocate(bAllowUAV ? (TextureDesc.MipLevels+1) : 1);
+
 	m_CurrentStates = bAllowUAV ? (D3D12_RESOURCE_STATE_UNORDERED_ACCESS) : (D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE| D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
 	R_CHK(Factory->Device->CreateCommittedResource(&Properties,D3D12_HEAP_FLAG_NONE,&TextureDesc, m_CurrentStates,nullptr,	IID_PPV_ARGS(&TextureBuffer)));
 	
@@ -40,6 +42,10 @@ DX12Texture2D::DX12Texture2D(bsize width, bsize height, bsize mips, bsize count,
 			DX12ShaderResource::SRV.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
 			DX12ShaderResource::SRV.Texture2D.MipLevels = static_cast<UINT>(mips);
 		}
+		CD3DX12_CPU_DESCRIPTOR_HANDLE ÑpuDescriptorHandle(m_ShaderResource.DescriptorHeap->GetCPUDescriptorHandleForHeapStart());
+		ÑpuDescriptorHandle.Offset(Factory->CbvSrvUavDescriptorSize, static_cast<UINT>(m_ShaderResource.Id));
+		Factory->Device->CreateShaderResourceView(TextureBuffer.Get(), &(DX12ShaderResource::SRV), ÑpuDescriptorHandle);
+
 	}
 	if(bAllowUAV)
 	{
@@ -53,6 +59,16 @@ DX12Texture2D::DX12Texture2D(bsize width, bsize height, bsize mips, bsize count,
 		else
 		{
 			DX12UnorderedAccess::UAV.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE2D;
+		}
+
+		CD3DX12_CPU_DESCRIPTOR_HANDLE ÑpuDescriptorHandle(m_ShaderResource.DescriptorHeap->GetCPUDescriptorHandleForHeapStart());
+		ÑpuDescriptorHandle.Offset(Factory->CbvSrvUavDescriptorSize, static_cast<UINT>(m_ShaderResource.Id + 1));
+		for (bsize i = 0; i < mips; i++)
+		{
+			DX12UnorderedAccess::UAV.Texture2D.MipSlice = i;
+			DX12UnorderedAccess::UAV.Texture2DArray.MipSlice = i;
+			Factory->Device->CreateUnorderedAccessView(TextureBuffer.Get(), nullptr, &(DX12UnorderedAccess::UAV), ÑpuDescriptorHandle);
+			ÑpuDescriptorHandle.Offset(Factory->CbvSrvUavDescriptorSize, static_cast<UINT>(1));
 		}
 		return;
 	}
@@ -99,11 +115,16 @@ DX12Texture2D::DX12Texture2D(bsize width, bsize height, BearRenderTargetFormat p
 	auto Properties = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
 	R_CHK(Factory->Device->CreateCommittedResource(&Properties,D3D12_HEAP_FLAG_NONE,&TextureDesc,m_CurrentStates,nullptr,IID_PPV_ARGS(&TextureBuffer)));
 
+	m_ShaderResource = Factory->ReserveResourceHeapAllocator.allocate(1);
+
 	bear_fill(DX12ShaderResource::SRV);
 	DX12ShaderResource::SRV.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
 	DX12ShaderResource::SRV.Format = TextureDesc.Format;
 	DX12ShaderResource::SRV.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
 	DX12ShaderResource::SRV.Texture2D.MipLevels = static_cast<UINT>(1);
+	CD3DX12_CPU_DESCRIPTOR_HANDLE ÑpuDescriptorHandle(m_ShaderResource.DescriptorHeap->GetCPUDescriptorHandleForHeapStart());
+	ÑpuDescriptorHandle.Offset(Factory->CbvSrvUavDescriptorSize, static_cast<UINT>(m_ShaderResource.Id));
+	Factory->Device->CreateShaderResourceView(TextureBuffer.Get(), &(DX12ShaderResource::SRV), ÑpuDescriptorHandle);
 
 }
 
@@ -136,7 +157,9 @@ DX12Texture2D::DX12Texture2D(bsize width, bsize height, BearDepthStencilFormat F
 bool DX12Texture2D::SetAsSRV(D3D12_CPU_DESCRIPTOR_HANDLE& heap)
 {
 	BEAR_CHECK(m_TextureType != BearTextureType::DepthStencil);
-	Factory->Device->CreateShaderResourceView(TextureBuffer.Get(),&(DX12ShaderResource::SRV), heap);
+	CD3DX12_CPU_DESCRIPTOR_HANDLE ÑpuDescriptorHandle(m_ShaderResource.DescriptorHeap->GetCPUDescriptorHandleForHeapStart());
+	ÑpuDescriptorHandle.Offset(Factory->CbvSrvUavDescriptorSize, static_cast<UINT>(m_ShaderResource.Id));
+	Factory->Device->CopyDescriptorsSimple(1, heap, ÑpuDescriptorHandle, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 	return true;
 }
 
@@ -144,9 +167,10 @@ bool DX12Texture2D::SetAsUAV(D3D12_CPU_DESCRIPTOR_HANDLE& heap, bsize offset)
 {
 	if (!bAllowUAV)return false;
 	BEAR_CHECK(m_TextureType != BearTextureType::DepthStencil);
-	DX12UnorderedAccess::UAV.Texture2D.MipSlice = offset;
-	DX12UnorderedAccess::UAV.Texture2DArray.MipSlice = offset;
-	Factory->Device->CreateUnorderedAccessView(TextureBuffer.Get(),nullptr, &(DX12UnorderedAccess::UAV), heap);
+	BEAR_CHECK(TextureDesc.MipLevels > offset);
+	CD3DX12_CPU_DESCRIPTOR_HANDLE ÑpuDescriptorHandle(m_ShaderResource.DescriptorHeap->GetCPUDescriptorHandleForHeapStart());
+	ÑpuDescriptorHandle.Offset(Factory->CbvSrvUavDescriptorSize, static_cast<UINT>(m_ShaderResource.Id+1+ offset));
+	Factory->Device->CopyDescriptorsSimple(1, heap, ÑpuDescriptorHandle, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 	return true;
 }
 
@@ -166,6 +190,8 @@ void* DX12Texture2D::QueryInterface(int type)
 
 DX12Texture2D::~DX12Texture2D()
 {
+	if(m_TextureType != BearTextureType::DepthStencil)
+		Factory->ReserveResourceHeapAllocator.free(m_ShaderResource);
 	--Texture2DCounter;
 }
 

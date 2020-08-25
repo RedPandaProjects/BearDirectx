@@ -22,4 +22,5 @@ private:
 	BearTexturePixelFormat m_Format;
 	void AllocBuffer();
 	void FreeBuffer();
+	DX12AllocatorHeapItem m_ShaderResource;
 };

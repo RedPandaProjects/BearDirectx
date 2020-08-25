@@ -28,7 +28,7 @@ DX12DescriptorHeap::DX12DescriptorHeap(const BearDescriptorHeapDescription& desc
 		if (CountBuffers + CountSRVs)
 		{
 
-			UniSRVHeap = Factory->ViewHeapAllocator.allocate(CountBuffers + CountSRVs + CountUAVs);
+			UniSRVHeap = Factory->ShaderResourceHeapAllocator.allocate(CountBuffers + CountSRVs + CountUAVs);
 		}
 	}
 	RootSignature = description.RootSignature;
@@ -36,7 +36,7 @@ DX12DescriptorHeap::DX12DescriptorHeap(const BearDescriptorHeapDescription& desc
 
 DX12DescriptorHeap::~DX12DescriptorHeap()
 {
-	Factory->ViewHeapAllocator.free(UniSRVHeap);
+	Factory->ShaderResourceHeapAllocator.free(UniSRVHeap);
 	Factory->SamplersHeapAllocator.free(SamplerHeap);
 	DescriptorHeapCounter--;
 }
@@ -244,8 +244,10 @@ void DX12DescriptorHeap::SetSampler(bsize slot, BearFactoryPointer<BearRHI::Bear
 	Samplers[slot] = resource;
 	CD3DX12_CPU_DESCRIPTOR_HANDLE CbvHandle(SamplerHeap.DescriptorHeap->GetCPUDescriptorHandleForHeapStart());
 	CbvHandle.Offset(Factory->SamplerDescriptorSize, static_cast<UINT>(slot+ SamplerHeap.Id));
-	auto* buffer = static_cast<const DX12SamplerState*>(resource.get());
-	Factory->Device->CreateSampler(&buffer->SamplerDesc, CbvHandle);
+	auto* Buffer = static_cast<const DX12SamplerState*>(resource.get());
+	CD3DX12_CPU_DESCRIPTOR_HANDLE ÑpuDescriptorHandle(Buffer->ShaderResource.DescriptorHeap->GetCPUDescriptorHandleForHeapStart());
+	ÑpuDescriptorHandle.Offset(Factory->CbvSrvUavDescriptorSize, static_cast<UINT>(Buffer->ShaderResource.Id));
+	Factory->Device->CopyDescriptorsSimple(1, CbvHandle, ÑpuDescriptorHandle, D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER);
 
 }
 

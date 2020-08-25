@@ -60,9 +60,10 @@ public:
 	ComPtr<ID3D12DeviceX> Device;
 	ComPtr<IDXGIFactoryX> GIFactory;
 
-	DX12AllocatorHeap< D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV> ViewHeapAllocator;
-	DX12AllocatorHeap< D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER> SamplersHeapAllocator;
-
+	DX12AllocatorHeap<D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV,2048,false> ReserveResourceHeapAllocator;
+	DX12AllocatorHeap<D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV> ShaderResourceHeapAllocator;
+	DX12AllocatorHeap<D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, 128, false> ReserveSamplersHeapAllocator;
+	DX12AllocatorHeap<D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER,128> SamplersHeapAllocator;
 public:
 	void LockCommandList();
 	void UnlockCommandList(ID3D12CommandQueue*command_queue=0);

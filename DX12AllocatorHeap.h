@@ -7,7 +7,7 @@ struct  DX12AllocatorHeapItem
 	bsize Size;
 };
 
-template<D3D12_DESCRIPTOR_HEAP_TYPE heap_type, bsize elements_in_heap=128 >
+template<D3D12_DESCRIPTOR_HEAP_TYPE heap_type, bsize elements_in_heap=512,bool ShaderVisible = true>
 class  DX12AllocatorHeap
 {
 public:
@@ -93,7 +93,7 @@ private:
 		{
 			D3D12_DESCRIPTOR_HEAP_DESC HeapDesc = {};
 			HeapDesc.NumDescriptors = static_cast<UINT>(elements_in_heap);
-			HeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
+			HeapDesc.Flags = ShaderVisible?D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE: D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
 			HeapDesc.Type = heap_type;
 			R_CHK(Factory->Device->CreateDescriptorHeap(&HeapDesc, IID_PPV_ARGS(&HeapPtr->DescriptorHeap)));
 		}

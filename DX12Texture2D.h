@@ -35,5 +35,5 @@ private:
 	D3D12_RESOURCE_STATES m_CurrentStates;
 	virtual void LockUAV(ID3D12GraphicsCommandListX* command_list);
 	virtual void UnlockUAV(ID3D12GraphicsCommandListX* command_list);
-
+	DX12AllocatorHeapItem m_ShaderResource;
 };

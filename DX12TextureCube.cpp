@@ -23,8 +23,12 @@ DX12TextureCube::DX12TextureCube(bsize width, bsize height, bsize mips, bsize co
 	auto Properties = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
 
 	R_CHK(Factory->Device->CreateCommittedResource(&Properties,D3D12_HEAP_FLAG_NONE,&TextureDesc,D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE,nullptr,IID_PPV_ARGS(&TextureBuffer)));
-	bear_fill(DX12ShaderResource::SRV);
+	
+	
+	
+	m_ShaderResource = Factory->ReserveResourceHeapAllocator.allocate(1);
 
+	bear_fill(DX12ShaderResource::SRV);
 	DX12ShaderResource::SRV.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
 	DX12ShaderResource::SRV.Format = TextureDesc.Format;
 	if (TextureDesc.DepthOrArraySize > 6)
@@ -38,6 +42,10 @@ DX12TextureCube::DX12TextureCube(bsize width, bsize height, bsize mips, bsize co
 		DX12ShaderResource::SRV.ViewDimension = D3D12_SRV_DIMENSION_TEXTURECUBE;
 		DX12ShaderResource::SRV.TextureCube.MipLevels = static_cast<UINT>(mips);
 	}
+
+	CD3DX12_CPU_DESCRIPTOR_HANDLE ÑpuDescriptorHandle(m_ShaderResource.DescriptorHeap->GetCPUDescriptorHandleForHeapStart());
+	ÑpuDescriptorHandle.Offset(Factory->CbvSrvUavDescriptorSize, static_cast<UINT>(m_ShaderResource.Id));
+	Factory->Device->CreateShaderResourceView(TextureBuffer.Get(), &(DX12ShaderResource::SRV), ÑpuDescriptorHandle);
 	
 
 	if (BearTextureUsage::Static != m_TextureUsage)AllocBuffer();
@@ -60,7 +68,9 @@ DX12TextureCube::DX12TextureCube(bsize width, bsize height, bsize mips, bsize co
 
 bool DX12TextureCube::SetAsSRV(D3D12_CPU_DESCRIPTOR_HANDLE& heap)
 {
-	Factory->Device->CreateShaderResourceView(TextureBuffer.Get(),&(DX12ShaderResource::SRV), heap);
+	CD3DX12_CPU_DESCRIPTOR_HANDLE ÑpuDescriptorHandle(m_ShaderResource.DescriptorHeap->GetCPUDescriptorHandleForHeapStart());
+	ÑpuDescriptorHandle.Offset(Factory->CbvSrvUavDescriptorSize, static_cast<UINT>(m_ShaderResource.Id));
+	Factory->Device->CopyDescriptorsSimple(1, heap, ÑpuDescriptorHandle, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 	return true;
 }
 
@@ -78,6 +88,7 @@ void* DX12TextureCube::QueryInterface(int type)
 DX12TextureCube::~DX12TextureCube()
 {
 	--TextureCubeCounter;
+	Factory->ReserveResourceHeapAllocator.free(m_ShaderResource);
 }
 
 void* DX12TextureCube::Lock(bsize mip, bsize depth)
