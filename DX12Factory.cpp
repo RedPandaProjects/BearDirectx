@@ -353,7 +353,7 @@ void DX12Factory::GetHardwareAdapter(IDXGIFactoryX* factory, IDXGIAdapter1** pp_
 				D3D12_FEATURE_DATA_SHADER_MODEL shaderModel = { CurrentMeshShadingShadeModel };
 				if (FAILED(LDevice->CheckFeatureSupport(D3D12_FEATURE_SHADER_MODEL, &shaderModel, sizeof(shaderModel))))
 				{
-					bSupportRayTracing = false;
+					bSupportMeshShader = false;
 				}
 			}
 #endif
