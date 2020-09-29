@@ -72,7 +72,7 @@ DX12RayTracingTopLevel::DX12RayTracingTopLevel(const BearRayTracingTopLevelDescr
 
 	AccelerationStructureInputs.DescsLayout = D3D12_ELEMENTS_LAYOUT_ARRAY;
 	AccelerationStructureInputs.InstanceDescs = InstanceDescsResource->GetGPUVirtualAddress();
-	AccelerationStructureInputs.NumDescs = InstanceDescs.size();
+	AccelerationStructureInputs.NumDescs = static_cast<UINT>(InstanceDescs.size());
 
 	D3D12_RAYTRACING_ACCELERATION_STRUCTURE_PREBUILD_INFO PrebuildInfo = {};
 	Factory->Device->GetRaytracingAccelerationStructurePrebuildInfo(&AccelerationStructureInputs, &PrebuildInfo);

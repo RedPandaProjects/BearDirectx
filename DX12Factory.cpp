@@ -162,8 +162,6 @@ DX12Factory::~DX12Factory()
 		ReserveResourceHeapAllocator.clear();
 	}
 	{
-		if(CommandList)
-		R_CHK(CommandList->Close());
 
 		if (m_Default_FenceEvent)
 			CloseHandle(m_Default_FenceEvent);

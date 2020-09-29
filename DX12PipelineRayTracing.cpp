@@ -62,15 +62,15 @@ DX12PipelineRayTracing::DX12PipelineRayTracing(const BearPipelineRayTracingDescr
 		ShaderConfig->Config(description.ShaderConfig.MaxPayloadSizeInBytes,description.ShaderConfig.MaxAttributeSizeInBytes);
 	}
 	{
-		auto LocalRootSignature = RayTracingPipeline.CreateSubobject< CD3DX12_LOCAL_ROOT_SIGNATURE_SUBOBJECT>();
-		LocalRootSignature->SetRootSignature(Factory->LocalRootSignatureDefault.Get());
+		auto LocalRootSignatureSub = RayTracingPipeline.CreateSubobject< CD3DX12_LOCAL_ROOT_SIGNATURE_SUBOBJECT>();
+		LocalRootSignatureSub->SetRootSignature(Factory->LocalRootSignatureDefault.Get());
 
 		auto RootSignatureAssociation = RayTracingPipeline.CreateSubobject<CD3DX12_SUBOBJECT_TO_EXPORTS_ASSOCIATION_SUBOBJECT>();
 		for (const BearStringConteniarUnicode& a : LocalRootSignature_Exports)
 		{
 			RootSignatureAssociation->AddExport(*a);
 		}
-		RootSignatureAssociation->SetSubobjectToAssociate(*LocalRootSignature);
+		RootSignatureAssociation->SetSubobjectToAssociate(*LocalRootSignatureSub);
 	}
 	{
 		auto GlobalRootSignature = RayTracingPipeline.CreateSubobject<CD3DX12_GLOBAL_ROOT_SIGNATURE_SUBOBJECT>();

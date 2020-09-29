@@ -100,7 +100,6 @@ DX12RootSignature::DX12RootSignature(const BearRootSignatureDescription& descrip
 		CD3DX12_DESCRIPTOR_RANGE1 Ranges[64];
 		CD3DX12_ROOT_PARAMETER1 RootParameters[128];
 		bsize offset = 0;
-		bsize root_offset = 0;
 		for (bsize i = 0; i < 16; i++)
 		{
 			if (description.UniformBuffers[i].Shader != BearShaderType::Null)

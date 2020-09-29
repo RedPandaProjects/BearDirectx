@@ -65,8 +65,8 @@ DX12Texture2D::DX12Texture2D(bsize width, bsize height, bsize mips, bsize count,
 		ÑpuDescriptorHandle.Offset(Factory->CbvSrvUavDescriptorSize, static_cast<UINT>(m_ShaderResource.Id + 1));
 		for (bsize i = 0; i < mips; i++)
 		{
-			DX12UnorderedAccess::UAV.Texture2D.MipSlice = i;
-			DX12UnorderedAccess::UAV.Texture2DArray.MipSlice = i;
+			DX12UnorderedAccess::UAV.Texture2D.MipSlice =static_cast<UINT>( i);
+			DX12UnorderedAccess::UAV.Texture2DArray.MipSlice = static_cast<UINT>(i);
 			Factory->Device->CreateUnorderedAccessView(TextureBuffer.Get(), nullptr, &(DX12UnorderedAccess::UAV), ÑpuDescriptorHandle);
 			ÑpuDescriptorHandle.Offset(Factory->CbvSrvUavDescriptorSize, static_cast<UINT>(1));
 		}

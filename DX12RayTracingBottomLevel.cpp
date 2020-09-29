@@ -52,7 +52,7 @@ DX12RayTracingBottomLevel::DX12RayTracingBottomLevel(const BearRayTracingBottomL
 				GeometryDesc.Triangles.VertexBuffer.StartAddress = VertexBuffer->VertexBufferView.BufferLocation + (i.Triangles.VertexOffset * VertexBuffer->VertexBufferView.StrideInBytes);
 				GeometryDesc.Triangles.VertexBuffer.StrideInBytes = VertexBuffer->VertexBufferView.StrideInBytes;
 				BEAR_CHECK(i.Triangles.VertexCount >= VertexBuffer->VertexBufferView.SizeInBytes / VertexBuffer->VertexBufferView.StrideInBytes);
-				GeometryDesc.Triangles.VertexCount = i.Triangles.VertexCount;
+				GeometryDesc.Triangles.VertexCount = static_cast<UINT>(i.Triangles.VertexCount);
 				GeometryDesc.Triangles.VertexFormat = DX12Factory::TranslationForRayTracing(i.Triangles.VertexFormat);
 			}
 			if (i.Triangles.IndexBuffer.empty())
@@ -65,7 +65,7 @@ DX12RayTracingBottomLevel::DX12RayTracingBottomLevel(const BearRayTracingBottomL
 				BEAR_CHECK(IndexBuffer->IndexBufferView.SizeInBytes);
 				GeometryDesc.Triangles.IndexBuffer = IndexBuffer->IndexBufferView.BufferLocation + (i.Triangles.IndexOffset * 4);
 				GeometryDesc.Triangles.IndexFormat = IndexBuffer->IndexBufferView.Format;
-				GeometryDesc.Triangles.IndexCount = i.Triangles.IndexCount;
+				GeometryDesc.Triangles.IndexCount = static_cast<UINT>(i.Triangles.IndexCount);
 			}
 		}
 		else
@@ -99,7 +99,7 @@ DX12RayTracingBottomLevel::DX12RayTracingBottomLevel(const BearRayTracingBottomL
 
 	AccelerationStructureInputs.DescsLayout = D3D12_ELEMENTS_LAYOUT_ARRAY;
 	AccelerationStructureInputs.pGeometryDescs = GeometryDescs.data();
-	AccelerationStructureInputs.NumDescs = GeometryDescs.size();
+	AccelerationStructureInputs.NumDescs = static_cast<UINT>(GeometryDescs.size());
 
 	D3D12_RAYTRACING_ACCELERATION_STRUCTURE_PREBUILD_INFO PrebuildInfo = {};
 	Factory->Device->GetRaytracingAccelerationStructurePrebuildInfo(&AccelerationStructureInputs, &PrebuildInfo);
@@ -117,7 +117,8 @@ DX12RayTracingBottomLevel::DX12RayTracingBottomLevel(const BearRayTracingBottomL
 		BottomLevelBuildDesc.DestAccelerationStructureData = BottomLevelAccelerationStructure->GetGPUVirtualAddress();
 	}
 	Factory->CommandList->BuildRaytracingAccelerationStructure(&BottomLevelBuildDesc, 0, nullptr);
-	Factory->CommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::UAV(BottomLevelAccelerationStructure.Get()));
+	auto ResourceBarrier1 = CD3DX12_RESOURCE_BARRIER::UAV(BottomLevelAccelerationStructure.Get());
+	Factory->CommandList->ResourceBarrier(1, &ResourceBarrier1);
 
 	Factory->UnlockCommandList();
 }

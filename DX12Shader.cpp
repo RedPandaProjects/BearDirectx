@@ -108,7 +108,7 @@ bool DX12Shader::LoadAsText(const bchar* text, const bchar* entry_point, const B
 
 	D3DIncluder Includer(includer);
 #ifdef UNICODE
-	if (FAILED(D3DCompile(*BearEncoding::FastToAnsi(text), BearString::GetSize(Text), "noname", Marcos, &Includer, entry_point, Type2Text, CompileFlags, 0, &Shader, &ErrorMessage)))
+	if (FAILED(D3DCompile(*BearEncoding::FastToAnsi(text), BearString::GetSize(text), "noname", Marcos, &Includer, *BearEncoding::FastToAnsi(entry_point), Type2Text, CompileFlags, 0, &Shader, &ErrorMessage)))
 	{
 		Result = false;
 	}
@@ -412,7 +412,7 @@ bool DX12Shader::LoadAsText(const bchar* text, const bchar* entry_point, const B
 		ErrorMsg.append(InfoLog.data());
 		PError->Release();
 #ifdef UNICODE
-		out_error.assign(*BearEncoding::FastToUnicode( *errorMsg));
+		out_error.assign(*BearEncoding::FastToUnicode( *ErrorMsg));
 #else
 		out_error.assign(*ErrorMsg);
 #endif

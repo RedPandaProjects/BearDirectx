@@ -233,9 +233,9 @@ void DX12Context::DispatchRays(bsize count_x, bsize count_y, bsize count_z, Bear
     Desc.HitGroupTable = ShaderTable->HitGroupTable;
     Desc.CallableShaderTable = ShaderTable->CallableShaderTable;
 
-    Desc.Width = count_x;
-    Desc.Height = count_y;
-    Desc.Depth = count_z;
+    Desc.Width = static_cast<UINT>(count_x);
+    Desc.Height = static_cast<UINT>(count_y);
+    Desc.Depth = static_cast<UINT>(count_z);
     m_CommandList->DispatchRays(&Desc);
 #endif
 }
