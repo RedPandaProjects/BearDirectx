@@ -26,7 +26,7 @@ DX12TextureCube::DX12TextureCube(bsize width, bsize height, bsize mips, bsize co
 	
 	
 	
-	m_ShaderResource = Factory->ReserveResourceHeapAllocator.allocate(1);
+	m_ShaderResource = Factory->ReserveResourceHeapAllocator.allocate(1, Factory->Device.Get());
 
 	bear_fill(DX12ShaderResource::SRV);
 	DX12ShaderResource::SRV.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;

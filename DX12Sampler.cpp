@@ -71,7 +71,7 @@ DX12SamplerState::DX12SamplerState(const BearSamplerDescription& description)
 	default:
 		BEAR_CHECK(0);
 	}
-	ShaderResource = Factory->ReserveSamplersHeapAllocator.allocate(1);
+	ShaderResource = Factory->ReserveSamplersHeapAllocator.allocate(1, Factory->Device.Get());
 	CD3DX12_CPU_DESCRIPTOR_HANDLE ÑpuDescriptorHandle(ShaderResource.DescriptorHeap->GetCPUDescriptorHandleForHeapStart());
 	ÑpuDescriptorHandle.Offset(Factory->CbvSrvUavDescriptorSize, static_cast<UINT>(ShaderResource.Id));
 	Factory->Device->CreateSampler(&SamplerDesc, ÑpuDescriptorHandle);

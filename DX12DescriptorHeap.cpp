@@ -23,12 +23,12 @@ DX12DescriptorHeap::DX12DescriptorHeap(const BearDescriptorHeapDescription& desc
 
 		if (CountSamplers)
 		{
-			SamplerHeap = Factory->SamplersHeapAllocator.allocate(CountSamplers);
+			SamplerHeap = Factory->SamplersHeapAllocator.allocate(CountSamplers,Factory->Device.Get());
 		}
 		if (CountBuffers + CountSRVs)
 		{
 
-			UniSRVHeap = Factory->ShaderResourceHeapAllocator.allocate(CountBuffers + CountSRVs + CountUAVs);
+			UniSRVHeap = Factory->ShaderResourceHeapAllocator.allocate(CountBuffers + CountSRVs + CountUAVs, Factory->Device.Get());
 		}
 	}
 	RootSignature = description.RootSignature;

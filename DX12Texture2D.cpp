@@ -22,7 +22,7 @@ DX12Texture2D::DX12Texture2D(bsize width, bsize height, bsize mips, bsize count,
 
 	auto Properties = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
 
-	m_ShaderResource = Factory->ReserveResourceHeapAllocator.allocate(bAllowUAV ? (TextureDesc.MipLevels+1) : 1);
+	m_ShaderResource = Factory->ReserveResourceHeapAllocator.allocate(bAllowUAV ? (TextureDesc.MipLevels+1) : 1, Factory->Device.Get());
 
 	m_CurrentStates = bAllowUAV ? (D3D12_RESOURCE_STATE_UNORDERED_ACCESS) : (D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE| D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
 	R_CHK(Factory->Device->CreateCommittedResource(&Properties,D3D12_HEAP_FLAG_NONE,&TextureDesc, m_CurrentStates,nullptr,	IID_PPV_ARGS(&TextureBuffer)));
@@ -115,7 +115,7 @@ DX12Texture2D::DX12Texture2D(bsize width, bsize height, BearRenderTargetFormat p
 	auto Properties = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
 	R_CHK(Factory->Device->CreateCommittedResource(&Properties,D3D12_HEAP_FLAG_NONE,&TextureDesc,m_CurrentStates,nullptr,IID_PPV_ARGS(&TextureBuffer)));
 
-	m_ShaderResource = Factory->ReserveResourceHeapAllocator.allocate(1);
+	m_ShaderResource = Factory->ReserveResourceHeapAllocator.allocate(1, Factory->Device.Get());
 
 	bear_fill(DX12ShaderResource::SRV);
 	DX12ShaderResource::SRV.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;

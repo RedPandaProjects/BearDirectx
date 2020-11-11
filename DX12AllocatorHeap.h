@@ -29,7 +29,7 @@ public:
 		}
 
 	}
-	inline DX12AllocatorHeapItem allocate(bsize count_element)
+	inline DX12AllocatorHeapItem allocate(bsize count_element, ID3D12DeviceX* Device)
 	{
 		BEAR_CHECK(elements_in_heap >=count_element);
 		DX12AllocatorHeapItem Result;
@@ -39,7 +39,7 @@ public:
 			auto Item = std::lower_bound(HeapsOfMaxSize.begin(), HeapsOfMaxSize.end(), count_element, [](Heap* a1, bsize a2)->bool {return a1->MaxSize < a2; });
 			if (Item == HeapsOfMaxSize.end())
 			{
-				HeapPtr = create_block();
+				HeapPtr = create_block(Device);
 			}
 			else
 			{
@@ -50,11 +50,11 @@ public:
 		}
 		else
 		{
-			HeapPtr = create_block();
+			HeapPtr = create_block(Device);
 		}
 		if (HeapPtr->MaxSize < count_element)
 		{
-			HeapPtr = create_block();
+			HeapPtr = create_block(Device);
 		}
 		Result.DescriptorHeap = HeapPtr->DescriptorHeap;
 		bsize id = find_id(count_element, HeapPtr);
@@ -86,7 +86,7 @@ private:
 		uint8 BlockInfo[elements_in_heap];
 		bsize MaxSize;
 	};
-	inline Heap* create_block()
+	inline Heap* create_block(ID3D12DeviceX*Device)
 	{
 		Heap* HeapPtr = bear_new<Heap>();
 
@@ -95,7 +95,7 @@ private:
 			HeapDesc.NumDescriptors = static_cast<UINT>(elements_in_heap);
 			HeapDesc.Flags = ShaderVisible?D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE: D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
 			HeapDesc.Type = heap_type;
-			R_CHK(Factory->Device->CreateDescriptorHeap(&HeapDesc, IID_PPV_ARGS(&HeapPtr->DescriptorHeap)));
+			R_CHK(Device->CreateDescriptorHeap(&HeapDesc, IID_PPV_ARGS(&HeapPtr->DescriptorHeap)));
 		}
 		bear_fill(HeapPtr->BlockInfo, elements_in_heap,0);
 		HeapPtr->MaxSize = elements_in_heap;
