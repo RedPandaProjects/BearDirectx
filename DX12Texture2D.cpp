@@ -113,6 +113,7 @@ DX12Texture2D::DX12Texture2D(bsize width, bsize height, BearRenderTargetFormat p
 	TextureDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
 	
 	auto Properties = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
+	m_CurrentStates = (D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
 	R_CHK(Factory->Device->CreateCommittedResource(&Properties,D3D12_HEAP_FLAG_NONE,&TextureDesc,m_CurrentStates,nullptr,IID_PPV_ARGS(&TextureBuffer)));
 
 	m_ShaderResource = Factory->ReserveResourceHeapAllocator.allocate(1, Factory->Device.Get());
